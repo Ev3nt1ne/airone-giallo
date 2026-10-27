@@ -12,3 +12,4 @@ decide when to load it, then the rules, each with its reason, and a closing sect
 | [doc-discipline](doc-discipline/SKILL.md) | Keeping several design documents and their registry true together: levels in sync, identifiers minted through one allocator, the cascade read before an edit, a gate recorded as a hard stop |
 | [commit](commit/SKILL.md) | What one commit holds, the changes that get a commit of their own, the checks run before staging, the message, and what never goes in |
 | [adversary](adversary/SKILL.md) | Opposed reviewers set against a deliverable on named occasions, their findings merged, tempered and handed to the owner for triage, with the reviewer prompts and the worksheet |
+| [orient](orient/SKILL.md) | A template the project fills: which document answers which question, how an identifier resolves, where the frontier is read, with a worked example |

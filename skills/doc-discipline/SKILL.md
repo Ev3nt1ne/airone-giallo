@@ -1,6 +1,6 @@
 ---
 name: doc-discipline
-description: Keeping a project's design documents and registry consistent through a change, and the gate as a hard stop. Load before editing a specification, plan or registry, or minting an identifier.
+description: Keeping a project's design documents and registry consistent through a change, the gate as a hard stop, and when a review is due. Load before editing a specification, plan or registry, minting an identifier, committing such a change, or proposing a review.
 ---
 
 # Changing a project's documents without breaking them
@@ -39,7 +39,7 @@ below reduce to "the document, the registry and the code agree".
   An open problem that gets resolved has its content moved into the text and leaves a one-line tombstone where it
   was. *An identifier deleted breaks every reference to it; one reused makes old references lie.*
 - **A number not derived from a measurement is marked illustrative**, and turning it into a derived one says what
-  derived it (`verify`).
+  derived it (the `session` skill's [verify method](../session/references/verify-method.md)).
 - **Every substantive edit to a level appends a dated line to that level's change note.** *Refining in place drops
   the old text; the change note is where its reason survives.*
 - **Nothing is dropped silently**: refine it, move it, or archive it. Neither rule means "never modify": a stale
@@ -55,10 +55,15 @@ Where the reasoning of a superseded claim goes depends on the material:
 
 ## 3. Minting an identifier
 
-One registry allocates every identifier; **an identifier not in it does not exist.** It is append-only: never
-renumber, never reuse. *Two allocators eventually give one number to two things, and every citation of it becomes
-ambiguous.* Where the project uses the specification graph (`graph/` in this kit), the registry is its
-`registry.yml`; otherwise it can be a table of identifier, one-sentence statement and the place that defines it.
+One allocator per family; **an identifier in neither allocator does not exist.** The graph's registry allocates
+statement IDs (requirements, decisions, assumptions, threats): with the specification graph (`graph/` in this kit)
+it is `registry.yml`, otherwise a table of identifier, one-sentence statement and the place that defines it. The
+register (`register/` in this kit) allocates work-item IDs: what is left to do. Both are append-only: never
+renumber, never reuse. *Two allocators for one family eventually give one number to two things, and every citation
+of it becomes ambiguous.* An item may cite a node; a node never cites an item. *A node states what holds and
+outlives the work; a citation of work inside it goes stale when the work closes.*
+
+The steps below mint a statement; a work item takes the next free ID the register's checker prints.
 
 1. **Check it is not there.** Search the registry for the statement (with the graph, `specgraph near WORD…`), then
    take the next free number in the family: `grep -o 'REQ-[0-9]*' registry.yml | sort -uV | tail -1`.
@@ -68,7 +73,7 @@ ambiguous.* Where the project uses the specification graph (`graph/` in this kit
    in `graph/docs/spec-graph.md`.
 4. **Write the prose that uses it, in the same edit.** *A minted identifier with no text is a dangling allocation.*
 5. **Run the checks**: with the graph, `specgraph lint --fix`, then `specgraph lint`, to zero errors.
-6. **Commit the entry with the text that uses it** (`commit`).
+6. **Commit the entry with the text that uses it** (§6).
 
 **The budget test:** would anything downstream change if this statement flipped? If not, it is prose, not an entry.
 *A registry of everything is read like a registry of nothing.* A decision cited by name that nothing rests on (a
@@ -109,6 +114,19 @@ the pattern for any hard stop: a release, a migration, a change of architecture.
 - **Carried risks stay carried.** A risk the stage did not retire is named as not retired, in those words. *A gate
   that quietly turns a model that was bounded but never validated into a validated one is the failure this
   discipline exists to prevent.*
+- **A review is proposed on these occasions, and only on these**, in one line with its cost, never launched unasked
+  (`session` §2). *A self-assessment is not evidence, and an occasion that never pays teaches the owner to say no.*
+  1. A decision is recorded before its design, with nothing yet satisfying it; propose before the work that builds
+     it starts. *A flaw found in a design costs a paragraph; found in built code, it costs the code.*
+  2. A gate recommendation is drafted.
+  3. With the specification graph only: a batch makes a node newly hold on a place where a threat is undefended, or
+     a new satisfier makes a condition hold; `specgraph batch` lists these. *The engine shows the graph consistent;
+     only a review says whether the support is enough.*
+  4. Code with a security surface lands: a cache, a parser, an export format, anything a peer can feed.
+  5. A measurement is about to become evidence that a decision rests on.
+
+  How a review is run (roles and cuts, independent reviewers, the merge with tempering, where the output goes, the
+  prompts and the worksheet) is in [references/reviewer-prompts.md](references/reviewer-prompts.md).
 
 When the owner has ruled, the record:
 
@@ -118,21 +136,46 @@ When the owner has ruled, the record:
 3. Mint any identifier the ruling creates (§3).
 4. Tick the gate in the detail, change the stage's status in the map, add the map's change-note line.
 5. Run the checks to zero errors.
-6. Commit it alone, with the gate's identifier in the subject, and tag it where the project tags gates (`commit`).
+6. Commit it alone, with the gate's identifier in the subject, and tag it where the project tags gates (§6).
 
 Folding a stage's findings into the specification after a gate is the same discipline at volume: work the list in
 order, read the cascade of every statement about to be restated, and keep each mint in the commit of its text.
 
+## 6. Committing the change
+
+How a commit is made (staging, the message's form, branches, remotes) is the project's own commit skill's business;
+these are the rules this discipline adds to it.
+
+- **One logical task, with its bookkeeping**: the ticked items, the register rows, the change-note lines go in the
+  commit of the work that caused them. *A later "update the docs" commit makes the history say a thing became true
+  later than it did.*
+- **A decision or a specification change gets its own commit**, its body saying whether the cascade (§4) was read
+  and what it showed. *It is the most valuable history, and must be findable alone.*
+- **A gate is alone in its commit, with an annotated tag** (`git tag -a <name> -m "…"`). *Gates are where the
+  project re-baselines; a tag makes each one addressable.*
+- **The registry is never committed alone and never left behind**: a new identifier with the text that uses it, a
+  recomputed check value with the edit that changed its statement. Work on the registry's own machinery is the
+  exception. *An entry without its text, or text without its entry, is an inconsistency the check may not see.*
+- **The subject carries the identifiers the commit touches.** *`git log --grep` finds a subject that names one and
+  misses one that describes it.*
+- **The checks run before staging, never recalled**: zero errors, the documents agree, the status markers say what
+  is true; a fix the checks require goes in this commit, not the next. *A check remembered as passing is a check
+  skipped.*
+- **Never in the commit**: a secret of any kind, scratch or temporary files, another session's work (stage your own
+  files by name). *A committed secret is in every clone, and another session's half-done edit rides out under your
+  message.*
+
 ## Adapting this to your project
 
-Fixed: the documents agree at every commit; one owner per fact; one allocator, append-only, one sentence per
-entry; the cascade read before the edit; the reasoning of a superseded claim kept somewhere; a gate passed only by
-the owner's ruling, recorded alone, carried risks named.
+Fixed: the documents agree at every commit; one owner per fact; one allocator per family, append-only, one sentence
+per entry; the cascade read before the edit; the reasoning of a superseded claim kept somewhere; a gate passed only
+by the owner's ruling, recorded alone, carried risks named; a review only on its occasions, nothing applied before
+the owner rules; decisions and gates in commits of their own, the registry never alone.
 
 Slots the project fills in its instruction file: its levels and their files (one, two or three); the registry's
-file and the identifier families with their grammar; whether it uses the specification graph; the check command;
-where the change notes live; the frozen folder; its gates, where their exit criteria are written, and how a gate's
-tag is named.
+file, the register's, and the identifier families with their grammar; whether it uses the specification graph; the
+check command; where the change notes live; the frozen folder; its gates, where their exit criteria are written,
+and how a gate's tag is named; its review occasions, the reviews folder and the models available for review.
 
 Evolving: a rule is added from a named inconsistency that reached a commit, with its reason beside it; a rule not
 needed for a long while is removed. *A discipline nobody can recite is not practised.*

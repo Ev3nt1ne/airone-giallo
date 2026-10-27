@@ -7,9 +7,8 @@ description: How a working session on a long project runs, from opening on the h
 
 A long project is worked in sessions by agents that start cold. Most of what goes wrong is a continuity failure:
 a claim carried forward without being checked, a decision re-derived because nobody recorded why, a fact left in
-one file that was then archived. This skill is the order of a session; `verify` and `handoff` hold the methods it
-calls on, and a short version of each is here for a project that has not adopted them. Each rule carries its reason
-in italics.
+one file that was then archived. This skill is the order of a session; `handoff` and the references beside this skill
+hold the methods it calls on. Each rule carries its reason in italics.
 
 ## 1. Opening
 
@@ -22,6 +21,9 @@ and reopens questions that were settled.*
   is not a ruling on its neighbours.
 - **A handoff is a record, not a source.** It says what was true when written. Resolve anything you build on
   against the code or the specification. *A record repeats its errors as faithfully as its facts.*
+- **The project's map** (which document answers which question, the identifier families, the entry points) lives in
+  its instruction file; until the setup skill writes it there, the template is
+  [references/project-map-template.md](references/project-map-template.md).
 
 ## 2. Whose decision it is
 
@@ -33,8 +35,9 @@ Classify every decision before acting on it.
   recorded ruling, and whatever the owner has reserved. Put it to them and wait.
 
 When unsure, it is the owner's. *A project decision taken as a technical one is discovered after it is built on.*
-Never apply a reviewer's finding before the owner rules on it; when blocked on a privilege, print the command and
-wait instead of working around it.
+A review of a deliverable is never launched unasked: it is proposed in one line with its cost, and nothing a
+reviewer finds is applied before the owner rules. *A review costs the owner a triage as well as the tokens.* When
+blocked on a privilege, print the command and wait instead of working around it.
 
 ## 3. Putting a decision to the owner
 
@@ -68,8 +71,8 @@ Before sending, read only the first and the last line: together they must say wh
 
 ## 5. Doing the work
 
-- One logical task per commit, its bookkeeping in the same commit.
-- Load `verify` before recording any number, in a document or a test.
+- One logical task per commit, its bookkeeping in the same commit (`doc-discipline` §6).
+- Before recording any number, in a document or a test, apply [references/verify-method.md](references/verify-method.md).
 - A gate is a hard stop: not passed until its exit criteria are met and the decision recorded.
 - A frozen folder is never edited.
 - Speed is not a goal. *A wrong claim in a recorded decision reads as verified to everyone downstream.*
@@ -81,10 +84,19 @@ Before sending, read only the first and the last line: together they must say wh
 
 ## 6. Two passes
 
-Nothing lands on the first pass. The second lists every claim the change makes (numbers, quotations,
-identifiers, hashes, citations, every *all*, *every*, *none*, *only*) and resolves each against its source,
-never against the draft; then it reports what it found, including "nothing". *A re-read checks that a text is
-coherent, not that it is true.* The full method is `verify` §10.
+Two passes, always; nothing lands on the first. The second is claim by claim, never a re-read. *A re-read checks
+that a text is coherent, not that it is true.*
+
+1. List every claim the change makes: numbers, quotations, identifiers, hashes, citations, invariants stated in
+   code comments, and every *all*, *every*, *none*, *only*.
+2. Resolve each against its source, never against the draft. A fix made during the pass is a new claim.
+3. Read the artifact, not a view of it: the changed text whole, never a truncated hunk; a grep anchored on the
+   concept, with what it matched read (a case-insensitive grep matches inside other words; a search for the old
+   wording misses a reworded passage).
+4. Report what the pass found, including "nothing".
+
+*False completeness is the expensive error: "everything was handled" is the sentence that stops the next reader
+checking.* Correct such a claim in place.
 
 ## 7. Where state lives
 
@@ -112,13 +124,14 @@ Three places, not interchangeable, kept consistent at every close.
 
 ## Adapting this to your project
 
-Fixed: open from the handoff, not a re-survey; classify a decision before acting; explanations, never menus;
-where the work stands in every reply; two passes; state in three places, consistent at the close.
+Fixed: open from the handoff, not a re-survey; classify a decision before acting; no review launched unasked;
+explanations, never menus; where the work stands in every reply; two passes, the second claim by claim; state in
+three places, consistent at the close.
 
-Slots the project fills in its instruction file: the opening order and its command, if any; the handoff's location;
-the glossary; what the owner reserves beyond the default list of project decisions; how the owner wants a decision
-framed (a line saying which part of the system it concerns, a picture on request, a language); the checks run at
-close; where memory lives; the frozen folders and the gates.
+Slots the project fills in its instruction file: the project's map; the opening order and its command, if any; the
+handoff's location; the glossary; what the owner reserves beyond the default list of project decisions; how the
+owner wants a decision framed (a line saying which part of the system it concerns, a picture on request, a
+language); the checks run at close; where memory lives; the frozen folders and the gates.
 
 Evolving: a rule is added from a named failure of a session, with its reason; a rule not needed for a long while
 is removed. *Rules without reasons get obeyed literally or not at all.*

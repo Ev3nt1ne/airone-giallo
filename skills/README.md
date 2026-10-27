@@ -6,10 +6,11 @@ decide when to load it, then the rules, each with its reason, and a closing sect
 | Skill | What it is for |
 |---|---|
 | [markdown-docs](markdown-docs/SKILL.md) | Writing, searching, moving and correcting a project's Markdown documents so they stay findable and trustworthy |
-| [verify](verify/SKILL.md) | Establishing that a claim is true before it is recorded or built on: the artifact measured, a negative control, derived thresholds, a test seen failing, a second pass claim by claim |
 | [handoff](handoff/SKILL.md) | The state file a cold session starts from and the log each close appends to, the sections that earned their place, and the rule for evolving the form |
-| [session](session/SKILL.md) | The order of a working session: open from the handoff, classify a decision and explain it to the owner, say where the work stands, two passes, close with state consistent in three places |
-| [doc-discipline](doc-discipline/SKILL.md) | Keeping several design documents and their registry true together: levels in sync, identifiers minted through one allocator, the cascade read before an edit, a gate recorded as a hard stop |
-| [commit](commit/SKILL.md) | What one commit holds, the changes that get a commit of their own, the checks run before staging, the message, and what never goes in |
-| [adversary](adversary/SKILL.md) | Opposed reviewers set against a deliverable on named occasions, their findings merged, tempered and handed to the owner for triage, with the reviewer prompts and the worksheet |
-| [orient](orient/SKILL.md) | A template the project fills: which document answers which question, how an identifier resolves, where the frontier is read, with a worked example |
+| [session](session/SKILL.md) | The order of a working session: open from the handoff, classify a decision and explain it to the owner, say where the work stands, two passes, close with state consistent in three places; with the method for verifying a claim and the template for the project's map |
+| [doc-discipline](doc-discipline/SKILL.md) | Keeping several design documents, the graph's registry and the register true together: levels in sync, one allocator per identifier family, the cascade read before an edit, a gate recorded as a hard stop, the occasions for a review and how one is run, and what a commit of the change holds |
+
+The kit deliberately ships no generic commit, test or review skill: the large public collections already have them,
+and a project usually has its own. A second skill with the same name and the same trigger competes with the
+project's, and the agent picks one of the two; the rules specific to this kit live instead in the skill that defines
+what they govern.

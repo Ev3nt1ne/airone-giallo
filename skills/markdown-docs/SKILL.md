@@ -80,7 +80,7 @@ Below about fifteen documents, list and read them; above a few hundred, add a ra
   next commit and nobody edits a design document to fix an integer.* Cite the command that counts, not its answer.
 - A document that reasons does not report progress: "done", "landed", "not yet implemented", "the code currently
   does". *Such words are true for one commit and the prose around them for months, so they go stale on a different
-  schedule.* Progress lives in the register; a plan or log
+  schedule.* Progress lives in the register (`register/` in this kit); a plan or log
   may record what it delivered, dated and in the past tense.
 - Operational documents (runbooks, setup, recovery) change in the same session as the change they describe. *An
   out-of-date one is trusted.*

@@ -1,0 +1,40 @@
+# A specification registry: one file, one line per node and one per edge. `meta` is the schema every tool reads.
+# Profile: lite. Four kinds, four relations, no axes (one place). It grows into the full profile by replacing this
+# meta block with the full one; no node or edge needs to change.
+meta:
+  version: 1
+  profile: lite
+  # ID families: an ID is FAMILY-NN (id_digits: from 2 to 3 digits), or FAMILY-slug for the families in slug_prefixes
+  # (a slug family also accepts a number).
+  # No rule reads a family: an ID is an address. What a node is, is its `kind`.
+  prefixes: [DEC, REQ, ASM, ATK]
+  slug_prefixes: [DEC]
+  id_digits: [2, 3]
+  # The places a node may hold on. None: there is one place, `all`.
+  axes: []
+  # What a node is. An assertion carries a `support` and holds or not; a threat is defended or not.
+  assertion_kinds: [requirement, assumption, decision]
+  other_kinds: [threat]
+  supports: [given, chosen, premises, satisfier]
+  # Kinds that say where they hold, once axes are declared.
+  domain_kinds: [requirement, assumption, decision, threat]
+  # Which kinds each relation may join. `assertion` stands for every assertion kind.
+  relations:
+    requires:  {from: [assertion], to: [requirement, assumption, decision]}
+    satisfies: {from: [decision, requirement], to: [requirement]}
+    mitigates: {from: [decision, requirement], to: [threat]}
+    obstructs: {from: [threat], to: [requirement]}
+  # How a node's `where` is resolved: short names for documents, and how sections and IDs are written.
+  where_aliases: {}
+  where_forms:
+    section_mark: "§"
+    id: '^[A-Z]{2,5}-(?:[0-9]{2,3}|[a-z0-9][a-z0-9-]*)$'
+    heading: '^#{1,6}\s+§?(\S+)'
+    lead: '^\*\*§?([0-9][0-9A-Za-z.]*)\b'
+    item: '^([0-9]+)\.\s'
+    folder_files: [README.md]
+  # Single nodes that need no edge, each with its reason; kinds still being linked (the list only shrinks).
+  orphan_ok: {}
+  orphan_exempt: []
+nodes: []
+edges: []

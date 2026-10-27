@@ -1,0 +1,49 @@
+# A specification registry: one file, one line per node and one per edge. `meta` is the schema every tool reads.
+# Profile: full. Every kind and relation of the graph. A lite registry is valid under this meta unchanged.
+meta:
+  version: 1
+  profile: full
+  # ID families: an ID is FAMILY-NN (id_digits: from 2 to 3 digits), or FAMILY-slug for the families in slug_prefixes
+  # (a slug family also accepts a number). No rule reads a family: an ID is an address. What a node is, is its `kind`.
+  prefixes: [OBJ, GOAL, REQ, EXP, ASM, DEC, ATK, EVD, CHK, QST, JUS, REC]
+  slug_prefixes: [DEC]
+  id_digits: [2, 3]
+  # The places a node may hold on: a cell is one value per axis; an axis with `interfaces` adds the boundary
+  # between two of its values, an `ordered` axis the move between two adjacent values (listed bottom to top).
+  # None: there is one place, `all`. For example:
+  #   axes:
+  #     - {name: env, values: [DEV, STAGING, PROD], ordered: true}
+  #     - {name: side, values: [CLIENT, SERVER], interfaces: true}
+  axes: []
+  # What a node is. An assertion carries a `support` and holds or not on each place; a threat is defended or not;
+  # evidence stands or not; a check, a question, a justification and a record carry no truth value.
+  assertion_kinds: [objective, goal, requirement, expectation, assumption, decision]
+  other_kinds: [threat, evidence, check, question, justification, record]
+  supports: [given, chosen, premises, satisfier]
+  # Kinds that say where they hold, once axes are declared (an objective holds everywhere).
+  domain_kinds: [goal, requirement, expectation, assumption, decision, threat, evidence, check, question]
+  # Kinds outside the argument: nothing rests on them and they are never asked for an edge.
+  outside_kinds: [record, justification]
+  # Which kinds each relation may join. `assertion` stands for every assertion kind.
+  relations:
+    requires:     {from: [assertion, evidence, record], to: [goal, requirement, expectation, assumption, decision]}
+    satisfies:    {from: [decision, goal, requirement, expectation], to: [objective, goal, requirement, expectation]}
+    mitigates:    {from: [decision, goal, requirement], to: [threat]}
+    obstructs:    {from: [threat], to: [objective, goal, requirement, expectation]}
+    evidenced-by: {from: [assertion], to: [evidence]}
+    verified-by:  {from: [assertion], to: [check]}
+    awaits:       {from: [assertion, threat, evidence, check, record], to: [question]}
+  # How a node's `where` is resolved: short names for documents, and how sections and IDs are written.
+  where_aliases: {}
+  where_forms:
+    section_mark: "§"
+    id: '^[A-Z]{2,5}-(?:[0-9]{2,3}|[a-z0-9][a-z0-9-]*)$'
+    heading: '^#{1,6}\s+§?(\S+)'
+    lead: '^\*\*§?([0-9][0-9A-Za-z.]*)\b'
+    item: '^([0-9]+)\.\s'
+    folder_files: [README.md]
+  # Single nodes that need no edge, each with its reason; kinds still being linked (the list only shrinks).
+  orphan_ok: {}
+  orphan_exempt: []
+nodes: []
+edges: []

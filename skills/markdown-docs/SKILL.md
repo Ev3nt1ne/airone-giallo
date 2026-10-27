@@ -125,16 +125,9 @@ done
 
 ## 7. Optional: the `iwe` tool
 
-Where `.iwe/` is present, `iwe` does §2: `iwe find --filter 'type: decision' -f keys` (the list),
-`iwe find --lexical "journal replay" --project 'title,description'` (the summaries; `--project` is what keeps this
-cheap), `iwe retrieve -k DOCS/design --expand-references 1` (one document; always limit expansion).
-
-🚨 `iwe rename` and `iwe normalize` rewrite every file they touch into canonical form, applying `refs_path` and
-`refs_extension` from `.iwe/config.toml` to every link. Before the first rename, measure whether those settings
-match how links are actually written; if they do not (usual when documents link to code or folders), never
-rename or normalize: `git mv` and fix links yourself (§6). Write the verdict at the top of `.iwe/config.toml`.
-A link alone on its own line is an inclusion to `iwe`, not a cross-reference: never leave a "see also" alone on a
-line.
+Where the documents are an `iwe` workspace (`.iwe/` is present), `iwe` does §2 faster; setup, the commands and
+the one hazard (`rename` and `normalize` rewrite every file they touch) are in [references/iwe.md](references/iwe.md).
+Read it before the first `iwe` call in a project.
 
 ## 8. Prose and secrets
 

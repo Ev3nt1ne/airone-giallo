@@ -1,0 +1,124 @@
+---
+name: session
+description: How a working session on a long project runs, from opening on the handoff to the close. Load when starting, resuming or closing work, or putting a decision to the owner.
+---
+
+# A working session, end to end
+
+A long project is worked in sessions by agents that start cold. Most of what goes wrong is a continuity failure:
+a claim carried forward without being checked, a decision re-derived because nobody recorded why, a fact left in
+one file that was then archived. This skill is the order of a session; `verify` and `handoff` hold the methods it
+calls on, and a short version of each is here for a project that has not adopted them. Each rule carries its reason
+in italics.
+
+## 1. Opening
+
+Read the instruction file, then the handoff's state, then check what you will build on against the repository;
+report where things stand in a few lines, and stop unless the owner's message already says what to do. Only then
+the long documents, and only the parts the task needs. *A re-survey spends the session on what is already known
+and reopens questions that were settled.*
+
+- **The handoff exists so you do not re-derive.** A recorded ruling holds; build on it. A ruling on one question
+  is not a ruling on its neighbours.
+- **A handoff is a record, not a source.** It says what was true when written. Resolve anything you build on
+  against the code or the specification. *A record repeats its errors as faithfully as its facts.*
+
+## 2. Whose decision it is
+
+Classify every decision before acting on it.
+
+- **Technical, the agent's**: how to implement what is agreed, inside the rules already recorded, reversible by a
+  commit. Decide, record the reason where the work is, report it.
+- **Project, the owner's**: scope, priorities, cost, anything irreversible or public, anything that changes a
+  recorded ruling, and whatever the owner has reserved. Put it to them and wait.
+
+When unsure, it is the owner's. *A project decision taken as a technical one is discovered after it is built on.*
+Never apply a reviewer's finding before the owner rules on it; when blocked on a privilege, print the command and
+wait instead of working around it.
+
+## 3. Putting a decision to the owner
+
+The owner rules after an explanation, never after a menu. *A list of options with a recommendation gets ruled on
+the recommendation, and the condition it missed surfaces later.*
+
+1. **From basics**: what the thing mechanically is, with file and line.
+2. **What it does now**, and why the gap matters in practice.
+3. **Each option's costs and gains**, with real numbers, not adjectives. *"Two gigabytes of index on a machine with
+   eight" decides what "expensive" cannot.*
+4. **A recommendation**, naming the two or three facts that decide it.
+
+Expect the explanation to change the answer: the owner may add a condition or take a fuller option.
+
+- **Context with every term.** The first use of a project term gets one plain line saying what it is, from the
+  glossary. Every figure says which system produced it and whether it is a measurement, a model or an estimate.
+  *The owner rules on what they understood, not on what you meant.*
+- **Verify the explanation before sending it.** List its factual claims and resolve each against its source; a
+  claim you cannot cite is cut or marked as a guess. A subagent's or reviewer's line is a pointer: open what it
+  points at. *A false claim in an explanation goes straight into a ruling, with no review to catch it.*
+
+## 4. Where the work stands, in every reply
+
+1. **Where we are**, first: the session's piece of work and the step in it.
+2. **What just changed**: what is now true, and whether it is committed. Earlier work is named by what it is,
+   never by a label from an earlier message.
+3. **What is next**, last, and what the owner is asked, answerable in one line.
+
+Before sending, read only the first and the last line: together they must say where we are and what is asked.
+*An owner who has to ask what happened has lost the thread, and every later message costs more.*
+
+## 5. Doing the work
+
+- One logical task per commit, its bookkeeping in the same commit.
+- Load `verify` before recording any number, in a document or a test.
+- A gate is a hard stop: not passed until its exit criteria are met and the decision recorded.
+- A frozen folder is never edited.
+- Speed is not a goal. *A wrong claim in a recorded decision reads as verified to everyone downstream.*
+- A task bigger than its item: do the part that is owed and record the rest as a finding. Smaller, because a
+  premise was wrong: say the premise was wrong.
+- A recommendation against a run is not withdrawn by the go that follows it; restate it as what limits how the
+  result may be read. A conditional yes does not cover a version the checks then corrected: put the new one again.
+- Delete temporary files by exact name, never by glob. *A glob reaches what another session kept.*
+
+## 6. Two passes
+
+Nothing lands on the first pass. The second lists every claim the change makes (numbers, quotations,
+identifiers, hashes, citations, every *all*, *every*, *none*, *only*) and resolves each against its source,
+never against the draft; then it reports what it found, including "nothing". *A re-read checks that a text is
+coherent, not that it is true.* The full method is `verify` §10.
+
+## 7. Where state lives
+
+Three places, not interchangeable, kept consistent at every close.
+
+- **The repository**: anything that matters after this session. A decision in the decision record, a measurement
+  beside the producer that made it. A ruling is recorded with the owner's exact words and the proposal they
+  answered, in the place it governs.
+- **Memory**: what a cold session needs to start (owner preferences, standing constraints, where the handoff is).
+  Not code structure, not history. *Memory that keeps a claim the repository has corrected misleads every session
+  that loads it*: delete what has become false.
+- **The handoff**: what is in flight, and nothing that lives only there (`handoff`).
+
+## 8. The close
+
+- [ ] Work committed, one logical task per commit.
+- [ ] The project's checks clean (tests, lint, format, link check).
+- [ ] The second pass run and its findings reported, including "nothing".
+- [ ] Every prediction tested this session scored refuted, confirmed or understated.
+- [ ] Every quotation attributed to the owner checked against what they said.
+- [ ] Memory updated; what it said that is now false, deleted.
+- [ ] The handoff written, its pointer updated.
+- [ ] Nothing uncommitted. Mid-task, commit an honest checkpoint marked as such. *A half-done task is no reason
+  for an inconsistent tree.*
+
+## Adapting this to your project
+
+Fixed: open from the handoff, not a re-survey; classify a decision before acting; explanations, never menus;
+where the work stands in every reply; two passes; state in three places, consistent at the close.
+
+Slots the project fills in its instruction file: the opening order and its command, if any; the handoff's location;
+the glossary; what the owner reserves beyond the default list of project decisions; how the owner wants a decision
+framed (a line saying which part of the system it concerns, a picture on request, a language); the checks run at
+close; where memory lives; the frozen folders and the gates.
+
+Evolving: a rule is added from a named failure of a session, with its reason; a rule not needed for a long while
+is removed. *Rules without reasons get obeyed literally or not at all.*

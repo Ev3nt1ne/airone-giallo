@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/lockup-dark.svg">
+    <img src="brand/lockup-light.svg" alt="Airone Giallo" width="420">
+  </picture>
+</p>
+
 # Airone Giallo
 
 A kit for running a long project with Claude Code agents: weeks or months of sessions on one codebase, where the
@@ -11,6 +18,7 @@ number nobody measured). Each piece is adoptable alone; a plugin bundles them.
 | The tools | Checks that run in a hook and in CI: links, frontmatter, the graph's lint | `tools/` |
 | Setup | A skill that asks a few questions and installs the pieces you chose into an existing project | `skills/setup/` |
 | The plugin | The pieces above, installable as one Claude Code plugin | `.claude-plugin/` |
+| The brand | The mark, its lockups and the rules for using them | `brand/` |
 
 The name is Italian for *yellow heron*: an elegant cousin of the yellow rubber duck. Like the bird, the
 kit is slow on purpose where it matters: a claim is checked before it is recorded, and a change is previewed before

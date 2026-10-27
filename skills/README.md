@@ -6,3 +6,4 @@ decide when to load it, then the rules, each with its reason, and a closing sect
 | Skill | What it is for |
 |---|---|
 | [markdown-docs](markdown-docs/SKILL.md) | Writing, searching, moving and correcting a project's Markdown documents so they stay findable and trustworthy |
+| [verify](verify/SKILL.md) | Establishing that a claim is true before it is recorded or built on: the artifact measured, a negative control, derived thresholds, a test seen failing, a second pass claim by claim |

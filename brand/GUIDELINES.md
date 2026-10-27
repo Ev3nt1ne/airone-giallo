@@ -2,8 +2,8 @@
 
 **The mark.** The standing yellow heron in a Notte circle (`airone-standing-circle-notte.svg`), the figure
 centred on its bounding box. Backup: the climbing heron, built the same way (`airone-climbing-*.svg`). For avatars, favicons and
-app icons, use the tight crop (`airone-standing-tight-circle-notte.svg`): the same drawing closer up, with the circle cutting the leg,
-the tail and the tip of the bill. The lockup puts the mark left of the wordmark *Airone Giallo* (EB Garamond, outlined;
+app icons, use the tight crop (`airone-standing-tight-circle-notte.svg`): the same drawing closer up, the whole figure inside the circle with a small margin.
+The lockup puts the mark left of the wordmark *Airone Giallo* (EB Garamond, outlined;
 SIL Open Font License): `lockup-light.svg` and `lockup-dark.svg`.
 
 ## Colours

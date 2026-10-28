@@ -19,6 +19,7 @@ belongs in that project's memory, not here.
 |---|---|---|
 | The specification graph | A project's decisions, requirements, assumptions and threats as a graph whose truth is computed, with a lint, a cascade and a batch tool | `graph/` |
 | The status file | The one file that holds a project's work: what waits on the owner's decision, what is accepted, what is deferred until a trigger, and what closed with what was chosen; a checker allocates the IDs | `status/` |
+| The archive's log | One log beside the frozen documents: every change made to an archived file, and every change of a word's meaning left uncorrected there, each dated; a checker holds every archived file to its freeze stamp and tells a reader which conflicts apply to it | `archive/` |
 | The skills | How a session opens and closes, how a claim is verified, how documents are written and corrected, how changes are reviewed | `skills/` |
 | The tools | Checks that run in a hook and in CI: links, frontmatter, the graph's lint | `tools/` |
 | Setup | A skill that asks a few questions and installs the pieces you chose into an existing project | `skills/setup/` |

@@ -1,9 +1,9 @@
 # Running a review: the method, the prompts and the worksheet
 
-For a review the owner has said yes to, on one of the occasions in the skill's §5. A design, a report or a
-recommendation is often written, summarized and graded by the same agent, and a self-assessment is not evidence: two
-or three reviewers attack the material from opposite sides, and their findings are merged, tempered and handed to
-the owner to rule on. Each rule carries its reason in italics.
+For a review the owner has said yes to, on one of the skill's occasions or at the owner's request. A design, a report
+or a recommendation is often written, summarized and graded by the same agent, and a self-assessment is not evidence:
+two or three reviewers attack the material from opposite sides, and their findings are merged, tempered and handed
+to the owner to rule on. Each rule carries its reason in italics.
 
 ## Roles and cuts
 
@@ -19,7 +19,7 @@ produce convergence, and convergence is what the owner can act on.*
 
 | Cut | Roles | For occasion |
 |---|---|---|
-| **full** | R1, R2, R3 | a gate recommendation, a stage report (2) |
+| **full** | R1, R2, R3 | a gate recommendation (2) |
 | **mechanism** | R1, R1b | a design recorded before it is built (1, 3) |
 | **evidence** | R3 alone, with its own second pass | a figure about to become evidence (5) |
 | **code** | R1 and R3 on the code, reading the tests as claims and planting the gaps they name | a security surface (4) |

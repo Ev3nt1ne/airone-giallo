@@ -1,6 +1,6 @@
 ---
 name: session
-description: How a working session on a long project runs, from opening on the handoff to the close. Load when starting, resuming or closing work, or putting a decision to the owner.
+description: How a working session on a long project runs, from opening on the handoff to the close. Load when starting, resuming or closing work, putting a decision to the owner, before recording a number or a threshold, or when a test fails.
 ---
 
 # A working session, end to end
@@ -20,7 +20,11 @@ and reopens questions that were settled.*
 - **The handoff exists so you do not re-derive.** A recorded ruling holds; build on it. A ruling on one question
   is not a ruling on its neighbours.
 - **A handoff is a record, not a source.** It says what was true when written. Resolve anything you build on
-  against the code or the specification. *A record repeats its errors as faithfully as its facts.*
+  against the code or the specification; where a record disagrees with the specification, the specification wins and
+  the disagreement is a finding to report. *A record repeats its errors as faithfully as its facts.*
+- **A recommendation the owner has not ratified is a submission, not a record.** A report or a discussion file
+  carries submissions; a plan, a specification or a decision record carries what was ruled. Asked what a report
+  decided, the honest answer is that it decided nothing. *A quoted recommendation starts to read as a ruling.*
 - **The project's map** (which document answers which question, the identifier families, the entry points) lives in
   its instruction file; until the setup skill writes it there, the template is
   [references/project-map-template.md](references/project-map-template.md).
@@ -35,9 +39,10 @@ Classify every decision before acting on it.
   recorded ruling, and whatever the owner has reserved. Put it to them and wait.
 
 When unsure, it is the owner's. *A project decision taken as a technical one is discovered after it is built on.*
-A review of a deliverable is never launched unasked: it is proposed in one line with its cost, and nothing a
-reviewer finds is applied before the owner rules. *A review costs the owner a triage as well as the tokens.* When
-blocked on a privilege, print the command and wait instead of working around it.
+A review of a deliverable is never launched unasked: it is proposed in one line the owner can answer yes or no (the
+occasion, the target, the cut, the cost, and what the review cannot catch), and nothing a reviewer finds is applied
+before the owner rules. *A review costs the owner a triage as well as the tokens, and what it finds changes decisions
+that are theirs.* When blocked on a privilege, print the command and wait instead of working around it.
 
 ## 3. Putting a decision to the owner
 
@@ -72,7 +77,8 @@ Before sending, read only the first and the last line: together they must say wh
 ## 5. Doing the work
 
 - One logical task per commit, its bookkeeping in the same commit (`doc-discipline` §6).
-- Before recording any number, in a document or a test, apply [references/verify-method.md](references/verify-method.md).
+- Before recording a number or a threshold, in a document or a test, and when a test fails, read and apply
+  [references/verify-method.md](references/verify-method.md); the method is there, not in this file.
 - A gate is a hard stop: not passed until its exit criteria are met and the decision recorded.
 - A frozen folder is never edited.
 - Speed is not a goal. *A wrong claim in a recorded decision reads as verified to everyone downstream.*
@@ -87,8 +93,9 @@ Before sending, read only the first and the last line: together they must say wh
 Two passes, always; nothing lands on the first. The second is claim by claim, never a re-read. *A re-read checks
 that a text is coherent, not that it is true.*
 
-1. List every claim the change makes: numbers, quotations, identifiers, hashes, citations, invariants stated in
-   code comments, and every *all*, *every*, *none*, *only*.
+1. List every claim the change makes, its commit message included ("all tests pass", "no behaviour change"):
+   numbers, quotations, identifiers, hashes, citations, invariants stated in code comments, and every *all*, *every*,
+   *none*, *only*.
 2. Resolve each against its source, never against the draft. A fix made during the pass is a new claim.
 3. Read the artifact, not a view of it: the changed text whole, never a truncated hunk; a grep anchored on the
    concept, with what it matched read (a case-insensitive grep matches inside other words; a search for the old

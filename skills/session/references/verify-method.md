@@ -1,9 +1,9 @@
 # Establishing that a claim is true
 
-The method behind every number a session records, in a document or a test. A wrong measurement is usually a
-*stable* wrong measurement: it reproduces perfectly, so reproducing it proves nothing. The second pass over a change
-is in the skill's §6; this file is what that pass and every measurement rest on. Each rule carries its reason in
-italics.
+The method behind every claim a session records or acts on: a number in a document or a test, "the build is
+reproducible", "everything was handled". A wrong measurement is usually a *stable* wrong measurement: it reproduces
+perfectly, so reproducing it proves nothing. The second pass over a change is in the skill's §6; this file is what
+that pass and every measurement rest on. Each rule carries its reason in italics.
 
 ## 1. Measure the artifact, never the command that produces it
 
@@ -28,7 +28,8 @@ precondition, or it passes without having run.
 ## 3. Resolve a signifier to its contents
 
 A name, a commit subject, a branch ref, a table of contents, a file's presence are signifiers: that one exists says
-nothing about what it holds. *A claim with nothing under it but a name gets copied from record to record.*
+nothing about what it holds; resolve it with a command that reads the contents. *A claim with nothing under it but
+a name gets copied from record to record.*
 
 | Signifier | What reads the contents |
 |---|---|
@@ -47,11 +48,12 @@ nothing about what it holds. *A claim with nothing under it but a name gets copi
 
 - A high-water mark (peak memory, a maximum) never decreases in a process: one size per process.
 - Arms run in blocks measure warm-up and drift: rotate the arms within each repetition, then take medians. An arm's
-  assignment must not move in step with the system's own schedule.
+  assignment must not move in step with the system's own schedule: draw it from a mix and record the variable that
+  could alias.
 - A percentile names its rule (nearest rank, interpolated); *two rules give two medians at an even count.*
 - If the difference between arms is inside the spread within an arm, the measurement does not resolve it and no
-  claim is made; *that is a result.* A number that moves between runs is quoted as a range; where absolutes drift
-  and ratios hold, the ratios are the result.
+  claim is made: say so; *that is a result.* A number that moves between runs is quoted as a range; where absolutes
+  drift and ratios hold, the ratios are the result.
 
 ## 5. Derive a test's numbers; never tune them
 
@@ -69,7 +71,7 @@ Every new test is re-run against the mutation it exists to catch: mutate the sou
 a kept copy. *"It passes" says nothing; "it fails when the thing it guards breaks" is the evidence.*
 
 - Distinguish the mutations from each other: *a failure should say which thing broke.*
-- A mutation that ran no test, or never reached its branch, tested nothing: check what each one ran.
+- A mutation that ran no test, or never reached its branch, tested nothing: check what each one ran before scoring it.
 - A claim about the whole suite needs the caught-by table: each mutation against the tests that failed on it.
 - A mutation that reveals a missing observable (a counter the code never kept) is a finding.
 - A mutation spec anchored on source text checks that each anchor matches exactly once before it runs.

@@ -1,6 +1,6 @@
 ---
 name: doc-discipline
-description: Keeping a project's design documents and registry consistent through a change, the gate as a hard stop, and when a review is due. Load before editing a specification, plan or registry, minting an identifier, committing such a change, or proposing a review.
+description: Keeping a project's design documents and registry consistent through a change, the gate as a hard stop, and when a review is due. Load before editing a specification, plan or registry, minting an identifier, committing such a change, proposing a review, or running one the owner asked for.
 ---
 
 # Changing a project's documents without breaking them
@@ -116,8 +116,9 @@ the pattern for any hard stop: a release, a migration, a change of architecture.
   discipline exists to prevent.*
 - **A review is proposed on these occasions, and only on these**, in one line with its cost, never launched unasked
   (`session` §2). *A self-assessment is not evidence, and an occasion that never pays teaches the owner to say no.*
-  1. A decision is recorded before its design, with nothing yet satisfying it; propose before the work that builds
-     it starts. *A flaw found in a design costs a paragraph; found in built code, it costs the code.*
+  1. A decision is recorded before its design, with nothing yet satisfying it and no evidence for it; propose
+     before the work that builds it starts. *A flaw found in a design costs a paragraph; found in built code, it
+     costs the code.*
   2. A gate recommendation is drafted.
   3. With the specification graph only: a batch makes a node newly hold on a place where a threat is undefended, or
      a new satisfier makes a condition hold; `specgraph batch` lists these. *The engine shows the graph consistent;
@@ -150,9 +151,12 @@ these are the rules this discipline adds to it.
   commit of the work that caused them. *A later "update the docs" commit makes the history say a thing became true
   later than it did.*
 - **A decision or a specification change gets its own commit**, its body saying whether the cascade (§4) was read
-  and what it showed. *It is the most valuable history, and must be findable alone.*
+  and what it showed; so does a document that is itself the deliverable. *It is the most valuable history, and must
+  be findable alone.*
 - **A gate is alone in its commit, with an annotated tag** (`git tag -a <name> -m "…"`). *Gates are where the
   project re-baselines; a tag makes each one addressable.*
+- **Evidence a gate will rest on lands on the main line**, even when the code that produced it is thrown away. *The
+  code is disposable; the evidence is not.*
 - **The registry is never committed alone and never left behind**: a new identifier with the text that uses it, a
   recomputed check value with the edit that changed its statement. Work on the registry's own machinery is the
   exception. *An entry without its text, or text without its entry, is an inconsistency the check may not see.*

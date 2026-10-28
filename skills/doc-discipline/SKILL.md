@@ -31,6 +31,18 @@ below reduce to "the document, the registry and the code agree".
 - Working notes (research, measurements, drafts) are evidence, not a level: the levels cite them, they never stand
   in for them. A finding in a note has changed nothing until it is folded into the specification.
 
+**The ladder: where a document sits, and what it may cite.** The kit's places form a ladder, read from the bottom:
+1 the system documents (`docs/`: the specification, the glossary, the studies, the change notes); 2 the graph
+(`graph.yml`); 3 the plan (`plan/`); 4 the AI documents (`ai-docs/`: the status file, the handoff, design, findings,
+guides); 5 the archive (`archive/`); 6 the agent layer (`AGENTS.md`, `CLAUDE.md`, `RATIONALE.md`, the skills). A
+document cites only rungs at or below its own; the archive is the exception, exempt from the link check and cited by
+nothing live beyond a category. The project's instruction file names **the cut**: every rung at or below it is public,
+every rung above it private, so a public text never points into a private one; in a one-repository project the cut
+sits at the top or the bottom and the rule still orders the citations. *A public text that cites a private one is a
+dead link to its readers or a leak, and a rung that cited upward could never be made public on its own.* Outside the
+ladder, each on the side the owner gives it: the owner's notes (`human-docs/`), downloaded sources (`sources/`, cited
+by URL through their manifest, never by path), and the code.
+
 ## 2. Editing the specification
 
 - **Refine in place.** A requirement is rewritten to its most precise current form; the old wording does not stay

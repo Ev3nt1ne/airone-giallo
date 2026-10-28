@@ -12,7 +12,9 @@ lives. A second file, the closed file, keeps every item that left, with what was
 reports what breaks the rules and prints the next free ID in each family.
 
 It is a piece of Airone Giallo, the kit described in the [repository](https://github.com/Ev3nt1ne/airone-giallo), and
-it is useful without the rest.
+it is useful without the rest. In a project laid out by the kit it sits in `ai-docs/`, on rung 4 of the ladder
+(`skills/doc-discipline` §1): an item may cite a graph node or any document at or below that rung, and a handoff or a
+finding may cite an item.
 
 ## Why
 

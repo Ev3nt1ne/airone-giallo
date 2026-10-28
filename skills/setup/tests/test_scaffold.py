@@ -25,7 +25,7 @@ _spec.loader.exec_module(sc)
 # contributors' file. Invented values.
 FULL = {
     "name": "Inkwell", "purpose": "a note editor whose saved notes survive a crash, for people who write offline",
-    "invariants": ["a saved note survives a crash: otherwise silent data loss"], "mode": "four-hands",
+    "invariants": ["a saved note survives a crash, else notes are lost silently"], "mode": "four-hands",
     "cut": "plan", "agent_layer": "both", "graph": "lite", "status": True,
     "families": {"APP": "the application", "DOC": "the documentation"}, "handoff": True,
     "outward": "free", "attribution": "Co-Authored-By: An Agent <agent@example.com>",
@@ -378,6 +378,40 @@ def test_the_one_repository_forms_nest_nothing_and_append_their_ignore_lines(tmp
         assert git("check-ignore", "-q", "sources/README.md", cwd=folder).returncode == 1
         assert "everything is private" in flat(agents(folder))
         assert "The owner's words" in rationale
+
+
+@needs_git
+def test_the_workspace_agents_file_says_sessions_open_at_the_root_and_where_the_kit_comes_from(tmp_path, capsys):
+    two, both, one = workspace(tmp_path, "two"), workspace(tmp_path, "both"), project(tmp_path, "one")
+    answers = dict(MINIMAL, cut="plan", status=True, families=FAMILIES, invariants=FULL["invariants"])
+    assert install(two, answers, capsys=capsys)[0] == 0
+    assert install(both, dict(answers, agent_layer="both"), capsys=capsys)[0] == 0
+    assert install(one, dict(MINIMAL, graph="lite"), capsys=capsys)[0] in (0, 1)  # the graph step may be skipped
+    two_text, both_text, one_text = flat(agents(two)), flat(agents(both)), flat(agents(one))
+    assert "never inside `inkwell/`**, where no instruction file exists" in two_text
+    assert "whose own `AGENTS.md` is the contributors' short one" in both_text
+    assert "Sessions open here" not in one_text
+    # The opening paragraph names where the skills and the commands in use come from, and nothing else's.
+    assert "https://github.com/Ev3nt1ne/airone-giallo" in two_text and "`/airone-giallo:<skill>`" in two_text
+    assert "(`check-status` and `check-archive`)" in two_text
+    assert "(`specgraph` and `check-archive`)" in one_text
+    # One invariant reads as one sentence: one colon, no word said twice by the lead-in and the answer.
+    sentence = re.search(r"Its invariants[^.]*\.", two_text).group(0)
+    assert sentence.count(":") == 1 and sentence.count("silent") == 1, sentence
+
+
+def test_the_map_gives_each_home_of_a_decision_its_part(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(sc, "specgraph_available", lambda: False)
+    folder = project(tmp_path)
+    install(folder, dict(MINIMAL, graph="lite"), capsys=capsys)
+    rows = {ln.split(" | ")[-1].strip(" |"): ln for ln in agents(folder).splitlines() if ln.startswith("| ")}
+    assert "where a new decision is written" in rows["`docs/`"]
+    assert "a node for each recorded decision that something technical rests on" in rows["`graph.yml`"]
+    assert "on the way to a decision; they stay here once it is recorded" in rows["`ai-docs/design/`"]
+    text = flat(agents(folder))
+    assert "put a project decision to the owner as an explanation, never a menu" in text
+    assert "A permission covers the purpose it was given for, and nothing else" in text
+    assert "owner's go to them" not in text and "A leave covers" not in text
 
 
 # ---------------------------------------------------------------- what the answers change

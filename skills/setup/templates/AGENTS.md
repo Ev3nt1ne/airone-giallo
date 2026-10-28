@@ -1,9 +1,17 @@
 # {{name}}: instructions for agents
 
-{{name}} is {{purpose}}. Invariants, and what breaks silently without them: {{invariants}}. The methods are the kit's
-skills (`session`, `handoff`, `doc-discipline`, `markdown-docs`), not repeated here; the origin of each rule the
-project adds is in [RATIONALE.md](RATIONALE.md). Written against Claude Code {{claude_code_version}} and model
-{{model}}; re-read this file when either changes.
+{{name}} is {{purpose}}. Its invariants, each with what breaks if it fails: {{invariants}}. The methods are the kit's
+skills (`session`, `handoff`, `doc-discipline`, `markdown-docs`), not repeated here; they and the commands of the
+checks ({{kit_commands}}) come from Airone Giallo, its plugin (`/airone-giallo:<skill>`)
+and its Python packages, at https://github.com/Ev3nt1ne/airone-giallo, and a session that lacks them asks the owner
+to install them. The origin of each rule the project adds is in [RATIONALE.md](RATIONALE.md). Written against Claude
+Code {{claude_code_version}} and model {{model}}; re-read this file when either changes.
+{{#two_repos}}
+
+**Sessions open here, at the workspace root, never inside `{{public_dir}}/`**{{^contributors}}, where no instruction
+file exists{{/contributors}}{{#contributors}}, whose own `AGENTS.md` is the contributors' short one{{/contributors}}.
+*The rules and the map live only here; the agent layer is not injected into the public checkout.*
+{{/two_repos}}
 
 **Challenge, correct, confirm.** Agreement is not a contribution. A claim the owner makes about the code or the
 world is confirmed, from a source or from the code, or corrected; a hedged one ("I think", "maybe") or a question
@@ -15,9 +23,9 @@ later session.*
 
 | The question | The answer |
 |---|---|
-| What the system is, why, what breaks it; what was decided | {{spec}} |
+| What the system is and what breaks it; the decision record, each decision and its reason, where a new decision is written | {{spec}} |
 {{#graph_on}}
-| What rests on what: the decisions, requirements and evidence as nodes | `{{graph_file}}` |
+| What rests on what: requirements, evidence, and a node for each recorded decision that something technical rests on | `{{graph_file}}` |
 {{/graph_on}}
 | What gets built, in what order, to which milestones | {{plan}} |
 {{#status}}
@@ -27,7 +35,7 @@ later session.*
 | Where things stand, and what is in flight | `{{handoff_state}}` (process, not normative) |
 {{/handoff}}
 | What a term means | {{glossary}} |
-| What was studied and decided along the way, and why | `{{design_dir}}` |
+| The studies and arguments on the way to a decision; they stay here once it is recorded | `{{design_dir}}` |
 | What was measured or found, and how to rerun it | {{findings}} |
 | How a thing is done here: how-tos, reusable prompts, reference lists | `{{guides_dir}}` |
 | What stopped being true, kept readable | `{{archive_dir}}/`: frozen, outside every search unless named (`.ignore`; plain `grep -r` does not read it), cited at most as a category; `{{archive_check}} read <file>` before reading one |
@@ -40,8 +48,8 @@ later session.*
 
 ## The rules
 
-- Classify every decision before acting; the owner's go to them as an explanation, never a menu (`session` §2,
-  §3).{{#reserved}} The owner also reserves: {{reserved}}.{{/reserved}}{{#four_hands}} After building, list the choices the
+- Classify every decision before acting, and put a project decision to the owner as an explanation, never a menu
+  (`session` §2, §3).{{#reserved}} The owner also reserves: {{reserved}}.{{/reserved}}{{#four_hands}} After building, list the choices the
   work made that the owner did not, with the why where it is not obvious; each stays a choice until
   confirmed.{{/four_hands}} *A reserved decision taken by an agent is found after it is built on{{#four_hands}}, and a
   choice made silently in the code is a decision nobody took{{/four_hands}}.*
@@ -61,9 +69,9 @@ later session.*
 - Never narrow the scope for the owner: what you would drop, refuse or delete goes to them as a list with costs. *A
   boundary announced in a summary reads as agreed.*
 {{/four_hands}}
-- A leave covers its purpose only; a subagent's brief names this file, the skills, what it may write or publish, and
-  where its findings go. *A permission read wider than given is a decision never taken, and a subagent follows only
-  its brief.*
+- A permission covers the purpose it was given for, and nothing else; a subagent's brief names this file, the
+  skills, what it may write or publish, and where its findings go. *A permission read wider than given is a decision
+  never taken, and a subagent follows only its brief.*
 - Blocked by something trivial for the owner (an install, a privilege, a file, a credential, a host): stop, report
   it as it happened, give the exact command, and wait; one retry of an obvious one-off failure is fine, said. Reuse
   what exists; never build around an easy question to stay self-sufficient. *The classic failure is an agent

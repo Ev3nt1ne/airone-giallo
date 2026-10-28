@@ -1,18 +1,19 @@
 # {{name}}: instructions for a contributor's agent
 
-{{name}} is {{purpose}}. Invariants, and what breaks silently without them: {{invariants}}. This file is for an
-agent working in this repository on a contributor's behalf.
+{{name}} is {{purpose}}. Its invariants, each with what breaks if it fails: {{invariants}}. This file is for an
+agent working in this repository on a contributor's behalf. The skills and commands it cites come from Airone Giallo,
+its plugin (`/airone-giallo:<skill>`) and its Python packages, at https://github.com/Ev3nt1ne/airone-giallo.
 
 ## Where things are
 
 | The question | The answer |
 |---|---|
-| What the system is, why, what breaks it; what was decided | `{{c_docs}}` |
+| What the system is and what breaks it; the decision record, each decision and its reason | `{{c_docs}}` |
 {{#c_glossary}}
 | What a term means | `{{c_glossary}}` |
 {{/c_glossary}}
 {{#c_graph}}
-| What rests on what: the decisions, requirements and evidence as nodes | `{{c_graph}}` |
+| What rests on what: requirements, evidence, and a node for each recorded decision that something technical rests on | `{{c_graph}}` |
 {{/c_graph}}
 {{#c_plan}}
 | What gets built, in what order, to which milestones | `{{c_plan}}` |

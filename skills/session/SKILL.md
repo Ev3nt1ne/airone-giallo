@@ -128,17 +128,3 @@ Three places, not interchangeable, kept consistent at every close.
 - [ ] The handoff written, its pointer updated.
 - [ ] Nothing uncommitted. Mid-task, commit an honest checkpoint marked as such. *A half-done task is no reason
   for an inconsistent tree.*
-
-## Adapting this to your project
-
-Fixed: open from the handoff, not a re-survey; classify a decision before acting; no review launched unasked;
-explanations, never menus; where the work stands in every reply; two passes, the second claim by claim; state in
-three places, consistent at the close.
-
-Slots the project fills in its instruction file: the project's map; the opening order and its command, if any; the
-handoff's location; the glossary; what the owner reserves beyond the default list of project decisions; how the
-owner wants a decision framed (a line saying which part of the system it concerns, a picture on request, a
-language); the checks run at close; where memory lives; the frozen folders and the gates.
-
-Evolving: a rule is added from a named failure of a session, with its reason; a rule not needed for a long while
-is removed. *Rules without reasons get obeyed literally or not at all.*

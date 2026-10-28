@@ -91,17 +91,3 @@ still going, the next one must know what it writes and how to read it.*
 A log, or any session record, moves to the archive only when nothing in it is outstanding and nothing in it lives
 only there. *An archive is never re-read, so archiving a record whose facts exist nowhere else deletes them.*
 Rehouse first, archive second.
-
-## Adapting this to your project
-
-Fixed: two files, a state rewritten whole and a log appended; the six core sections; rulings in the owner's words;
-the diff against the previous state at every close; nothing archived that lives only there.
-
-Slots the project fills in its instruction file: the `HANDOFF` folder and the pointer line's place; what a stage is
-(a phase, a milestone, a month); how sessions are numbered; the frontmatter, if the project uses it; the
-extension sections and their reasons; the state's length budget.
-
-Evolving: a section is added from a named continuity failure, a fact that had no home, with the failure written
-beside it in the rationale file. A section that stays empty for a number of closes the owner sets is removed. The
-state's length is watched against its budget; over budget, material moves to its home in the repository, and the
-state does not grow. *A handoff that is too long to read cold has stopped doing its one job.*

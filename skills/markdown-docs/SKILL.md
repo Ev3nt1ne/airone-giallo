@@ -138,16 +138,3 @@ Read it before the first `iwe` call in a project.
 - Never write a key, token, password, credential or hash into a document, note, pasted log or commit message.
   *A secret in a Markdown file is in every clone and every copy of the history.* Write the form of the command
   that hides it.
-
-## Adapting this to your project
-
-Fixed: index before documents; `created:` never changes and `updated:` changes with every substantive edit, one
-format, one offset; correct by appending; measured and inferred never mixed; no counts and no progress in a
-document that reasons; one meaning per marker; no dead link after a move; no secrets.
-
-Slots the project fills in its instruction file: the `DOCS` folder and any frozen folder; the frontmatter fields
-and the closed lists of `type:` and `status:` values; where progress lives (one register); added markers; its
-tools (an index, a link checker, a frontmatter check).
-
-Evolving: a rule is added from a named failure, with its reason beside it; a rule not needed for a long while is
-removed. *A list nobody applies teaches readers to skip the list.*

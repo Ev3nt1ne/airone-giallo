@@ -135,8 +135,3 @@ again whenever a dependency is added or upgraded.
 - [ ] Every signifier resolved: hashes, refs, paths, cited passages, counts.
 - [ ] The producer is committed, beside the figure or in a tools folder; a workload shared by a test and a
   benchmark lives in one file. *A figure whose producer lives in a transcript cannot be re-run.*
-
-Slots the project fills in its instruction file: where measurements and their producers live; the mutation tool and
-how a round is recorded; the percentile rule; the measuring machine and whether it may be in other use during a run;
-the hazard classes its domain cares about (for a reproducible build, timestamps and paths; for a service, perhaps
-locale and time zone).

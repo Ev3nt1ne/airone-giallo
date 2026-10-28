@@ -80,6 +80,11 @@ one. *The preview is where a wrong answer costs nothing.*
   handoff, the registry) is never replaced, even then, and is reported KEPT. *An empty register written over a full
   one deletes the project's history.*
 
+The templates in `templates/` use the syntax the script implements: `{{name}}` is a value, `{{#name}}…{{/name}}`
+keeps its body when the answer is true or non-empty, `{{^name}}…{{/name}}` when it is false or empty; a tag alone on a
+line takes the line with it. A slot with no answer stops the script, so a template and its answers cannot drift apart
+unnoticed. To change what a project gets, edit the template and the answer it reads, with a test.
+
 ## 4. After the script
 
 Run each check and read its output; the script's report is a claim, these measure the files.
@@ -101,18 +106,3 @@ It writes no hook and no CI workflow (that is the job of the kit's tools piece),
 repository's allowlist `.gitignore`, the propagation of shared files into the public parts and its refusals. For an
 umbrella, the setup writes the rule on sides and leaves the repositories as they are. It never commits, and never
 deletes a file.
-
-## Adapting this to your project
-
-Fixed: the questions are asked, never answered by the agent alone; the repository is read before the owner is asked;
-the dry run before the run; nothing replaced without `--force`, and no record replaced at all; the exit code follows
-the report; the checks of §4 run after.
-
-Slots: the templates in `templates/`, in the syntax the script implements: `{{name}}` is a value, `{{#name}}…{{/name}}`
-keeps its body when the answer is true or non-empty, `{{^name}}…{{/name}}` when it is false or empty; a tag alone on a
-line takes the line with it. A slot with no answer stops the script, so a template and its answers cannot drift apart
-unnoticed. To change what a project gets, edit the template and the answer it reads, with a test.
-
-Evolving: a question is added when a project needed something the template could not guess, with the failure written
-in the kit's history; a rule enters the AGENTS template only when no skill can carry it. *The file every session
-loads is the most expensive place for a rule.*

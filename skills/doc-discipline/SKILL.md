@@ -168,18 +168,3 @@ these are the rules this discipline adds to it.
 - **Never in the commit**: a secret of any kind, scratch or temporary files, another session's work (stage your own
   files by name). *A committed secret is in every clone, and another session's half-done edit rides out under your
   message.*
-
-## Adapting this to your project
-
-Fixed: the documents agree at every commit; one owner per fact; one allocator per family, append-only, one sentence
-per entry; the cascade read before the edit; the reasoning of a superseded claim kept somewhere; a gate passed only
-by the owner's ruling, recorded alone, carried risks named; a review only on its occasions, nothing applied before
-the owner rules; decisions and gates in commits of their own, the registry never alone.
-
-Slots the project fills in its instruction file: its levels and their files (one, two or three); the registry's
-file, the register's, and the identifier families with their grammar; whether it uses the specification graph; the
-check command; where the change notes live; the frozen folder; its gates, where their exit criteria are written,
-and how a gate's tag is named; its review occasions, the reviews folder and the models available for review.
-
-Evolving: a rule is added from a named inconsistency that reached a commit, with its reason beside it; a rule not
-needed for a long while is removed. *A discipline nobody can recite is not practised.*

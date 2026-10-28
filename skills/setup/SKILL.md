@@ -122,10 +122,12 @@ and the answer it reads, with a test.
 
 ## 4. After the script
 
-The checks are the kit's installed commands, never copies in the project: `pip install ./graph ./status ./archive`
-from the kit, or from the plugin's copy of it, gives `specgraph`, `check-status` and `check-archive`. Ask the owner to
-install them. *A copied script is a second copy that the kit's next version does not reach.* Run each check and read
-its output; the script's report is a claim, these measure the files.
+The checks are the kit's installed commands, never copies in the project: `pip install ./graph ./status ./archive
+./tools` from the kit, or from the plugin's copy of it, gives `specgraph`, `check-status`, `check-archive`,
+`check-links` and `check-frontmatter`, with the tools' other commands. Ask the owner to install them. *A copied script
+is a second copy that the kit's next version does not reach.* The two document checks read the tracked tree, so first
+stage what the script wrote, `git add` in each repository it wrote into; staging is undone by `git reset`. Run each
+check and read its output; the script's report is a claim, these measure the files.
 
 1. With the graph: `specgraph lint` reports 0 errors (`--graph <name>/graph.yml` when the graph is public in the
    two-repository form).
@@ -133,12 +135,13 @@ its output; the script's report is a claim, these measure the files.
    with the graph, reports 0 errors and prints the first free ID of each family.
 3. `check-archive` (`--archive <name>/archive` when the archive is public in the two-repository form) reports 0
    errors.
-4. The dead-link check of `markdown-docs` §6, run from the workspace root so that it walks the public folder too,
-   prints nothing.
-5. `git check-ignore local-machine.md` prints the file's name; in the two-repository form `git status` at the root
+4. `check-links --cut <cut>` reports 0 errors; in the two-repository form `check-links --public <name> --cut <cut>`,
+   from the workspace root, so that it walks the public folder and holds both sides to the cut.
+5. `check-frontmatter --all` reports 0 errors; from the workspace root it reads the public folder too.
+6. `git check-ignore local-machine.md` prints the file's name; in the two-repository form `git status` at the root
    lists only the files the allowlist names and the public folder.
-6. `grep -n 'to fill' AGENTS.md local-machine.md` lists the slots left; give them to the owner as one list.
-7. Read the written AGENTS.md whole with the owner. *They will be bound by it; the first reading is theirs.*
+7. `grep -n 'to fill' AGENTS.md local-machine.md` lists the slots left; give them to the owner as one list.
+8. Read the written AGENTS.md whole with the owner. *They will be bound by it; the first reading is theirs.*
 
 Then propose a local commit of what was installed, by the project's own commit rules: in the two-repository form one
 in the public repository first, then one in the private workspace with the updated gitlink, *so the gitlink names a
@@ -147,7 +150,7 @@ commit that exists.* Anything outward follows the answer to question 5.
 ## 5. What the script does not do
 
 It runs no `git submodule` and no other git command that changes anything, commits nothing, deletes nothing and
-copies no script into the project; it writes no hook and no CI workflow (that is the job of the kit's tools piece),
-and it moves no existing document into the tree: that is a session's work with the owner, file by file. Not done
-yet: injecting the agent layer into the public checkout, several public folders under one workspace, and
-`.git/info/exclude` in place of a visible ignore block.
+copies no script into the project; it writes no hook and no CI workflow (the lines a project copies into its own are
+in the kit's `tools/README.md`), and it moves no existing document into the tree: that is a session's work with the
+owner, file by file. Not done yet: injecting the agent layer into the public checkout, several public folders under
+one workspace, and `.git/info/exclude` in place of a visible ignore block.

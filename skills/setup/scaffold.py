@@ -376,6 +376,14 @@ def context(a, lay, target):
         graph_flag = f" --graph {graph_file}" if graph_file else ""
         checks.append(f"`check-status {status_file} {closed_file}{graph_flag}`")
     checks.append(f"`{archive_check}`")
+    # The documents' checks: the links walk the public folder from the workspace root and hold both sides to the cut;
+    # the frontmatter is read in the repository whose commit is being made.
+    if lay.form == "two":
+        checks.append(f"`check-links --public {lay.public_dir} --cut {lay.cut}`")
+        checks.append("`check-frontmatter`, in the repository being committed")
+    else:
+        checks.append(f"`check-links --cut {lay.cut}`")
+        checks.append("`check-frontmatter`")
     # The project's own checks beside the kit's, or a visible slot until they are known.
     own_checks = a["checks"] or SLOT.format("the project's own test and lint commands")
     checks.append(own_checks)
@@ -399,6 +407,8 @@ def context(a, lay, target):
     if lay.public("archive"):
         c_archive = local(archive)
         c_checks.append("`check-archive`" if c_archive == "archive" else f"`check-archive --archive {c_archive}`")
+    # In the public repository alone everything is public, so a link out of it is dead and no cut is needed.
+    c_checks += ["`check-links`", "`check-frontmatter`"]
     c_checks.append(own_checks)
 
     human_docs = lay.outside(a["human_docs"], "human-docs") + "/"
@@ -413,7 +423,8 @@ def context(a, lay, target):
         "four_hands": a["mode"] == "four-hands", "conductor": a["mode"] == "conductor",
         "sides": sides_in_words(a, lay), "layer_public": lay.agent_layer == "public",
         "kit_commands": join([code(c) for c, on in (("specgraph", graph_file), ("check-status", a["status"]),
-                                                    ("check-archive", True)) if on]),
+                                                    ("check-archive", True), ("check-links", True),
+                                                    ("check-frontmatter", True)) if on]),
         "two_repos": lay.form == "two", "public_dir": lay.public_dir, "contributors": lay.agent_layer == "both",
         "status": a["status"], "handoff": a["handoff"], "graph_on": bool(graph_file), "graph_file": graph_file,
         "status_file": status_file, "closed_file": closed_file, "handoff_state": handoff_state,

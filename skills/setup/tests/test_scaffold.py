@@ -112,6 +112,29 @@ def dead_links(folder):
     return dead
 
 
+def document_checks(folder, cut, public=None):
+    """Stage what the setup wrote, as the skill's §4 says, then run the kit's two document checks from the workspace
+    root as a script from the kit: (exit code, output) of each."""
+    if not (folder / ".git").exists():
+        git("init", "-q", cwd=folder)
+    if public:
+        assert git("add", "-A", cwd=folder / public).returncode == 0
+        assert git("add", "-A", "--", ".", f":!{public}", cwd=folder).returncode == 0
+    else:
+        assert git("add", "-A", cwd=folder).returncode == 0
+    tools = sc.KIT / "tools" / "src"
+    out = {}
+    for name, args in (("check_links", ["--cut", cut] + (["--public", public] if public else [])),
+                       ("check_frontmatter", ["--all"])):
+        p = subprocess.run([sys.executable, str(tools / f"{name}.py"), *args], cwd=folder, capture_output=True,
+                           text=True)
+        out[name] = (p.returncode, p.stdout + p.stderr)
+        # A check that read nothing passes vacuously: the documents the setup wrote are in what it read.
+        read = re.search(r"(\d+) (?:Markdown file|document)\(s\)", p.stdout)
+        assert read and int(read.group(1)) >= 8, (name, p.stdout + p.stderr)
+    return out
+
+
 def agents(folder):
     return (folder / "AGENTS.md").read_text(encoding="utf-8")
 
@@ -165,10 +188,16 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
                 "`ai-docs/findings/`", "`ai-docs/guides/`", "`archive/`", "`human-docs/`", "`sources/README.md`",
                 "`APP`, `DOC`", "`specgraph lint --graph inkwell/graph.yml`",
                 "`check-status ai-docs/status.md ai-docs/closed.md --graph inkwell/graph.yml`", "`check-archive`",
-                "`check-archive read <file>` before reading one", "`pytest`"):
+                "`check-archive read <file>` before reading one", "`check-links --public inkwell --cut plan`",
+                "`check-frontmatter`, in the repository being committed", "`pytest`"):
         assert row in text, row
     assert "[to fill" not in text
     assert "check-status ai-docs/status.md ai-docs/closed.md" in (folder / "ai-docs/status.md").read_text()
+    # The contributors' file names the two document checks, run inside the public repository alone.
+    assert "`check-links`; `check-frontmatter`; `pytest`" in (folder / "inkwell" / "AGENTS.md").read_text()
+    # What the setup wrote passes the kit's own document checks, the ladder included.
+    for name, (code, output) in document_checks(folder, "plan", "inkwell").items():
+        assert code == 0 and "0 error(s)" in output, (name, output)
 
 
 def test_minimal_install_writes_only_the_core(tmp_path, capsys):
@@ -232,6 +261,11 @@ def test_the_cut_puts_each_rung_on_its_side(tmp_path, capsys, cut):
     readme = (folder / "inkwell" if archived else folder) / "archive" / "README.md"
     assert f"`{command} read <file>`" in flat(readme.read_text())
     assert (readme.parent / "LOG.md").is_file()
+    # The links' check holds the sides to this cut; the tree the setup wrote passes it and the frontmatter's.
+    links = f"check-links --public inkwell --cut {cut}" if form == "two" else f"check-links --cut {cut}"
+    assert f"`{links}`" in words and "`check-frontmatter`" in words
+    for name, (code, output) in document_checks(folder, cut, "inkwell" if form == "two" else None).items():
+        assert code == 0 and "0 error(s)" in output, (cut, name, output)
 
 
 @needs_git
@@ -393,8 +427,8 @@ def test_the_workspace_agents_file_says_sessions_open_at_the_root_and_where_the_
     assert "Sessions open here" not in one_text
     # The opening paragraph names where the skills and the commands in use come from, and nothing else's.
     assert "https://github.com/Ev3nt1ne/airone-giallo" in two_text and "`/airone-giallo:<skill>`" in two_text
-    assert "(`check-status` and `check-archive`)" in two_text
-    assert "(`specgraph` and `check-archive`)" in one_text
+    assert "(`check-status`, `check-archive`, `check-links` and `check-frontmatter`)" in two_text
+    assert "(`specgraph`, `check-archive`, `check-links` and `check-frontmatter`)" in one_text
     # One invariant reads as one sentence: one colon, no word said twice by the lead-in and the answer.
     sentence = re.search(r"Its invariants[^.]*\.", two_text).group(0)
     assert sentence.count(":") == 1 and sentence.count("silent") == 1, sentence
@@ -580,6 +614,7 @@ def test_the_projects_own_checks_show_a_slot_until_answered(tmp_path, capsys):
     install(told, dict(MINIMAL, status=True, families=FAMILIES, checks="`pytest`"), capsys=capsys)
     row = [ln for ln in agents(bare).splitlines() if ln.startswith("| How a session opens")][0]
     assert "`check-status" in row and "`check-archive`" in row
+    assert "`check-links --cut none`" in row and "`check-frontmatter`" in row
     assert row.endswith("[to fill: the project's own test and lint commands] |")
     row = [ln for ln in agents(told).splitlines() if ln.startswith("| How a session opens")][0]
     assert row.endswith("`pytest` |") and "to fill" not in row

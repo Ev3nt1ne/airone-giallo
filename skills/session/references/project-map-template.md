@@ -8,7 +8,7 @@ family checked against its allocator.
 How the map is used, cheapest first, stopping at the step that answers:
 
 1. **Address by identifier, not by file name.** Grep the identifier in its allocator (with the specification graph,
-   `specgraph show REQ-04`); a one-sentence registry statement often answers the question alone.
+   `specgraph show REQ-04`); a one-sentence graph statement often answers the question alone.
 2. Every site that cites it: `grep -rn 'REQ-04' DOCS`.
 3. One file's section map, `grep -n '^#' DOCS/design.md`, then one section.
 4. The whole document, last.
@@ -26,7 +26,7 @@ never guess from the prefix.
 | What the system is, why, and what breaks it | `<spec>` | <its main sections> |
 | What gets built, in what order, to which milestones | `<plan>` | <where each phase's status lives> |
 | How one phase is carried out | `<phase files>` | <the milestone's exit criteria> |
-| Does this statement exist, and where is it defined | `<graph registry>` | the allocator of statement IDs |
+| Does this statement exist, and where is it defined | `<graph file>` | the allocator of statement IDs |
 | What is left to do, and what waits on the owner | `<register>` | the allocator of work-item IDs |
 | What a term means, in plain words | `<glossary>` | |
 | Where things stand, and what is in flight | `<handoff state>` | process, not normative |
@@ -39,7 +39,7 @@ never guess from the prefix.
 
 | Family | Form | Names | Allocated by |
 |---|---|---|---|
-| `<PREFIX>` | `<PREFIX>-NN` or `<PREFIX>-slug` | <what kind of thing> | `<graph registry or register>` |
+| `<PREFIX>` | `<PREFIX>-NN` or `<PREFIX>-slug` | <what kind of thing> | `<graph file or register>` |
 
 ### Entry points
 
@@ -68,15 +68,15 @@ plan. It shows the shape of a filled map, not a recommended layout.
 | What the editor is, why, and what breaks it | `docs/design.md` | §1 goals · §2 choices · §3 risks · §4 decisions record · §5 open questions · §6 change note |
 | What gets built, in what order, to which milestones | `docs/plan.md` | §2 holds each phase's status and names its milestones |
 | How one phase is carried out | `docs/phases/phase-NN-<slug>.md` | pitfalls, the milestone's exit criteria at the bottom |
-| Does this statement exist | `registry.yml` | `specgraph show ID` |
+| Does this statement exist | `graph.yml` | `specgraph show ID` |
 | What is left to do | `docs/register.md` | the checker prints the next free ID |
 | Where things stand, what is in flight | `handoff/current.md` | process, not normative |
 | What we used to think | `docs/archive/` | frozen; out of every search unless named |
 
 | Family | Form | Names | Allocated by |
 |---|---|---|---|
-| `REQ`, `ASM`, `ATK`, `QST` | `REQ-01` | a requirement, an assumption, a threat, an open question | `registry.yml` |
-| `DEC` | `DEC-journal` | a decision, by slug | `registry.yml` |
+| `REQ`, `ASM`, `ATK`, `QST` | `REQ-01` | a requirement, an assumption, a threat, an open question | `graph.yml` |
+| `DEC` | `DEC-journal` | a decision, by slug | `graph.yml` |
 | `ED` | `ED-001` | a work item; **not a statement**, never cited by one | `docs/register.md` |
 
 **"Why does saving write a journal first?"** `specgraph show DEC-journal` prints the one sentence, *a save writes a

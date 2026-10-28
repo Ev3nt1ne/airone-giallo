@@ -41,18 +41,18 @@ the same name, which is the same as `python -m specgraph`. The examples below us
 
 ## Start
 
-Create an empty registry in the lite profile (four kinds, four relations, no axes):
+Create an empty graph in the lite profile (four kinds, four relations, no axes):
 
 ```sh
 specgraph init --profile lite
 ```
 
-This writes `registry.yml`: a `meta` block, which is the schema every tool reads, and empty `nodes` and `edges`.
+This writes `graph.yml`: a `meta` block, which is the schema every tool reads, and empty `nodes` and `edges`.
 The `full` profile adds objectives, goals, expectations, evidence, checks, open questions, records and
-justifications, with the relations `evidenced-by`, `verified-by` and `awaits`; a lite registry is valid under the
+justifications, with the relations `evidenced-by`, `verified-by` and `awaits`; a lite graph is valid under the
 full meta unchanged.
 
-A small example: an editor must not lose saved work. Write a short design document beside the registry,
+A small example: an editor must not lose saved work. Write a short design document beside the graph file,
 `design.md`:
 
 ```markdown
@@ -65,7 +65,7 @@ A small example: an editor must not lose saved work. Write a short design docume
 ## 3. Risks
 ```
 
-Then replace the empty `nodes: []` and `edges: []` in `registry.yml` with five nodes and four edges,
+Then replace the empty `nodes: []` and `edges: []` in `graph.yml` with five nodes and four edges,
 `nodes and edges`:
 
 ```yaml
@@ -110,7 +110,7 @@ The decision fails, and the requirement loses its only satisfier, so it fails to
 is undefended: the requirement is then *not argued yet*, which is not a failure but a hole someone has to fill.
 
 To look nodes up: `near WORD…`, `show ID…`, `why ID`, `at PLACE`, `draw ID` (Mermaid, or Graphviz with `--dot`).
-To change the registry in reviewable steps: `batch FILE` previews a batch of edits and reads its tier (additive,
+To change the graph in reviewable steps: `batch FILE` previews a batch of edits and reads its tier (additive,
 neutral links, or needs review); `batch FILE --apply` applies it; `actual REV` compares the outcomes with a git
 revision. Each command has `--help`.
 

@@ -1,4 +1,4 @@
-"""Reading and writing the registry file: one YAML file with `meta` (the schema), `nodes` and `edges`."""
+"""Reading and writing the graph file: one YAML file with `meta` (the schema), `nodes` and `edges`."""
 import hashlib
 import re
 from pathlib import Path

@@ -8,8 +8,9 @@ adopting project, from the template in `skills/setup/`.
   it exists and how it is used. A change that contradicts the README changes the README too.
 - **Each piece stands alone.** A change must not make one piece require another; the plugin bundles them, it does
   not couple them.
-- **Configuration is data.** A tool reads a project's values from that project's registry or from arguments,
-  never from constants in its code. A tool with a particular project's vocabulary in it is not done.
+- **Configuration is data.** A tool reads a project's values from that project's own files (the graph file's
+  `meta`, the register's `register-meta` block) or from arguments, never from constants in its code. A tool with a
+  particular project's vocabulary in it is not done.
 - **Tests travel with the code.** A change to a tool comes with its tests, and a new test has been seen to fail for
   the right reason before it counts.
 - **A rule carries its reason.** In a skill, each rule is one sentence of rule and one of reason, with a general

@@ -1,11 +1,11 @@
-"""Preview, then apply, one batch of changes to the registry; and compare a past revision with the working file.
+"""Preview, then apply, one batch of changes to the graph file; and compare a past revision with the working file.
 
 A batch is a YAML file with an optional `name`, an optional `whatif` and an `ops` list of operations on the
-registry's one-line entries (one node or one edge per line, in YAML flow style):
+graph file's one-line entries (one node or one edge per line, in YAML flow style):
 
     - {op: add_node, after: ID, line: "{id: ..., ...}"}        inserted after node ID's line
     - {op: set_statement, id: ID, statement: "..."}
-    - {op: set_domain, id: ID, domain: "[Z2.PROD]"}           the node's domain, written as in the registry
+    - {op: set_domain, id: ID, domain: "[Z2.PROD]"}           the node's domain, written as in the graph file
     - {op: set_fields, id: ID, fields: "kind: goal, support: satisfier"}   inserted after the node's `id`
     - {op: drop_status, id: ID}                               the node becomes active
     - {op: set_status, id: ID, status: candidate}
@@ -130,7 +130,7 @@ def touched(ops):
 
 
 def tier(ops, moved_ids, new_text):
-    """'A', 'B' or '-', from the operations, the ids whose outcome the preview moved, and the registry as it would
+    """'A', 'B' or '-', from the operations, the ids whose outcome the preview moved, and the graph file as it would
     be (to read each new node's kind)."""
     kinds = {op["op"] for op in ops}
     new_nodes = set()
@@ -191,7 +191,7 @@ def lint_file(path, root, today=None):
 
 
 def _fixed_copy(d, text):
-    copy = Path(d) / "registry.yml"
+    copy = Path(d) / "graph.yml"
     copy.write_text(text, encoding="utf-8")
     fix_fingerprints(copy, load(copy)[1])
     return copy
@@ -258,7 +258,7 @@ def run(batch_path, registry, root=None, apply=False, additive=False, today=None
 
 
 def actual(rev, registry):
-    """The change a past batch made: outcomes on every place, the registry at a git revision against the working
+    """The change a past batch made: outcomes on every place, the graph file at a git revision against the working
     file, printed as the preview prints its section 2, so the two can be compared line by line."""
     reg = Path(registry).resolve()
     top = subprocess.run(["git", "-C", str(reg.parent), "rev-parse", "--show-toplevel"], capture_output=True,
@@ -267,7 +267,7 @@ def actual(rev, registry):
     old_text = subprocess.run(["git", "-C", top, "show", f"{rev}:{rel}"], capture_output=True, text=True,
                               check=True).stdout
     with tempfile.TemporaryDirectory() as d:
-        old = Path(d) / "registry.yml"
+        old = Path(d) / "graph.yml"
         old.write_text(old_text, encoding="utf-8")
         before, after = outcomes(old), outcomes(reg)
     print_moved(moved_outcomes(before, after))

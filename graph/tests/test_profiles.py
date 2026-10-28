@@ -1,5 +1,5 @@
 """The two shipped profiles: `init` writes them; an empty one lints clean; the README's example lints clean in the
-lite profile and, unchanged, under the full profile's meta (a lite registry grows into a full one without migration)."""
+lite profile and, unchanged, under the full profile's meta (a lite graph grows into a full one without migration)."""
 import re
 import tempfile
 from pathlib import Path
@@ -30,7 +30,7 @@ def test_init_writes_each_profile_and_it_lints_clean(tmp_path):
 
 
 def test_init_never_overwrites(tmp_path):
-    p = tmp_path / "registry.yml"
+    p = tmp_path / "graph.yml"
     p.write_text("keep me")
     code, out = call(["init", "--registry", str(p)])
     assert code == 1 and p.read_text() == "keep me"
@@ -48,7 +48,7 @@ def test_the_lite_profile_is_a_subset_of_the_full_one():
 
 def _readme_registry(d, meta):
     nodes_edges = yaml.safe_load(readme_block("nodes and edges"))
-    reg = Path(d) / "registry.yml"
+    reg = Path(d) / "graph.yml"
     text = "meta: " + yaml.safe_dump(meta, default_flow_style=True, width=10**6)
     text += readme_block("nodes and edges")
     reg.write_text(text)

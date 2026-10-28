@@ -1,4 +1,4 @@
-# A specification registry: one file, one line per node and one per edge. `meta` is the schema every tool reads.
+# A specification graph: one file, one line per node and one per edge. `meta` is the schema every tool reads.
 # Profile: lite. Four kinds, four relations, no axes (one place). It grows into the full profile by replacing this
 # meta block with the full one; no node or edge needs to change.
 meta:

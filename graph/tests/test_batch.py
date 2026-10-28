@@ -17,7 +17,7 @@ VERIFIED = {"op": "add_edge", "after_edge": ["A", "requires", "B"], "line": "{fr
 
 
 def text_with(*ops):
-    """The registry as it would read after OPS: enough of a node line for tier() to find each new node's kind."""
+    """The graph file as it would read after OPS: enough of a node line for tier() to find each new node's kind."""
     return "\n".join("  - " + op["line"] for op in ops if op["op"] == "add_node")
 
 
@@ -81,7 +81,7 @@ edges:
 
 class TestPreviewAndApply:
     def setup_registry(self, d):
-        p = Path(d) / "registry.yml"
+        p = Path(d) / "graph.yml"
         p.write_text(REGISTRY)
         (Path(d) / "spec.md").write_text("# Spec\n\n## 1. One\n")
         call(["lint", "--registry", str(p), "--fix"])

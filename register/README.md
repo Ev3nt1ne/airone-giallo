@@ -97,15 +97,15 @@ the templates.
 
 An item may cite a graph node by its ID, in backticks: *"`APP-004` builds what `REQ-02` requires"*. A node never
 cites an item: a node states what holds, which outlives the work, and a citation of work inside it goes stale when the
-work closes. Give the graph's registry to check both directions:
+work closes. Give the graph file to check both directions:
 
 ```sh
-python3 tools/check_register.py docs/register.md docs/closed.md --graph registry.yml
+python3 tools/check_register.py docs/register.md docs/closed.md --graph graph.yml
 ```
 
-Every cited node must then exist in the registry, no node may mention an item's ID, and no register family may share
+Every cited node must then exist in the graph, no node may mention an item's ID, and no register family may share
 a code with a graph family, since a citation of either would be ambiguous. Without `--graph`, a citation of a node is
-allowed and not checked. The checker reads the registry's text as `specgraph` writes it, without PyYAML.
+allowed and not checked. The checker reads the graph file's text as `specgraph` writes it, without PyYAML.
 
 ## What it is not
 

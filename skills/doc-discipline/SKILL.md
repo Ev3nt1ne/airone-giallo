@@ -1,11 +1,11 @@
 ---
 name: doc-discipline
-description: Keeping a project's design documents and registry consistent through a change, a milestone passed by the owner's ruling, and when a review is due. Load before editing a specification, plan or registry, minting an identifier, committing such a change, proposing a review, or running one the owner asked for.
+description: Keeping a project's design documents and graph consistent through a change, a milestone passed by the owner's ruling, and when a review is due. Load before editing a specification, plan or graph, minting an identifier, committing such a change, proposing a review, or running one the owner asked for.
 ---
 
 # Changing a project's documents without breaking them
 
-For a project whose design is written down: a specification, a plan, a registry of identifiers, often in several
+For a project whose design is written down: a specification, a plan, a graph of statements, often in several
 documents that describe the same system at different altitudes. An edit that touches one and not the others leaves a
 repository that passes every check and is still wrong. Each rule carries its reason in italics. How a single document
 is written and corrected is the `markdown-docs` skill; this one is about keeping several of them true together.
@@ -17,7 +17,7 @@ contradiction, with no way to tell which side is current.*
 ## 1. Levels, and what each owns
 
 A pattern a project may use whole, in part, or not at all. A small project has one design document and the rules
-below reduce to "the document, the registry and the code agree".
+below reduce to "the document, the graph and the code agree".
 
 | Level | Typically | Owns | Never holds |
 |---|---|---|---|
@@ -61,15 +61,15 @@ Where the reasoning of a superseded claim goes depends on the material:
 
 | Material | The text | The reasoning survives in |
 |---|---|---|
-| the levels and the registry | refined in place | the change note, dated, append-only |
+| the levels and the graph | refined in place | the change note, dated, append-only |
 | working notes, studies, registers | edited in place, status tables kept current | correction entries and CHANGE OF PLAN headings (`markdown-docs` §4) |
 | a frozen archive | never edited | — |
 
 ## 3. Minting an identifier
 
-One allocator per family; **an identifier in neither allocator does not exist.** The graph's registry allocates
+One allocator per family; **an identifier in neither allocator does not exist.** The graph allocates
 statement IDs (requirements, decisions, assumptions, threats): with the specification graph (`graph/` in this kit)
-it is `registry.yml`, otherwise a table of identifier, one-sentence statement and the place that defines it. The
+it is `graph.yml`, otherwise a table of identifier, one-sentence statement and the place that defines it. The
 register (`register/` in this kit) allocates work-item IDs: what is left to do. Both are append-only: never
 renumber, never reuse. *Two allocators for one family eventually give one number to two things, and every citation
 of it becomes ambiguous.* An item may cite a node; a node never cites an item. *A node states what holds and
@@ -77,8 +77,8 @@ outlives the work; a citation of work inside it goes stale when the work closes.
 
 The steps below mint a statement; a work item takes the next free ID the register's checker prints.
 
-1. **Check it is not there.** Search the registry for the statement (with the graph, `specgraph near WORD…`), then
-   take the next free number in the family: `grep -o 'REQ-[0-9]*' registry.yml | sort -uV | tail -1`.
+1. **Check it is not there.** Search the graph for the statement (with the graph, `specgraph near WORD…`), then
+   take the next free number in the family: `grep -o 'REQ-[0-9]*' graph.yml | sort -uV | tail -1`.
 2. **Write the entry as one sentence.** If it needs two, it is two entries. *A statement with two claims cannot be
    half false, and nothing can point at the half.*
 3. **Link it.** Where the project uses the specification graph: its kind, its support and its edges, by the rules
@@ -88,7 +88,7 @@ The steps below mint a statement; a work item takes the next free ID the registe
 6. **Commit the entry with the text that uses it** (§7).
 
 **The budget test:** would anything downstream change if this statement flipped? If not, it is prose, not an entry.
-*A registry of everything is read like a registry of nothing.* A decision cited by name that nothing rests on (a
+*A graph of everything is read like a graph of nothing.* A decision cited by name that nothing rests on (a
 licence, a project name) is a record: it keeps its identifier and carries no argument. When the owner states
 something, ask whether anything technical rests on it before minting it.
 
@@ -97,7 +97,7 @@ have it confirmed, and report the actual effect before the commit. Where the pro
 `specgraph batch FILE` prints the batch's tier with the preview: an additive batch may be applied
 (`--apply --additive`) and reported, neutral links are confirmed as one list, everything else is reviewed alone.
 Never classify a batch yourself. *The agent proposing a change is the one most likely to miss what it moved.* A
-proposal that conflicts with an existing entry is raised as a conflict first: the registry is enforced, not bent
+proposal that conflicts with an existing entry is raised as a conflict first: the graph is enforced, not bent
 to fit.
 
 ## 4. The cascade, before the edit
@@ -165,8 +165,8 @@ these are the rules this discipline adds to it.
   be findable alone.*
 - **Evidence a decision rests on lands on the main line**, even when the code that produced it is thrown away. *The
   code is disposable; the evidence is not.*
-- **The registry is never committed alone and never left behind**: a new identifier with the text that uses it, a
-  recomputed check value with the edit that changed its statement. Work on the registry's own machinery is the
+- **The graph is never committed alone and never left behind**: a new identifier with the text that uses it, a
+  recomputed check value with the edit that changed its statement. Work on the graph's own machinery is the
   exception. *An entry without its text, or text without its entry, is an inconsistency the check may not see.*
 - **The subject carries the identifiers the commit touches.** *`git log --grep` finds a subject that names one and
   misses one that describes it.*

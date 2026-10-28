@@ -330,7 +330,7 @@ def build_indexes(nodes, edges):
 
 
 def read_as_logic(meta, nodes, edges):
-    """The Logic of a registry, for tools that only read it; the schema's findings are dropped."""
+    """The Logic of a graph file, for tools that only read it; the schema's findings are dropped."""
     byid, _, _ = build_indexes(nodes, edges)
     grid = grid_of(meta)
     return Logic(meta, nodes, edges, byid, grid, node_domains(nodes, grid))

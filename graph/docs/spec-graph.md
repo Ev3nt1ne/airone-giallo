@@ -4,9 +4,9 @@ This document states the rules of the graph: what a node is, what the relations 
 holds and where, what a change does, and what the lint checks. Each rule carries one sentence of reason. The
 tools follow this document; where they disagree, one of them is wrong.
 
-## 1. The registry
+## 1. The graph file
 
-The graph lives in one YAML file, the registry, with three parts:
+The graph lives in one YAML file, `graph.yml` by default, with three parts:
 
 - `meta`: the schema. Every project-specific value the tools need is here: the ID families, the kinds, the
   supports, the relation table, the axes, how `where` is resolved. *The tools carry no project's vocabulary, so the
@@ -15,7 +15,7 @@ The graph lives in one YAML file, the registry, with three parts:
   edit an entry without rewriting the file.*
 - `edges`: one line per edge.
 
-The registry is the only place an ID is allocated: an ID not in it does not exist. IDs are never renumbered and
+The graph file is the only place an ID is allocated: an ID not in it does not exist. IDs are never renumbered and
 never reused; a node that is withdrawn keeps its line with status `retired` or `superseded`. *A reference written
 anywhere else must keep meaning the same thing.*
 
@@ -165,7 +165,7 @@ ambiguous.
 A **domain** is a list of tokens: a place; a wildcard, where `*` stands for every value of one axis (`PROD.*`,
 `*.SERVER`, `*.CLIENT~*.SERVER` for that interface on every environment, `STAGING.*>PROD` for that move on every
 side; the axis an interface or a transition is on takes a value, never `*`); or `all` for every cell.
-Kinds that carry a domain are listed in `meta.domain_kinds`; once a registry declares axes, each live node of those
+Kinds that carry a domain are listed in `meta.domain_kinds`; once a graph declares axes, each live node of those
 kinds has one (W1). An objective, a justification and a record carry none.
 
 The **sides** of an interface or a transition are the two cells it joins. A domain **covers** a place when the place
@@ -208,7 +208,7 @@ satisfier is in fact enough.*
 
 ## 7. The lint
 
-The lint checks the registry's form. Whether a node holds is the engine's, printed on a line of its own, never a
+The lint checks the graph file's form. Whether a node holds is the engine's, printed on a line of its own, never a
 check. Each check reads a node's kind or support, never its family.
 
 | Rule | Check | Level | Why |
@@ -238,7 +238,7 @@ the commit hook and in CI: a graph without its checker is stale bookkeeping.*
 A `where` is one or more references separated by `;`. In each reference:
 
 - a **file token** has a slash, ends in `.md`, or is a short name in `meta.where_aliases`. It resolves under the
-  registry's folder (or `--root`) to the file itself, the file with `.md` added, a folder's files
+  graph file's folder (or `--root`) to the file itself, the file with `.md` added, a folder's files
   (`where_forms.folder_files`, globs inside the folder), and the one file a prefix names (`notes/part-3` reads
   `notes/part-3-*.md`);
 - a **section token** starts with the section mark (`§4.2`; several may share one token: `§4.1/§7`), and must start
@@ -253,7 +253,7 @@ the resolver should follow the project, not the other way round.*
 
 ## 9. Changing the graph in batches
 
-A batch is a YAML file of operations on the registry's lines (add a node or an edge, change a statement, a domain, a
+A batch is a YAML file of operations on the graph file's lines (add a node or an edge, change a statement, a domain, a
 status, remove an edge, replace a text). `batch FILE` previews it on a copy: the lint's verdict, every node whose
 outcome changes on some place, the cascade of each node it touches, and the batch's **tier**, which is read from the
 operations and the outcomes, never declared:
@@ -278,7 +278,7 @@ compared.
   chosen, and what could go wrong.*
 - **full**: every kind and relation above, with evidence, checks, open questions, records and justifications.
 
-Every kind, relation and family of lite is in full, with the same reading, so **a lite registry is valid under the
+Every kind, relation and family of lite is in full, with the same reading, so **a lite graph is valid under the
 full meta unchanged**; growing is a matter of replacing the `meta` block. Declaring axes later is a modelling step,
 not a migration: the nodes then say where they hold (W1).
 

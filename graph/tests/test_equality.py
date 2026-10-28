@@ -1,8 +1,8 @@
-"""Proof of equality against a reference registry, run only when the two variables below are set.
+"""Proof of equality against a reference graph file, run only when the two variables below are set.
 
-    SPECGRAPH_EQUALITY_REGISTRY   a registry file
-    SPECGRAPH_EQUALITY_CONFIG     a YAML file: `axes` (the axes to read the registry with), `meta` (keys that replace
-                                  the registry's own), `root` (where `where` resolves), `today` (for L-9), and
+    SPECGRAPH_EQUALITY_REGISTRY   a graph file
+    SPECGRAPH_EQUALITY_CONFIG     a YAML file: `axes` (the axes to read the graph file with), `meta` (keys that replace
+                                  the graph file's own), `root` (where `where` resolves), `today` (for L-9), and
                                   `reference` (a JSON file with what another implementation computed on the same file)
 
 The reference holds the places, every node's outcome and reasons on every place, the lint's findings and, when

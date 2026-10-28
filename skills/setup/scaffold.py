@@ -11,7 +11,7 @@ defaults.
 What it writes, in the target folder: AGENTS.md (with the opinionated layer appended when chosen), CLAUDE.md,
 RATIONALE.md, local-machine.md (git-ignored), lines appended to .gitignore; with the register, the register and its
 closed file in the docs folder and the checker in tools/; with the handoff, the state and the first log in handoff/;
-with the graph, registry.yml through `python -m specgraph init`.
+with the graph, graph.yml through `python -m specgraph init`.
 
 The rule it exists to obey: never report success for a step it did not perform. Every step is reported as done,
 kept, skipped or failed, and the exit code follows the report: 0 when every step was done or kept, 1 when any was
@@ -19,7 +19,7 @@ refused, skipped or failed, 2 when the answers are invalid; a dry run exits 0 un
 refused. Before writing anything it checks every target: an
 existing file stops the whole run unless --force, so a refusal never leaves half an install. With --force the
 instruction files are replaced, but a record (the register, the closed file, the handoff, RATIONALE.md, the
-registry) is kept as it is, since replacing it with an empty one would delete the project's history.
+graph file) is kept as it is, since replacing it with an empty one would delete the project's history.
 
 Standard library only; the graph step runs specgraph in a child process when it is importable.
 """
@@ -232,7 +232,7 @@ def context(a):
 
     families = []
     if a["graph"] != "none":
-        families.append("the statement families declared in `registry.yml`'s meta, allocated by `registry.yml`")
+        families.append("the statement families declared in `graph.yml`'s meta, allocated by `graph.yml`")
     if a["register"]:
         codes = ", ".join(code(c) for c in a["families"])
         families.append(f"{codes} for work items, allocated by `{register_file}` (its checker prints the next free ID)")
@@ -241,7 +241,7 @@ def context(a):
     if a["graph"] != "none":
         checks.append("`specgraph lint`")
     if a["register"]:
-        graph_flag = " --graph registry.yml" if a["graph"] != "none" else ""
+        graph_flag = " --graph graph.yml" if a["graph"] != "none" else ""
         checks.append(f"`python3 tools/check_register.py {register_file} {closed_file}{graph_flag}`")
     if a["checks"]:
         checks.append(a["checks"])
@@ -342,10 +342,10 @@ def graph_action(profile):
             return ("SKIPPED", f"specgraph is not importable from {sys.executable}; install the kit's graph "
                     f"(pip install -e <kit>/graph), then run: specgraph init --profile {profile}")
         proc = subprocess.run([sys.executable, "-m", "specgraph", "init", "--profile", profile,
-                               "--registry", "registry.yml"], cwd=target, capture_output=True, text=True)
+                               "--registry", "graph.yml"], cwd=target, capture_output=True, text=True)
         out = (proc.stdout + proc.stderr).strip()
         # Measure the artifact, not the command: the file must exist and carry its meta.
-        reg = target / "registry.yml"
+        reg = target / "graph.yml"
         if proc.returncode != 0 or not reg.is_file() or "meta:" not in reg.read_text(encoding="utf-8"):
             return ("FAILED", f"specgraph init exited {proc.returncode}: {out}")
         return ("DONE", f"{profile} profile, by specgraph init")
@@ -381,7 +381,7 @@ def plan(a, ctx, now):
             Step(f"handoff/{log_name}", "the handoff's first log", lambda: log, record=True),
         ]
     if a["graph"] != "none":
-        steps.append(Step("registry.yml", f"the graph's registry ({a['graph']} profile)", None, record=True,
+        steps.append(Step("graph.yml", f"the graph file ({a['graph']} profile)", None, record=True,
                           action=graph_action(a["graph"])))
     return steps
 

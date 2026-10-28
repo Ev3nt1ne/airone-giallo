@@ -1,7 +1,7 @@
 """The lint's rules (L-1 … L-9, W0 … W11), the engine and its cascade (from a node and from a place), and the read
 side's view of what the engine computes.
 
-Each rule is run on a small throwaway registry twice: once with the defect it exists to catch (it must fire) and
+Each rule is run on a small throwaway graph twice: once with the defect it exists to catch (it must fire) and
 once corrected (it must stay silent), so a rule that always fires or never fires fails here.
 """
 import tempfile
@@ -188,7 +188,7 @@ class TestSchemaRules:
             text = p.read_text().replace("  statement:", "  where: twice\n  statement:", 1)
             p.write_text(text)
             code, out = call(["lint", "--registry", str(p)])
-        assert "ERROR L-1 registry.yml cannot be read" in out
+        assert "ERROR L-1 graph.yml cannot be read" in out
         assert "duplicate key 'where'" in out
         assert code == 1
 
@@ -200,7 +200,7 @@ class TestSchemaRules:
                 'domain: [all], reviewed: 2024-01-10, watch: 365, fingerprint: "00000000", note: "n"}\n'
                 'edges: []\n')
         with tempfile.TemporaryDirectory() as d:
-            p = Path(d) / "registry.yml"
+            p = Path(d) / "graph.yml"
             p.write_text(text)
             call(["lint", "--registry", str(p), "--fix"])
             line = [l for l in p.read_text().splitlines() if "ASM-01" in l][0]
@@ -682,7 +682,7 @@ class TestGraphView:
 
 
 class TestWhere:
-    """W11: a node's `where` names a document under the registry's folder, and every section and ID it cites is there."""
+    """W11: a node's `where` names a document under the graph file's folder, and every section and ID it cites is there."""
 
     def test_a_resolving_where_is_silent(self):
         code, out = run([node("ATK-01", ["all"], where="spec.md §1 ATK-01"),
@@ -747,7 +747,7 @@ class TestWhere:
             p = write(meta, nodes, [], d)
             code, out = call(["lint", "--registry", str(p)])
             assert "W11" not in out
-            # a copy of the registry elsewhere resolves under --root, as the batch tool's copies do
+            # a copy of the graph file elsewhere resolves under --root, as the batch tool's copies do
             with tempfile.TemporaryDirectory() as d2:
                 p2 = write(meta, nodes, [], d2)
                 assert "W11 ATK-02" in call(["lint", "--registry", str(p2)])[1]
@@ -789,7 +789,7 @@ class TestEdgeWhy:
 
 
 class TestWhereFormsFromMeta:
-    """What counts as an ID and which files a folder reads are the registry's data, not the lint's."""
+    """What counts as an ID and which files a folder reads are the graph file's data, not the lint's."""
 
     def test_the_id_form_is_read_from_meta(self):
         nodes = [node("ATK-01", ["all"], where="spec.md §1 #12")]

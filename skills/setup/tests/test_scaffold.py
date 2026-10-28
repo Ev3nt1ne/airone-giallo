@@ -96,14 +96,14 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
     assert rc == 0, out
     for rel in ("AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md", ".gitignore", "docs/register.md",
                 "docs/closed.md", "tools/check_register.py", "handoff/current.md", "handoff/log-stage-1.md",
-                "registry.yml"):
+                "graph.yml"):
         assert (folder / rel).is_file(), rel
     assert (folder / "CLAUDE.md").read_text() == "@AGENTS.md\n"
     for path in folder.rglob("*"):
         if path.is_file() and path.suffix in (".md", ".yml", ""):
             assert "{{" not in path.read_text(encoding="utf-8"), path
     checker = subprocess.run([sys.executable, "tools/check_register.py", "docs/register.md", "docs/closed.md",
-                              "--graph", "registry.yml"], cwd=folder, capture_output=True, text=True)
+                              "--graph", "graph.yml"], cwd=folder, capture_output=True, text=True)
     assert checker.returncode == 0, checker.stdout + checker.stderr
     assert "APP-001" in checker.stdout and "DOC-001" in checker.stdout
     lint = subprocess.run([sys.executable, "-m", "specgraph", "lint"], cwd=folder, capture_output=True, text=True)
@@ -111,7 +111,7 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
     assert dead_links(folder) == []
     text = agents(folder)
     for row in ("`docs/design.md`", "`docs/register.md`", "`handoff/current.md`", "`docs/glossary.md`",
-                "`docs/findings/`", "`APP`, `DOC`", "`specgraph lint`", "--graph registry.yml", "`pytest`"):
+                "`docs/findings/`", "`APP`, `DOC`", "`specgraph lint`", "--graph graph.yml", "`pytest`"):
         assert row in text, row
     assert "[to fill" not in text
 
@@ -123,7 +123,7 @@ def test_minimal_install_writes_only_the_core(tmp_path, capsys):
     written = sorted(str(p) for p in tree(folder))
     assert written == [".gitignore", "AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md"]
     text = agents(folder)
-    for absent in ("register.md", "handoff/", "specgraph", "registry.yml", "Identifier"):
+    for absent in ("register.md", "handoff/", "specgraph", "graph.yml", "Identifier"):
         assert absent not in text, absent
     assert dead_links(folder) == []
 
@@ -246,8 +246,8 @@ def test_the_graph_step_is_reported_skipped_when_specgraph_is_missing(tmp_path, 
     folder = project(tmp_path)
     rc, out = install(folder, dict(MINIMAL, graph="lite"), capsys=capsys)
     assert rc == 1
-    assert re.search(r"SKIPPED +registry.yml", out) and "SETUP INCOMPLETE" in out
-    assert not (folder / "registry.yml").exists()
+    assert re.search(r"SKIPPED +graph.yml", out) and "SETUP INCOMPLETE" in out
+    assert not (folder / "graph.yml").exists()
 
 
 def test_the_gitignore_line_is_appended_once(tmp_path, capsys):

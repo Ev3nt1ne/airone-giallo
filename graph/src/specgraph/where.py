@@ -1,6 +1,6 @@
 """W11: a node's `where` names the document that defines it, and every section and ID it cites is found there.
 
-Everything project-specific is read from the registry's `meta`: `where_aliases` maps a short name to a path, and
+Everything project-specific is read from the graph file's `meta`: `where_aliases` maps a short name to a path, and
 `where_forms` says how sections and IDs are written (the defaults below are plain Markdown conventions).
 """
 import re

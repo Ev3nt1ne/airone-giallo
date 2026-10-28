@@ -48,12 +48,12 @@ def closed(rows=""):
 def run(tmp_path, reg, clo=None, graph=None):
     """Write the files given and check them; return the errors and the next IDs."""
     paths = {}
-    for name, text in (("register.md", reg), ("closed.md", clo), ("registry.yml", graph)):
+    for name, text in (("register.md", reg), ("closed.md", clo), ("graph.yml", graph)):
         if text is not None:
             paths[name] = tmp_path / name
             paths[name].write_text(text, encoding="utf-8")
     errors, next_ids, _ = cr.check(*(str(paths[k]) if k in paths else None
-                                     for k in ("register.md", "closed.md", "registry.yml")))
+                                     for k in ("register.md", "closed.md", "graph.yml")))
     return errors, next_ids
 
 

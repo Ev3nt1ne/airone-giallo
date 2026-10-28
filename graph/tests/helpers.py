@@ -1,4 +1,4 @@
-"""Fixtures shared by the tests: a full-profile meta read with two neutral axes, and small registries written to a
+"""Fixtures shared by the tests: a full-profile meta read with two neutral axes, and small graph files written to a
 temporary folder and run through the command line in-process."""
 import contextlib
 import io
@@ -29,8 +29,8 @@ SPEC = ("# Spec\n\n## 1. One\n\nATK-01 and #7 are named here.\n\n### 1.2 Two\n\n
 
 
 def write(meta, nodes, edges, d):
-    """The registry, and beside it the one document the fixtures' `where` values point at."""
-    p = Path(d) / "registry.yml"
+    """The graph file, and beside it the one document the fixtures' `where` values point at."""
+    p = Path(d) / "graph.yml"
     p.write_text(yaml.safe_dump({"meta": meta, "nodes": nodes, "edges": edges}, sort_keys=False))
     (Path(d) / "spec.md").write_text(SPEC)
     return p
@@ -48,7 +48,7 @@ def call(argv):
 
 
 def run(nodes, edges, *extra, base=None, **meta_over):
-    """The lint on a throwaway registry."""
+    """The lint on a throwaway graph."""
     meta = dict(base or META, orphan_ok={})
     meta.update(meta_over)
     with tempfile.TemporaryDirectory() as d:
@@ -57,7 +57,7 @@ def run(nodes, edges, *extra, base=None, **meta_over):
 
 
 def graph(nodes, edges, *args, base=None, **meta_over):
-    """A read-side command on a throwaway registry."""
+    """A read-side command on a throwaway graph."""
     meta = dict(base or META, orphan_ok={})
     meta.update(meta_over)
     with tempfile.TemporaryDirectory() as d:

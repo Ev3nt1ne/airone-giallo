@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Check a project's register and its closed file, and print the next free ID in each family.
 
-    python3 check_register.py REGISTER [CLOSED] [--graph REGISTRY]
+    python3 check_register.py REGISTER [CLOSED] [--graph GRAPH]
 
 REGISTER holds the open items and the `register-meta` block that declares the families; CLOSED holds the closed
-items. With --graph, every citation of a graph node is checked against the specification graph's registry, and
-the registry is checked for citations of items. Exits 1 on any error, 2 when a file cannot be read. Standard
+items. With --graph, every citation of a graph node is checked against the specification graph's file, and
+the graph file is checked for citations of items. Exits 1 on any error, 2 when a file cannot be read. Standard
 library only, so it runs wherever Python 3.10 does.
 """
 
@@ -189,7 +189,7 @@ def read_families(doc, errors):
 
 
 def read_graph(path):
-    """The graph's ID prefixes and node IDs, and the lines outside its meta, read from the registry's text."""
+    """The graph's ID prefixes and node IDs, and the lines outside its meta, read from the graph file's text."""
     prefixes, ids, body = set(), set(), []
     section = None
     for n, line in enumerate(Path(path).read_text(encoding="utf-8").splitlines(), 1):
@@ -293,7 +293,7 @@ def check(register_path, closed_path=None, graph_path=None):
     graph_prefixes, graph_ids, graph_body = read_graph(graph_path) if graph_path else (set(), set(), [])
     shared = [code for code in families if code.split("-")[0] in graph_prefixes]
     for code in shared:
-        errors.append(f"{register.path}: family {code} is also a family of the graph's registry; a "
+        errors.append(f"{register.path}: family {code} is also a family of the graph; a "
                       f"citation of either would be ambiguous")
 
     highest = {code: 0 for code in families}
@@ -339,7 +339,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description="Check a register and its closed file; print the next free IDs.")
     parser.add_argument("register", help="the register: open items and the register-meta block")
     parser.add_argument("closed", nargs="?", help="the closed file")
-    parser.add_argument("--graph", metavar="REGISTRY", help="the specification graph's registry.yml")
+    parser.add_argument("--graph", metavar="GRAPH", help="the specification graph's file (graph.yml)")
     args = parser.parse_args(argv)
     try:
         errors, next_ids, (register, closed, notes) = check(args.register, args.closed, args.graph)

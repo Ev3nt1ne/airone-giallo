@@ -1,4 +1,4 @@
-"""The lint: the registry's form, checked rule by rule. Whether a node holds is the engine's, reported apart.
+"""The lint: the graph file's form, checked rule by rule. Whether a node holds is the engine's, reported apart.
 
 Rule index (the full text is in docs/spec-graph.md):
   L-1 grammar, uniqueness, statuses, edge types, endpoints     L-2 no family prefix is a prefix of another

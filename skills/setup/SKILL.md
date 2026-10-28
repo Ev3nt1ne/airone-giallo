@@ -77,7 +77,7 @@ one. *The preview is where a wrong answer costs nothing.*
   script exists to prevent.*
 - **An existing file stops the whole run before anything is written.** `--force` replaces the instruction files
   (AGENTS.md, CLAUDE.md, the machine file, the checker); a record (RATIONALE.md, the register, the closed file, the
-  handoff, the registry) is never replaced, even then, and is reported KEPT. *An empty register written over a full
+  handoff, the graph file) is never replaced, even then, and is reported KEPT. *An empty register written over a full
   one deletes the project's history.*
 
 The templates in `templates/` use the syntax the script implements: `{{name}}` is a value, `{{#name}}…{{/name}}`
@@ -91,7 +91,7 @@ Run each check and read its output; the script's report is a claim, these measur
 
 1. With the graph: `specgraph lint` reports 0 errors.
 2. With the register: `python3 tools/check_register.py <docs>/register.md <docs>/closed.md`, adding
-   `--graph registry.yml` with the graph, reports 0 errors and prints the first free ID of each family.
+   `--graph graph.yml` with the graph, reports 0 errors and prints the first free ID of each family.
 3. The dead-link check of `markdown-docs` §6 prints nothing.
 4. `git check-ignore local-machine.md` prints the file's name.
 5. `grep -n 'to fill' AGENTS.md local-machine.md` lists the slots left; give them to the owner as one list.

@@ -1,5 +1,5 @@
-# A specification registry: one file, one line per node and one per edge. `meta` is the schema every tool reads.
-# Profile: full. Every kind and relation of the graph. A lite registry is valid under this meta unchanged.
+# A specification graph: one file, one line per node and one per edge. `meta` is the schema every tool reads.
+# Profile: full. Every kind and relation of the graph. A lite graph is valid under this meta unchanged.
 meta:
   version: 1
   profile: full

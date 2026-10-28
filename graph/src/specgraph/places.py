@@ -1,6 +1,6 @@
 """Places: where a statement of the graph holds.
 
-The places come from the axes declared in the registry's `meta.axes`. Each axis has a name and an ordered list of
+The places come from the axes declared in the graph file's `meta.axes`. Each axis has a name and an ordered list of
 values; an axis may be marked `interfaces` (the boundary between two of its values is a place) and `ordered` (the
 move between two adjacent values is a place). The places are:
 
@@ -41,7 +41,7 @@ class Axis:
 
 
 class Grid:
-    """The places of a registry, from `meta.axes`."""
+    """The places of a graph, from `meta.axes`."""
 
     def __init__(self, axes=()):
         self.axes = [a if isinstance(a, Axis) else Axis(a) for a in (axes or [])]

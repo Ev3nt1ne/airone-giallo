@@ -197,7 +197,7 @@ def run(mode, args, data, registry_name, at=None, depth=2, dot=False):
 
     if mode == "draw":
         if args[0] not in nodes:
-            print(f"not in the registry: {args[0]}", file=sys.stderr)
+            print(f"not in the graph: {args[0]}", file=sys.stderr)
             return 1
         draw(args[0], nodes, edges, logic, depth, dot)
         return 0
@@ -205,7 +205,7 @@ def run(mode, args, data, registry_name, at=None, depth=2, dot=False):
     if mode == "why":
         nid = args[0]
         if nid not in nodes:
-            print(f"not in the registry: {nid}", file=sys.stderr)
+            print(f"not in the graph: {nid}", file=sys.stderr)
             return 1
         n = nodes[nid]
         print(f"{nid}  [{n.get('kind')}, {n.get('status', 'active')}]  {n.get('where', '')}")
@@ -234,7 +234,7 @@ def run(mode, args, data, registry_name, at=None, depth=2, dot=False):
     else:
         missing = [a for a in args if a not in nodes]
         if missing:
-            print(f"not in the registry: {', '.join(missing)}", file=sys.stderr)
+            print(f"not in the graph: {', '.join(missing)}", file=sys.stderr)
             return 1
         hits = args
     if not hits:

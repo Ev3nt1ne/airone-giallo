@@ -21,8 +21,8 @@ def prog_name():
 
 
 def _registry_arg(p):
-    p.add_argument("--registry", metavar="PATH", default="registry.yml",
-                   help="the registry file (default: registry.yml in the current folder)")
+    p.add_argument("--registry", metavar="PATH", default="graph.yml",
+                   help="the graph file (default: graph.yml in the current folder)")
 
 
 def parser():
@@ -30,16 +30,16 @@ def parser():
                                  "place by place: the lint, the read side, the batch tool.")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
-    p = sub.add_parser("init", help="write an empty registry with its meta")
+    p = sub.add_parser("init", help="write an empty graph file with its meta")
     p.add_argument("--profile", choices=PROFILES, default="lite")
     _registry_arg(p)
 
-    p = sub.add_parser("lint", help="check the registry; with --what-if, simulate a change")
+    p = sub.add_parser("lint", help="check the graph; with --what-if, simulate a change")
     _registry_arg(p)
-    p.add_argument("--fix", action="store_true", help="write fingerprints back into the registry")
+    p.add_argument("--fix", action="store_true", help="write fingerprints back into the graph file")
     p.add_argument("--what-if", metavar="ID|PLACE", help="simulate revising a node, or what we believe about a place")
     p.add_argument("--today", metavar="YYYY-MM-DD", help="the date L-9 measures staleness from (default: today)")
-    p.add_argument("--root", metavar="DIR", help="the folder `where` resolves under (default: the registry's)")
+    p.add_argument("--root", metavar="DIR", help="the folder `where` resolves under (default: the graph file's)")
 
     p = sub.add_parser("near", help="nodes whose id, statement or `where` holds every word")
     p.add_argument("words", nargs="+")

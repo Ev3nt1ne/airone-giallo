@@ -82,9 +82,9 @@ python3 <kit>/skills/setup/scaffold.py --answers ANSWERS.json
 What it writes, the dry run lists file by file: at the workspace root the agent layer (`AGENTS.md`, `CLAUDE.md`,
 `RATIONALE.md`, the git-ignored `local-machine.md`), `.ignore` with `archive/` and the `.gitignore`, an allowlist
 in the two-repository form; on each rung's side `ai-docs/` with the status file, the handoff and a README for each
-of its places, `archive/README.md` and the archive's log `archive/LOG.md`, a README in `docs/` (with a glossary) and
-in `plan/` when the folder is new, and `graph.yml`; `human-docs/README.md` and the `sources/README.md` manifest on
-their chosen sides.
+of its places, `archive/README.md` and the archive's log `archive/LOG.md`, a README in `docs/` and in `plan/` when the
+folder is new, `docs/glossary.md` when absent and no other glossary is answered, and `graph.yml`;
+`human-docs/README.md` and the `sources/README.md` manifest on their chosen sides.
 
 `--help` lists every answer as a flag; a flag overrides the file. Show the owner the dry run before the real
 one. *The preview is where a wrong answer costs nothing.*
@@ -98,9 +98,9 @@ one. *The preview is where a wrong answer costs nothing.*
 - **An existing file stops the whole run before anything is written.** `--force` replaces the instruction files
   (AGENTS.md, CLAUDE.md, the machine file, the contributors' files, the workspace's allowlist `.gitignore`); a record
   (RATIONALE.md, the status file, the closed file, the handoff, the archive's log, the graph file, the folders'
-  READMEs) is never replaced, even then, and is reported KEPT. An existing `docs/` or `plan/` is never written into,
-  and `.ignore` and a one-repository `.gitignore` only get the lines they lack. *An empty status file written over a
-  full one deletes the project's history.*
+  READMEs) is never replaced, even then, and is reported KEPT. An existing `docs/` or `plan/` gets no index and only
+  the files it lacks (the glossary), which changes none of its own; `.ignore` and a one-repository `.gitignore` only
+  get the lines they lack. *An empty status file written over a full one deletes the project's history.*
 
 The templates in `templates/` use the syntax the script implements: `{{name}}` is a value, `{{#name}}…{{/name}}`
 keeps its body when the answer is true or non-empty, `{{^name}}…{{/name}}` when it is false or empty; a tag alone on a

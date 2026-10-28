@@ -18,8 +18,8 @@ never runs `git submodule` itself.
 What it writes: at the workspace root the agent layer (AGENTS.md, CLAUDE.md, RATIONALE.md, local-machine.md, which is
 git-ignored), `.ignore` with the line `archive/`, and the `.gitignore` (an allowlist in the two-repository form, a few
 appended lines otherwise); on each rung's side `archive/README.md` and the archive's log `archive/LOG.md`, `ai-docs/`
-with its five places (the status file and the handoff when chosen), a README in `plan/` and in `docs/` (with a
-glossary) only when the folder is new, and `graph.yml` through `python -m specgraph init`; outside the ladder
+with its five places (the status file and the handoff when chosen), a README in `plan/` and in `docs/` only when the
+folder is new, `docs/glossary.md` when absent, and `graph.yml` through `python -m specgraph init`; outside the ladder
 `human-docs/README.md` and the `sources/README.md` manifest, each on its chosen side; with `agent_layer: both`, a
 contributors' AGENTS.md and CLAUDE.md in the public folder. It copies no script into the project: the checks are the
 kit's installed commands.
@@ -355,7 +355,8 @@ def context(a, lay, target):
     graph_file = lay.at("graph", "graph.yml") if a["graph"] != "none" else ""
     docs, plan_dir = lay.at("docs", "docs"), lay.at("plan", "plan")
     glossary_file = f"{docs}/glossary.md"
-    has_glossary = not (target / docs).exists() or (target / glossary_file).is_file()
+    # Without an answer the glossary is the tree's own, written when absent; an answered one lives elsewhere.
+    has_glossary = not a["glossary"] or (target / glossary_file).is_file()
 
     families = []
     if graph_file:
@@ -375,10 +376,9 @@ def context(a, lay, target):
         graph_flag = f" --graph {graph_file}" if graph_file else ""
         checks.append(f"`check-status {status_file} {closed_file}{graph_flag}`")
     checks.append(f"`{archive_check}`")
-    if a["checks"]:
-        checks.append(a["checks"])
-    if checks == [f"`{archive_check}`"]:  # the kit's archive check alone: the project's own are still to come
-        checks.append(SLOT.format("the project's test and lint commands"))
+    # The project's own checks beside the kit's, or a visible slot until they are known.
+    own_checks = a["checks"] or SLOT.format("the project's own test and lint commands")
+    checks.append(own_checks)
 
     if a["handoff"]:
         opening = code(handoff_state)
@@ -399,8 +399,7 @@ def context(a, lay, target):
     if lay.public("archive"):
         c_archive = local(archive)
         c_checks.append("`check-archive`" if c_archive == "archive" else f"`check-archive --archive {c_archive}`")
-    if a["checks"]:
-        c_checks.append(a["checks"])
+    c_checks.append(own_checks)
 
     human_docs = lay.outside(a["human_docs"], "human-docs") + "/"
     m = a["machine"]
@@ -416,9 +415,9 @@ def context(a, lay, target):
         "status": a["status"], "handoff": a["handoff"], "graph_on": bool(graph_file), "graph_file": graph_file,
         "status_file": status_file, "closed_file": closed_file, "handoff_state": handoff_state,
         "spec": a["spec"] or code(f"{docs}/"), "plan": a["plan"] or code(f"{plan_dir}/"),
-        "glossary": a["glossary"] or (code(glossary_file) if has_glossary else SLOT.format("the glossary's path")),
+        "glossary": a["glossary"] or code(glossary_file),
         "findings": a["findings"] or code(f"{ai}/findings/"),
-        "design_dir": f"{ai}/design/", "guides_dir": f"{ai}/guides/", "archive_dir": f"{archive}/",
+        "design_dir": f"{ai}/design/", "guides_dir": f"{ai}/guides/", "archive_dir": archive,
         "archive_check": archive_check,
         "human_docs_dir": human_docs,
         "sources_manifest": lay.outside(a["sources"], "sources") + "/README.md",
@@ -434,7 +433,7 @@ def context(a, lay, target):
         "c_docs": local(docs) + "/", "c_glossary": local(glossary_file) if has_glossary else "",
         "c_graph": local(graph_file) if graph_file and lay.public("graph") else "",
         "c_plan": local(plan_dir) + "/" if lay.public("plan") else "",
-        "c_checks": "; ".join(c_checks) or SLOT.format("the project's test and lint commands"),
+        "c_checks": "; ".join(c_checks),
     }
 
 
@@ -605,20 +604,27 @@ def plan(a, lay, ctx, now, target):
               Step(f"{archive}/LOG.md", "the archive's log: changes to archived files, vocabulary conflicts",
                    lambda: log, record=True)]
 
-    for rung, files in (("docs", ("README.md", "glossary.md")), ("graph", ()), ("plan", ("README.md",))):
+    for rung in ("docs", "graph", "plan"):
         if rung == "graph":
             if a["graph"] != "none":
                 graph = ctx["graph_file"]
                 steps.append(Step(graph, f"the graph file ({a['graph']} profile, rung 2)", record=True,
                                   action=graph_action(a["graph"], str(Path(graph).parent))))
             continue
+        # An existing folder gets no index: its own layout is the project's. A new file beside its files changes
+        # none of them, so the glossary is written into it when absent.
         folder = lay.at(rung, rung)
         if (target / folder).exists():
-            steps.append(Step(f"{folder}/", "", kept="the folder exists; nothing written into it"))
-            continue
-        for name in files:
-            what = f"the index of {folder}/ (rung {RUNGS.index(rung) + 1})" if name == "README.md" else "the glossary"
-            steps.append(Step(f"{folder}/{name}", what, tree(f"{rung}/{name}"), record=True))
+            steps.append(Step(f"{folder}/", "", kept="the folder exists; no index written into it"))
+        else:
+            steps.append(Step(f"{folder}/README.md", f"the index of {folder}/ (rung {RUNGS.index(rung) + 1})",
+                              tree(f"{rung}/README.md"), record=True))
+        if rung == "docs" and not a["glossary"]:
+            glossary = f"{folder}/glossary.md"
+            if (target / glossary).exists():
+                steps.append(Step(glossary, "", kept="the glossary exists"))
+            else:
+                steps.append(Step(glossary, "the glossary", tree("docs/glossary.md"), record=True))
 
     for key, rel, what in (("human_docs", "human-docs", "the owner's notes, as written"),
                            ("sources", "sources", "the sources' manifest; the files are git-ignored")):

@@ -30,7 +30,7 @@ later session.*
 | What was studied and decided along the way, and why | `{{design_dir}}` |
 | What was measured or found, and how to rerun it | {{findings}} |
 | How a thing is done here: how-tos, reusable prompts, reference lists | `{{guides_dir}}` |
-| What stopped being true, kept readable | `{{archive_dir}}`: frozen, outside every search unless named (`.ignore`; plain `grep -r` does not read it), cited at most as a category; `{{archive_check}} read <file>` before reading one |
+| What stopped being true, kept readable | `{{archive_dir}}/`: frozen, outside every search unless named (`.ignore`; plain `grep -r` does not read it), cited at most as a category; `{{archive_check}} read <file>` before reading one |
 | The owner's own notes | `{{human_docs_dir}}`, as written: never cited by path, never checked |
 | Downloaded third-party material | `{{sources_manifest}}`, the manifest; the files are git-ignored and a document cites the URL |
 {{#families}}

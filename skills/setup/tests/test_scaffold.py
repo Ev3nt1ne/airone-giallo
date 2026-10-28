@@ -153,7 +153,13 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
                              cwd=folder, capture_output=True, text=True)
     assert archive.returncode == 0 and "0 error(s)" in archive.stdout, archive.stdout + archive.stderr
     assert dead_links(folder) == []
+    # No path is written with a doubled slash; a URL's own is the only one.
+    for path in folder.rglob("*"):
+        if path.is_file() and ".git" not in path.parts:
+            text = re.sub(r"[a-z][a-z0-9+.-]*://", "", path.read_text(encoding="utf-8"))
+            assert "//" not in text, path
     text = agents(folder)
+    assert "`archive/LOG.md`" in flat(text) and "`archive/`:" in text
     for row in ("`inkwell/docs/design.md`", "`inkwell/graph.yml`", "`ai-docs/status.md`",
                 "`ai-docs/handoff/current.md`", "`inkwell/docs/glossary.md`", "`ai-docs/design/`",
                 "`ai-docs/findings/`", "`ai-docs/guides/`", "`archive/`", "`human-docs/`", "`sources/README.md`",
@@ -488,18 +494,61 @@ def test_force_replaces_the_instructions_and_keeps_every_record(tmp_path, capsys
         assert re.search(rf"KEPT +{re.escape(rel)} ", out), rel
 
 
-def test_an_existing_docs_or_plan_folder_is_never_touched(tmp_path, capsys):
+def test_an_existing_docs_or_plan_folder_gets_no_index_and_docs_gets_its_missing_glossary(tmp_path, capsys):
     folder = project(tmp_path)
     (folder / "docs").mkdir()
     (folder / "docs" / "spec.md").write_text("the specification\n")
     (folder / "plan").mkdir()
     rc, out = install(folder, MINIMAL, capsys=capsys)
     assert rc == 0, out
-    assert sorted(p.name for p in (folder / "docs").iterdir()) == ["spec.md"]
+    assert sorted(p.name for p in (folder / "docs").iterdir()) == ["glossary.md", "spec.md"]
+    assert (folder / "docs" / "spec.md").read_text() == "the specification\n"
     assert list((folder / "plan").iterdir()) == []
     assert re.search(r"KEPT +docs/ +the folder exists", out) and re.search(r"KEPT +plan/ ", out)
-    # With no glossary to point at, the map shows the slot instead of a path that does not exist.
-    assert "What a term means | [to fill: the glossary's path]" in agents(folder)
+    assert "What a term means | `docs/glossary.md`" in agents(folder)
+    # A glossary already there is kept, and does not stop the run.
+    (folder / "docs" / "glossary.md").write_text("the project's glossary\n")
+    (folder / "AGENTS.md").unlink()
+    (folder / "CLAUDE.md").unlink()
+    rc, out = install(folder, MINIMAL, "--force", capsys=capsys)
+    assert rc == 0, out
+    assert (folder / "docs" / "glossary.md").read_text() == "the project's glossary\n"
+    assert re.search(r"KEPT +docs/glossary.md +the glossary exists", out)
+    # An answered glossary elsewhere: none is written into docs/.
+    other = project(tmp_path, "other")
+    (other / "docs").mkdir()
+    rc, out = install(other, dict(MINIMAL, glossary="`terms.md`"), capsys=capsys)
+    assert rc == 0, out
+    assert not (other / "docs" / "glossary.md").exists()
+
+
+def test_every_written_document_carries_frontmatter_except_the_owners_notes_and_the_manifest(tmp_path, capsys):
+    folder = project(tmp_path)
+    assert install(folder, dict(MINIMAL, status=True, families=FAMILIES, handoff=True), capsys=capsys)[0] == 0
+    exempt = {"AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md", "human-docs/README.md",
+              "sources/README.md"}
+    for md in folder.rglob("*.md"):
+        rel = str(md.relative_to(folder))
+        if rel in exempt:
+            continue
+        head = md.read_text().split("\n---\n", 1)[0]
+        assert head.startswith("---\n"), rel
+        # The handoff's template, the skill's own, carries no tags; every index and the glossary do.
+        keys = ("title:", "description:", "type:", "created:", "updated:") + (() if "handoff/" in rel else ("tags:",))
+        for key in keys:
+            assert f"\n{key}" in head, (rel, key)
+        assert "<YYYY" not in head, rel
+
+
+def test_the_projects_own_checks_show_a_slot_until_answered(tmp_path, capsys):
+    bare, told = project(tmp_path, "bare"), project(tmp_path, "told")
+    install(bare, dict(MINIMAL, status=True, families=FAMILIES), capsys=capsys)
+    install(told, dict(MINIMAL, status=True, families=FAMILIES, checks="`pytest`"), capsys=capsys)
+    row = [ln for ln in agents(bare).splitlines() if ln.startswith("| How a session opens")][0]
+    assert "`check-status" in row and "`check-archive`" in row
+    assert row.endswith("[to fill: the project's own test and lint commands] |")
+    row = [ln for ln in agents(told).splitlines() if ln.startswith("| How a session opens")][0]
+    assert row.endswith("`pytest` |") and "to fill" not in row
 
 
 def test_the_graph_step_is_reported_skipped_when_specgraph_is_missing(tmp_path, capsys, monkeypatch):

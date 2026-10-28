@@ -98,7 +98,7 @@ Python 3.10 or newer, standard library only; the package is `airone-archive`, MI
   explicit way in.
 
 Every verb exits 2 on a bad argument or a file it cannot read. Without git, or outside a repository, the checks that
-need it are printed as `NOT RUN`, never counted as passed; the rest still run.
+need it are printed as `NOT RUN`, never counted as passed, and the exit code is 1; the rest still run.
 
 ```text
 $ check-archive read archive/2026-03-design.md

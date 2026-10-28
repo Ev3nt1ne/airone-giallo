@@ -10,7 +10,8 @@ the table of vocabulary conflicts; and, for a session, which conflicts apply to 
 DIR is the archive folder, `archive` by default; its log is DIR/LOG.md. The check exits 1 on any failure; `read`
 exits 1 when the file's freeze time or a conflict's time cannot be read; `rename` changes nothing and exits 0 whether
 or not it finds the word. Every verb exits 2 on bad arguments or a file that cannot be read. Where git is missing,
-or the archive is not in a repository, the checks that need it are reported as not run. Standard library only, so it
+or the archive is not in a repository, the checks that need it are reported as not run, and the exit code is 1: a
+check that did not run is not a check that passed. Standard library only, so it
 runs wherever Python 3.10 does.
 """
 
@@ -521,7 +522,7 @@ def main(argv=None):
         print(f"NOT RUN: {n}")
     print(summary)
     print(f"{len(errors)} error(s)" + (f"; {len(not_run)} check(s) not run" if not_run else ""))
-    return 1 if errors else 0
+    return 1 if errors or not_run else 0
 
 
 if __name__ == "__main__":

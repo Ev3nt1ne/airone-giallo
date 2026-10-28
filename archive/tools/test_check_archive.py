@@ -456,7 +456,8 @@ def test_outside_a_repository_the_git_checks_are_not_run(tmp_path, capsys):
     repo.write("archive/design.md", doc())
     errors, notes, not_run, _ = run(repo)
     assert errors == [] and len(not_run) == 1 and "not inside a git repository" in not_run[0]
-    assert ca.main(["--archive", str(repo.archive)]) == 0
+    # A check that did not run is not a check that passed: the exit code says so.
+    assert ca.main(["--archive", str(repo.archive)]) == 1
     out = capsys.readouterr().out
     assert "NOT RUN" in out and "1 check(s) not run" in out
 

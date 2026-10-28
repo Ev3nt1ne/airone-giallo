@@ -12,9 +12,9 @@ was settled. The handoff is two files; a template for both is in
 
 ## 1. Two files
 
-- **The state** (`HANDOFF/current.md`): where the project stands at the last close, and nothing else. Rewritten
+- **The state** (`ai-docs/handoff/current.md`): where the project stands at the last close, and nothing else. Rewritten
   whole at every close, never a new file per session; version control keeps its history.
-- **The log** (`HANDOFF/log-<stage>.md`): one entry per close, newest first, appended and never edited. A new log
+- **The log** (`ai-docs/handoff/log-<stage>.md`): one entry per close, newest first, appended and never edited. A new log
   starts with each stage of the project.
 
 *A state that is also a history grows until nobody reads it cold; a history that is also a state gets edited, and

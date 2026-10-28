@@ -456,8 +456,11 @@ def stamp_frontmatter(text, now):
     if not text.startswith("---\n"):
         return text
     end = text.index("\n---\n", 4)
-    head = (text[:end].replace("<YYYY-MM-DDTHH:MM:SS+00:00>", now.strftime("%Y-%m-%dT%H:%M:%S+00:00"))
-            .replace("<YYYY-MM-DD>", now.strftime("%Y-%m-%d")))
+    head = text[:end]
+    for slot in ("<YYYY-MM-DDTHH:MM:SS+00:00>", "[to fill: YYYY-MM-DDTHH:MM:SS+00:00]"):
+        head = head.replace(slot, now.strftime("%Y-%m-%dT%H:%M:%S+00:00"))
+    for slot in ("<YYYY-MM-DD>", "[to fill: YYYY-MM-DD]"):
+        head = head.replace(slot, now.strftime("%Y-%m-%d"))
     return head + text[end:]
 
 
@@ -475,8 +478,8 @@ def handoff_files(stage, now):
         raise RuntimeError(f"{HANDOFF_TEMPLATE}: expected two ```markdown blocks, the state and the log; "
                            f"found {len(blocks)}")
     log_name = f"log-{stage}.md"
-    state = replace_once(blocks[0], "[<log file>](<log file>)", f"[{log_name}]({log_name})", HANDOFF_TEMPLATE)
-    log = blocks[1].replace("<stage>", stage)
+    state = replace_once(blocks[0], "[to fill: the log file, as a link]", f"[{log_name}]({log_name})", HANDOFF_TEMPLATE)
+    log = blocks[1].replace("[to fill: stage]", stage)
     return stamp_frontmatter(state, now), stamp_frontmatter(log, now), log_name
 
 

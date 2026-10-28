@@ -6,7 +6,7 @@ description: How to write, find, move and correct a project's Markdown documents
 # Markdown documents that stay useful
 
 For the `.md` files inside a project: design notes, decision records, plans, logs, runbooks, READMEs. The aim is
-documents that can be found again, trusted and corrected. Each rule carries its reason in italics. `DOCS` stands
+documents that can be found again, trusted and corrected. Each rule carries its reason in italics. `DOCS` (in a project laid out by the kit, `docs/` or `ai-docs/`) stands
 for the documentation folder the project names in its instruction file.
 
 ## 1. Frontmatter

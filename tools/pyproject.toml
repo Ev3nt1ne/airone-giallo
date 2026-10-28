@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "airone-tools"
+version = "0.1.0"
+description = "Checks for a project's documents: dead links and the ladder, and frontmatter with its dates."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+# The commands' names are set here and nowhere else in the code.
+[project.scripts]
+check-links = "check_links:main"
+check-frontmatter = "check_frontmatter:main"
+
+# Each command stays one file in src/, beside the module they share, so it still runs as a script from the kit;
+# installed, each is a top-level module. The tests in tests/ are not installed.
+[tool.setuptools]
+package-dir = {"" = "src"}
+py-modules = ["airone_tree", "check_links", "check_frontmatter"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

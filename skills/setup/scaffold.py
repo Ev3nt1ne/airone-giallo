@@ -633,6 +633,13 @@ def public_folder_problem(target, folder):
     top = proc.stdout.strip()
     if proc.returncode != 0 or Path(top).resolve() != where.resolve():
         return (f"{folder}/ is not a git work tree of its own (its top level is {top or 'none'}); {add}")
+    modules = target / ".gitmodules"
+    declared = modules.exists() and any(
+        ln.strip().startswith("path") and ln.split("=", 1)[1].strip() == folder
+        for ln in modules.read_text(encoding="utf-8").splitlines() if "=" in ln)
+    if not declared:
+        return (f"{folder}/ is a repository of its own but not a submodule of this workspace (no `path = {folder}` in "
+                f".gitmodules), so the workspace would not record which public commit its documents refer to; {add}")
     return None
 
 

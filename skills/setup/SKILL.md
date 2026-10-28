@@ -22,8 +22,8 @@ is copied into the project: what stays there is what the script writes. Each rul
   agent did not look.*
 - **In the two-repository form, the public repository is in place before the run.** It sits inside the private
   workspace as a submodule folder named after the project, added by the owner or with their go:
-  `git submodule add <its URL> <name>`. The script checks that the folder is a git work tree of its own and refuses
-  otherwise. *The submodule records which public commit the private documents refer to; a plain copy would drift
+  `git submodule add <its URL> <name>`. The script checks that the folder is a git work tree of its own and is declared
+  in `.gitmodules`, and refuses otherwise. *The submodule records which public commit the private documents refer to; a plain copy would drift
   from them unseen.*
 - **An existing `AGENTS.md` or `CLAUDE.md` is read before anything is written.** The script refuses to replace one
   without `--force`; with the owner, decide what of it moves into the new file or into RATIONALE.md first. *A

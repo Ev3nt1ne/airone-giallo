@@ -80,6 +80,7 @@ def workspace(tmp_path, name="nido", public="inkwell"):
     git("init", "-q", cwd=root)
     (root / public).mkdir()
     git("init", "-q", cwd=root / public)
+    (root / ".gitmodules").write_text(f'[submodule "{public}"]\n\tpath = {public}\n\turl = ../{public}.git\n')
     return root
 
 
@@ -230,6 +231,15 @@ def test_the_two_repository_form_refuses_without_the_public_repository(tmp_path,
     (plain / "inkwell").mkdir()
     rc, out = install(plain, answers, capsys=capsys)
     assert rc == 1 and "not a git work tree of its own" in out
+    # A nested clone that is a repository of its own but not declared in .gitmodules: the owner ruled submodule, no
+    # plain clone, because the workspace must record which public commit its documents refer to.
+    nested = project(tmp_path, "nested")
+    git("init", "-q", cwd=nested)
+    (nested / "inkwell").mkdir()
+    git("init", "-q", cwd=nested / "inkwell")
+    rc, out = install(nested, answers, capsys=capsys)
+    assert rc == 1 and "not a submodule of this workspace" in out and "git submodule add" in out
+    assert tree(nested) == {}
     assert tree(plain) == {}
     # The dry run still shows the tree, and says the real run would stop.
     rc, out = install(missing, answers, "--dry-run", capsys=capsys)

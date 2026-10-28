@@ -37,11 +37,13 @@ finding may cite an item.
 
 ## Start
 
-Python 3.10 or newer, standard library only.
+Python 3.10 or newer, standard library only; the package is `airone-status`, MIT, with no dependencies.
 
 1. Copy [templates/status.md](templates/status.md) and [templates/closed.md](templates/closed.md) into the
-   project's documentation folder, and [tools/check_status.py](tools/check_status.py) into its tools. The rules
-   are the templates' headers; edit them only to fit the project's words.
+   project's documentation folder, and install the checker from the kit: `pip install ./status` gives the command
+   `check-status`. The rules are the templates' headers; edit them only to fit the project's words. The checker,
+   [tools/check_status.py](tools/check_status.py), also runs as a script from the kit without installing; it is
+   never copied into the project. *A copied checker is a second copy that the kit's next version does not reach.*
 2. Declare the families in the status file's `status-meta` block, one line each, a code and what it covers:
 
    ````markdown
@@ -57,7 +59,7 @@ Python 3.10 or newer, standard library only.
 3. Run the checker:
 
    ```sh
-   python3 tools/check_status.py docs/status.md docs/closed.md
+   check-status docs/status.md docs/closed.md
    ```
 
    ```text
@@ -100,7 +102,7 @@ cites an item: a node states what holds, which outlives the work, and a citation
 work closes. Give the graph file to check both directions:
 
 ```sh
-python3 tools/check_status.py docs/status.md docs/closed.md --graph graph.yml
+check-status docs/status.md docs/closed.md --graph graph.yml
 ```
 
 Every cited node must then exist in the graph, no node may mention an item's ID, and no family of the status file

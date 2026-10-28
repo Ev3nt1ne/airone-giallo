@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE.parent / "templates"
 _spec = importlib.util.spec_from_file_location("check_status", HERE / "check_status.py")
@@ -357,3 +359,13 @@ def test_the_command_exits_two_when_a_file_cannot_be_read(tmp_path):
     r = subprocess.run([sys.executable, str(HERE / "check_status.py"), str(tmp_path / "absent.md")],
                        capture_output=True, text=True)
     assert r.returncode == 2
+
+
+def test_the_package_command_names_the_checker_main():
+    tomllib = pytest.importorskip("tomllib")
+    meta = tomllib.loads((HERE.parent / "pyproject.toml").read_text(encoding="utf-8"))
+    module, _, func = meta["project"]["scripts"]["check-status"].partition(":")
+    layout = meta["tool"]["setuptools"]
+    assert layout["py-modules"] == [module]
+    assert (HERE.parent / layout["package-dir"][""] / f"{module}.py") == HERE / "check_status.py"
+    assert callable(getattr(cr, func, None))

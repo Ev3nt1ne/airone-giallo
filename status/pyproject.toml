@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "airone-status"
+version = "0.1.0"
+description = "The status file's checker: the rules of its open and closed items, and the next free ID in each family."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+# The command's name is set here and nowhere else in the code.
+[project.scripts]
+check-status = "check_status:main"
+
+# The checker stays one file at tools/check_status.py, so it still runs as a script from the kit; installed, it is the
+# top-level module check_status. Its tests beside it are not installed.
+[tool.setuptools]
+package-dir = {"" = "tools"}
+py-modules = ["check_status"]

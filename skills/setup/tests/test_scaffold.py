@@ -24,7 +24,7 @@ _spec.loader.exec_module(sc)
 # The full install: every piece, every map row, every optional rule. Invented values.
 FULL = {
     "name": "Inkwell", "purpose": "a note editor whose saved notes survive a crash, for people who write offline",
-    "invariants": ["a saved note survives a crash: otherwise silent data loss"], "mode": "hands-on",
+    "invariants": ["a saved note survives a crash: otherwise silent data loss"], "mode": "four-hands",
     "layout": "umbrella", "graph": "lite", "status": True,
     "families": {"APP": "the application", "DOC": "the documentation"}, "handoff": True,
     "outward": "free", "attribution": "Co-Authored-By: An Agent <agent@example.com>",
@@ -36,12 +36,12 @@ FULL = {
     "machine": {"resources": "8 cores, 16 GB", "load": "nothing else", "limits": "one run at a time",
                 "timings": "yes"},
 }
-MINIMAL = {"name": "Inkwell", "purpose": "a small note editor", "mode": "hands-off", "status": False,
+MINIMAL = {"name": "Inkwell", "purpose": "a small note editor", "mode": "conductor", "status": False,
            "handoff": False}
 
-HANDS_ON_ONLY = ("After building, list the choices", "Never narrow the scope",
-                 "bring both rationales, the code's and the tool's", "Before adding beside what exists")
-HANDS_OFF_ONLY = ("The owner sets the direction and seldom the detail",)
+FOUR_HANDS_ONLY = ("After building, list the choices", "Never narrow the scope",
+                   "bring both rationales, the code's and the tool's", "Before adding beside what exists")
+CONDUCTOR_ONLY = ("The owner sets the direction and seldom the detail",)
 
 
 def install(folder, answers, *flags, capsys=None):
@@ -140,14 +140,14 @@ def test_the_machine_file_is_ignored_by_git(tmp_path, capsys):
 
 # ---------------------------------------------------------------- what the answers change
 
-def test_hands_on_and_hands_off_write_different_rules(tmp_path, capsys):
+def test_conductor_and_four_hands_write_different_rules(tmp_path, capsys):
     on, off = project(tmp_path, "on"), project(tmp_path, "off")
-    assert install(on, dict(MINIMAL, mode="hands-on"), capsys=capsys)[0] == 0
-    assert install(off, dict(MINIMAL, mode="hands-off"), capsys=capsys)[0] == 0
+    assert install(on, dict(MINIMAL, mode="four-hands"), capsys=capsys)[0] == 0
+    assert install(off, dict(MINIMAL, mode="conductor"), capsys=capsys)[0] == 0
     on_text, off_text = " ".join(agents(on).split()), " ".join(agents(off).split())
-    for phrase in HANDS_ON_ONLY:
+    for phrase in FOUR_HANDS_ONLY:
         assert phrase in on_text and phrase not in off_text, phrase
-    for phrase in HANDS_OFF_ONLY:
+    for phrase in CONDUCTOR_ONLY:
         assert phrase in off_text and phrase not in on_text, phrase
 
 
@@ -173,7 +173,7 @@ def test_the_opinionated_layer_is_off_unless_asked(tmp_path, capsys):
     plain, off_mode, on_mode = (project(tmp_path, n) for n in ("plain", "off", "on"))
     install(plain, MINIMAL, capsys=capsys)
     install(off_mode, dict(MINIMAL, opinionated=True), capsys=capsys)
-    install(on_mode, dict(MINIMAL, opinionated=True, mode="hands-on"), capsys=capsys)
+    install(on_mode, dict(MINIMAL, opinionated=True, mode="four-hands"), capsys=capsys)
     assert "kit author's rules" not in agents(plain)
     assert "kit author's rules" in agents(off_mode) and "Comments state invariants" not in agents(off_mode)
     assert "Comments state invariants" in agents(on_mode)
@@ -262,9 +262,9 @@ def test_the_gitignore_line_is_appended_once(tmp_path, capsys):
 
 def test_a_flag_overrides_the_answers_file(tmp_path, capsys):
     folder = project(tmp_path)
-    rc, _ = install(folder, dict(MINIMAL, mode="hands-off"), "--mode", "hands-on", capsys=capsys)
+    rc, _ = install(folder, dict(MINIMAL, mode="conductor"), "--mode", "four-hands", capsys=capsys)
     assert rc == 0
-    assert HANDS_ON_ONLY[0] in " ".join(agents(folder).split())
+    assert FOUR_HANDS_ONLY[0] in " ".join(agents(folder).split())
 
 
 @pytest.mark.parametrize("bad", [

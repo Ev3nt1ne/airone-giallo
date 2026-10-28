@@ -2,7 +2,7 @@
 """Install the pieces of Airone Giallo a project chose into that project's folder.
 
     python3 scaffold.py --answers ANSWERS.json [--target DIR] [--dry-run] [--force]
-    python3 scaffold.py --name N --purpose P --mode hands-off [more flags] [--target DIR] ...
+    python3 scaffold.py --name N --purpose P --mode conductor [more flags] [--target DIR] ...
 
 The `setup` skill asks the questions and writes the answers; this script does the mechanics. Answers come from a
 JSON file, from flags, or both; a flag overrides the file. `--help` lists every answer; DEFAULTS below holds the
@@ -42,7 +42,7 @@ REGISTER_TEMPLATES = KIT / "status" / "templates"
 REGISTER_CHECKER = KIT / "status" / "tools" / "check_status.py"
 HANDOFF_TEMPLATE = KIT / "skills" / "handoff" / "references" / "handoff-template.md"
 
-MODES = ("hands-off", "hands-on")
+MODES = ("conductor", "four-hands")
 LAYOUTS = ("single", "umbrella")
 GRAPHS = ("none", "lite", "full")
 OUTWARD = ("gated", "free")
@@ -263,7 +263,7 @@ def context(a):
         else SLOT.format("each invariant, and what breaks"),
         "claude_code_version": a["claude_code_version"] or SLOT.format("version"),
         "model": a["model"] or SLOT.format("model"),
-        "hands_on": a["mode"] == "hands-on", "hands_off": a["mode"] == "hands-off",
+        "four_hands": a["mode"] == "four-hands", "conductor": a["mode"] == "conductor",
         "umbrella": a["layout"] == "umbrella",
         "status": a["status"], "handoff": a["handoff"],
         "status_file": register_file, "closed_file": closed_file, "handoff_state": handoff_state,

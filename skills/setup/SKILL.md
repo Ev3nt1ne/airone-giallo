@@ -32,13 +32,13 @@ has a name in the answers file (§3).
 | # | Question | Recommend | What the answer changes |
 |---|---|---|---|
 | 1 | The project's name, what it is and for whom in one line, and its invariants: what breaks silently if each is violated (`name`, `purpose`, `invariants`) | the invariants now, even one; they may be left as a slot | the opening paragraph of AGENTS.md |
-| 2 | How the owner works: **hands-off** (directs, wants explanations and recommendations, seldom the technical detail) or **hands-on** (codes, judges every line, gives prototypes) (`mode`) | no default: ask, after describing both | hands-on adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; hands-off adds the sentence on directions as leads to explore |
+| 2 | How the owner works: **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
 | 3 | One repository, or an umbrella with public parts (`layout`: `single`, `umbrella`) | `single` unless public parts already exist | `umbrella` adds the rule that each document gets its side, public or private, before it is written, and marks RATIONALE.md as private |
 | 4 | Which pieces: the specification graph (`graph`: `none`, `lite`, `full`), the status file (`status`, with its `families`), the handoff (`handoff`, with the first log's `stage`) | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
 | 5 | Outward acts (pushes, tags, releases, issues, pull requests, comments, posts): **gated**, prepared as a branch or a draft for the owner to send, or **free**, done and reported, with an attribution trailer if they want one (`outward`, `attribution`) | `gated` | the outward rule |
 | 6 | Decisions the owner reserves beyond the project decisions of `session` §2 (`reserved`) | none to start; add as they surface | one sentence in the first rule on deciding |
 | 7 | This machine: its resources, what else runs on it, the run limits, whether timings measured here count as results (`machine`) | fill what the session can see (`nproc`, `free -h`, `df -h .`) and have the owner confirm | `local-machine.md`, git-ignored, one per device |
-| 8 | The kit author's opinionated layer: comments state invariants (hands-on only), every fix has a test, irreversible acts offered as such (`opinionated`) | off; offer it, never assume it | the rules appended under their own heading: three for hands-on, two for hands-off |
+| 8 | The kit author's opinionated layer: comments state invariants (Four-Hands only), every fix has a test, irreversible acts offered as such (`opinionated`) | off; offer it, never assume it | the rules appended under their own heading: three for Four-Hands, two for Conductor |
 
 A family of the status file is a code of 2 to 5 capitals or digits starting with a capital, or two joined by a
 hyphen, and a line saying what it covers; start with one per repository or area, since a family, once declared,
@@ -53,7 +53,7 @@ Write the answers as one JSON object to a file in the session's scratch folder, 
 
 ```json
 {"name": "Inkwell", "purpose": "a note editor whose saved notes survive a crash, for people who write offline",
- "invariants": ["a saved note survives a crash: otherwise silent data loss"], "mode": "hands-off",
+ "invariants": ["a saved note survives a crash: otherwise silent data loss"], "mode": "conductor",
  "graph": "lite", "families": {"APP": "the application", "DOC": "the documentation"},
  "outward": "gated", "claude_code_version": "<from claude --version>", "model": "<the session's model>",
  "machine": {"resources": "8 cores, 16 GB", "load": "nothing else", "limits": "one run at a time", "timings": "yes"}}

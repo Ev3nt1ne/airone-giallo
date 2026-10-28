@@ -74,6 +74,9 @@ Expect the explanation to change the answer: the owner may add a condition or ta
 Before sending, read only the first and the last line: together they must say where we are and what is asked.
 *An owner who has to ask what happened has lost the thread, and every later message costs more.*
 
+A change of plan is said before the work follows it, as its own line: what changes and why. *A plan changed silently
+is discovered when the result does not match what was asked.*
+
 ## 5. Doing the work
 
 - One logical task per commit, its bookkeeping in the same commit (`doc-discipline` §7).

@@ -11,4 +11,5 @@ tags: [index, findings]
 
 The question this folder answers: *what did we observe?* It holds measurements, review worksheets with the owner's
 triage and audits, each dated, each with its method and the command that reruns it; a finding changes nothing until
-it is folded into the specification or the plan.
+it is folded into the specification or the plan. A finding is written the day it is made, not later from memory: *a
+result recalled is a result rounded, and its rerun command is the first thing forgotten.*

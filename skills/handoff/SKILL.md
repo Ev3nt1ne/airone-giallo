@@ -38,8 +38,7 @@ Each earned its place by a fact that had no home and was lost or re-derived. The
    established; items deferred, with their trigger.
 4. **What the next session does first.** One concrete first step, and a prompt the owner can paste to start it.
 5. **What must not be touched.** Properties the next change could silently break, runs in flight and what they
-   write, frozen files, work another session holds. *A cold session cannot see an invariant that lives only in the
-   last session's head.*
+   write, frozen files. *A cold session cannot see an invariant that lives only in the last session's head.*
 6. **Where the numbers come from.** For each figure the state quotes: the commit, the command, the system that
    produced it, and whether it is a measurement, a model or an estimate. *A number without its producer cannot be
    re-checked and gets copied as a fact.*
@@ -47,7 +46,7 @@ Each earned its place by a fact that had no home and was lost or re-derived. The
 A one-line banner opens the file: which close wrote it, the state in one sentence, a link to the log's newest
 entry.
 
-An item that lives only in the handoff is marked as such (⚠️ *only here*). *A record cannot be archived while it
+An item that lives only in the handoff is marked as such (*only here*). *A record cannot be archived while it
 holds the only copy of a fact, and an unmarked one gets archived anyway.* Move it to its home in the repository
 when you can.
 

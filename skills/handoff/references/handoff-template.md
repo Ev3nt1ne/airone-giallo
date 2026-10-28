@@ -56,7 +56,7 @@ Prompt to paste:
 | <name> | <value> | `<command>` at `<commit>`, on <system> | measurement / model / estimate |
 ```
 
-*Mark anything that exists only in this file with ⚠️ only here.*
+*Mark anything that exists only in this file with "only here".*
 
 ## `log-<stage>.md`, the log
 

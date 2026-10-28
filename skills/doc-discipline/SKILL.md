@@ -1,6 +1,6 @@
 ---
 name: doc-discipline
-description: Keeping a project's design documents and registry consistent through a change, the gate as a hard stop, and when a review is due. Load before editing a specification, plan or registry, minting an identifier, committing such a change, proposing a review, or running one the owner asked for.
+description: Keeping a project's design documents and registry consistent through a change, a milestone passed by the owner's ruling, and when a review is due. Load before editing a specification, plan or registry, minting an identifier, committing such a change, proposing a review, or running one the owner asked for.
 ---
 
 # Changing a project's documents without breaking them
@@ -21,9 +21,9 @@ below reduce to "the document, the registry and the code agree".
 
 | Level | Typically | Owns | Never holds |
 |---|---|---|---|
-| Specification | `SPEC` | requirements, architecture, threats, decisions, open problems, gate records | schedules, task lists |
-| Map | `PLAN` | stages, gates, the order between them, risks, each stage's status | mechanism design |
-| Detail | one file per stage | work items, pitfalls, verification checklists, a gate's exit criteria | decisions |
+| Specification | `docs/` | requirements, architecture, threats, decisions, open problems | schedules, task lists |
+| Plan | `plan/` | phases, milestones, the order between them, risks, each phase's status | mechanism design |
+| Phase detail | one file per phase | work items, pitfalls, verification checklists, a milestone's exit criteria | decisions |
 
 - A change at any level reaches the others in the same edit and the same commit. *A later "bring the docs up to
   date" commit makes the history lie about when a thing became true.*
@@ -73,7 +73,7 @@ The steps below mint a statement; a work item takes the next free ID the registe
    in `graph/docs/spec-graph.md`.
 4. **Write the prose that uses it, in the same edit.** *A minted identifier with no text is a dangling allocation.*
 5. **Run the checks**: with the graph, `specgraph lint --fix`, then `specgraph lint`, to zero errors.
-6. **Commit the entry with the text that uses it** (§6).
+6. **Commit the entry with the text that uses it** (§7).
 
 **The budget test:** would anything downstream change if this statement flipped? If not, it is prose, not an entry.
 *A registry of everything is read like a registry of nothing.* A decision cited by name that nothing rests on (a
@@ -103,46 +103,44 @@ consistent with whatever you wrote.*
   undefended, that list is what the design argues today. *A claim invented to shorten it argues nothing.* Leave
   it, and report how it moves.
 
-## 5. The gate: a hard stop
+## 5. A milestone the project names
 
-A gate is a point the project does not pass until named exit criteria are met and a decision is recorded. It is
-the pattern for any hard stop: a release, a migration, a change of architecture.
+Where the plan names milestones (a release, a migration, the end of a phase), each has exit criteria written down
+before the work toward it starts.
 
-- **A gate is passed by the owner's ruling, never by an agent concluding the criteria look met.** The agent lays
-  out the evidence and a recommendation, marked as such. *A gate passed by the agent that did the work is a
-  self-grade.*
-- **Carried risks stay carried.** A risk the stage did not retire is named as not retired, in those words. *A gate
-  that quietly turns a model that was bounded but never validated into a validated one is the failure this
-  discipline exists to prevent.*
-- **A review is proposed on these occasions, and only on these**, in one line with its cost, never launched unasked
-  (`session` §2). *A self-assessment is not evidence, and an occasion that never pays teaches the owner to say no.*
-  1. A decision is recorded before its design, with nothing yet satisfying it and no evidence for it; propose
-     before the work that builds it starts. *A flaw found in a design costs a paragraph; found in built code, it
-     costs the code.*
-  2. A gate recommendation is drafted.
-  3. With the specification graph only: a batch makes a node newly hold on a place where a threat is undefended, or
-     a new satisfier makes a condition hold; `specgraph batch` lists these. *The engine shows the graph consistent;
-     only a review says whether the support is enough.*
-  4. Code with a security surface lands: a cache, a parser, an export format, anything a peer can feed.
-  5. A measurement is about to become evidence that a decision rests on.
+- **A milestone is passed by the owner's ruling, never by the agent that did the work concluding the criteria look
+  met.** The agent lays out the evidence against each criterion and a recommendation, marked as such. *A milestone
+  passed by the agent that did the work is a self-grade.*
+- **The record answers each exit criterion and names what the work did not retire, in those words.** *A record that
+  rounds a bounded but unchecked risk up to a retired one is the failure this discipline exists to prevent.*
+- **The ruling is recorded as a decision** (§2, §7): in the specification with its reason, the plan's status changed
+  in the same commit, the milestone's name in the subject. *The work is done at its last task; the milestone is
+  passed at its ruling.*
 
-  How a review is run (roles and cuts, independent reviewers, the merge with tempering, where the output goes, the
-  prompts and the worksheet) is in [references/reviewer-prompts.md](references/reviewer-prompts.md).
+Folding many findings into the specification at once is the same discipline at volume: work the list in order, read
+the cascade of every statement about to be restated, and keep each mint in the commit of its text.
 
-When the owner has ruled, the record:
+## 6. Reviews
 
-1. Re-read the gate's exit criteria. The record answers each one; it does not paraphrase the gate.
-2. Write the decision into the specification: the section it governs, the decisions record, the change note. The
-   rationale, not only the choice.
-3. Mint any identifier the ruling creates (§3).
-4. Tick the gate in the detail, change the stage's status in the map, add the map's change-note line.
-5. Run the checks to zero errors.
-6. Commit it alone, with the gate's identifier in the subject, and tag it where the project tags gates (§6).
+A review is proposed, never launched unasked, in one line the owner can answer yes or no: the occasion, the target,
+the cost, and what it cannot catch (`session` §2). *A review costs the owner a triage as well as the tokens.* It is
+proposed on these occasions only; *an occasion that never pays teaches the owner to say no to all of them*:
 
-Folding a stage's findings into the specification after a gate is the same discipline at volume: work the list in
-order, read the cascade of every statement about to be restated, and keep each mint in the commit of its text.
+1. A decision is recorded before anything satisfies it or gives evidence for it: before the build starts. *A flaw
+   found in a design costs a paragraph; found in built code, it costs the code.*
+2. A milestone recommendation is drafted.
+3. Code with a security surface lands: a cache, a parser, an export format, anything a peer can feed.
+4. A measurement is about to become evidence that a decision rests on.
 
-## 6. Committing the change
+**How one runs.** Two or three reviewers attack the same named target from opposed sides, read-only and without
+seeing each other's output, on a different model from the author's where one is available, each told what the
+material declares it does not claim; where the material carries numbers, one re-runs them. Every finding cites a file
+and a line and gives a failure scenario; there is no quota. *Opposed reviewers who did not read each other converge
+only where the flaw is real.* The merge is one findings document: by theme, convergences first, each finding tempered
+(stands, overstated, overreach, challenges a decision) and given a direction, not a fix, and what survived said.
+Nothing in it is applied before the owner rules; their answers are written in as given.
+
+## 7. Committing the change
 
 How a commit is made (staging, the message's form, branches, remotes) is the project's own commit skill's business;
 these are the rules this discipline adds to it.
@@ -153,9 +151,7 @@ these are the rules this discipline adds to it.
 - **A decision or a specification change gets its own commit**, its body saying whether the cascade (§4) was read
   and what it showed; so does a document that is itself the deliverable. *It is the most valuable history, and must
   be findable alone.*
-- **A gate is alone in its commit, with an annotated tag** (`git tag -a <name> -m "…"`). *Gates are where the
-  project re-baselines; a tag makes each one addressable.*
-- **Evidence a gate will rest on lands on the main line**, even when the code that produced it is thrown away. *The
+- **Evidence a decision rests on lands on the main line**, even when the code that produced it is thrown away. *The
   code is disposable; the evidence is not.*
 - **The registry is never committed alone and never left behind**: a new identifier with the text that uses it, a
   recomputed check value with the edit that changed its statement. Work on the registry's own machinery is the
@@ -165,6 +161,5 @@ these are the rules this discipline adds to it.
 - **The checks run before staging, never recalled**: zero errors, the documents agree, the status markers say what
   is true; a fix the checks require goes in this commit, not the next. *A check remembered as passing is a check
   skipped.*
-- **Never in the commit**: a secret of any kind, scratch or temporary files, another session's work (stage your own
-  files by name). *A committed secret is in every clone, and another session's half-done edit rides out under your
-  message.*
+- **Never a secret of any kind in the commit.** *A committed secret is in every clone and every copy of the
+  history.*

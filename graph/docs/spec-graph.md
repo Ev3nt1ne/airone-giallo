@@ -80,7 +80,9 @@ says what a statement is; support says how it is argued; the engine reads only t
 clears it), `open` (a condition waiting on a work item, named in its `homed_by`), `retired`, `superseded`. Whether a
 node holds is computed (§4), never read from its status; a status only leaves retired and superseded nodes out of
 the logic and holds a few declarations to account (L-1, W5). *A declared truth can disagree with the graph; a
-computed one cannot.*
+computed one cannot.* A milestone's exit criteria may be written as conditions with status `open`, each homed by the
+work item that closes it; the milestone is ready to put to the owner when none of its conditions is open and each
+holds.
 
 ### 2.5 Other fields
 

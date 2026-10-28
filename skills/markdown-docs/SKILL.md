@@ -91,16 +91,9 @@ Below about fifteen documents, list and read them; above a few hundred, add a ra
 
 One meaning each, placed where a reader scans. *A marker on every line is a marker on none.*
 
-| | Means | | Means |
-|---|---|---|---|
-| ✅ | done and verified | 🔻 | CHANGE OF PLAN |
-| ⬜ | not started | ✏️ | CORRECTION of an earlier claim |
-| 🟡 | partial, or done but unverified | ❌ | considered and rejected |
-| 🔴 | a problem or risk | ⭐ | the recommended option |
-| 🟢 | good news, a constraint resolved | ⚖️ | a trade-off with no free answer |
-| 🚨 | has already caused damage once | 🧭 | a direction, or a decision pending |
-| 🔑 | the key point | 🧠 | a lesson learned the hard way |
-| ⚠️ | a caveat that changes the reading | 📋 | to do |
+The kit's default, for state: ✅ done and verified · ⬜ not started · 🟡 partial, or done but unverified · 🔴 a problem
+or risk; for corrections (§4): ✏️ CORRECTION of an earlier claim · 🔻 CHANGE OF PLAN · ❌ considered and rejected. The
+project fixes its own markers, one meaning each, in its instruction file.
 
 ## 6. Paths, links, moving
 
@@ -133,8 +126,8 @@ Read it before the first `iwe` call in a project.
 
 - Lead with the finding, then the evidence, not the story of finding it.
 - Tables for more than two dimensions; prose for reasoning.
-- A glossary term is written capitalised in italics for its precise sense (*Journal*), as code for the identifier
-  (`Journal`), plain for the everyday word. *The reader never guesses which is meant.*
+- A term with a precise sense is written one way throughout, as the project's glossary says. *The reader never
+  guesses which is meant.*
 - Never write a key, token, password, credential or hash into a document, note, pasted log or commit message.
   *A secret in a Markdown file is in every clone and every copy of the history.* Write the form of the command
   that hides it.

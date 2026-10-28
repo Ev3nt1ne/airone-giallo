@@ -19,7 +19,7 @@ later session.*
 | What the system is, why, what breaks it; what was decided | {{spec}} |
 {{/spec}}
 {{#plan}}
-| What gets built, in what order, gated by what | {{plan}} |
+| What gets built, in what order, to which milestones | {{plan}} |
 {{/plan}}
 {{#register}}
 | What is left to do, and what waits on the owner | `{{register_file}}`; closed items in `{{closed_file}}` |
@@ -69,10 +69,9 @@ later session.*
   what exists; never build around an easy question to stay self-sufficient. *The classic failure is an agent
   rewriting a whole library because installing it needed sudo: one question would have cost seconds.*
 - Before a test or a benchmark, read `local-machine.md` (what else runs, the resources, what a run may cost) and ask
-  before a run over its limits. Never edit another session's files or what a running job reads: work on a copy, and
-  ask when you cannot tell whether a job is live; before exposing anything on a network, ask which situation holds and
-  default to the safest posture. *An overloaded machine takes every session down, and a change under a live job
-  invalidates its result.*
+  before a run over its limits. Never change what a running job reads: work on a copy, and ask when you cannot tell
+  whether a job is live. *An overloaded machine takes every session down, and a change under a live job invalidates
+  its result.*
 - Every claim says how it is known: a run and its results file, a source line at a commit, or "I inferred this
   from …" (the method is `session`'s verify reference); open questions stay open. A fact about a domain, a tool or a
   system not worked with here is checked at its primary source (its documentation, its code, the owner), never

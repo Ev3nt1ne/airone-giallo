@@ -40,7 +40,7 @@ Classify every decision before acting on it.
 
 When unsure, it is the owner's. *A project decision taken as a technical one is discovered after it is built on.*
 A review of a deliverable is never launched unasked: it is proposed in one line the owner can answer yes or no (the
-occasion, the target, the cut, the cost, and what the review cannot catch), and nothing a reviewer finds is applied
+occasion, the target, the cost, and what the review cannot catch), and nothing a reviewer finds is applied
 before the owner rules. *A review costs the owner a triage as well as the tokens, and what it finds changes decisions
 that are theirs.* When blocked on a privilege, print the command and wait instead of working around it.
 
@@ -76,17 +76,16 @@ Before sending, read only the first and the last line: together they must say wh
 
 ## 5. Doing the work
 
-- One logical task per commit, its bookkeeping in the same commit (`doc-discipline` §6).
+- One logical task per commit, its bookkeeping in the same commit (`doc-discipline` §7).
 - Before recording a number or a threshold, in a document or a test, and when a test fails, read and apply
   [references/verify-method.md](references/verify-method.md); the method is there, not in this file.
-- A gate is a hard stop: not passed until its exit criteria are met and the decision recorded.
+- A milestone the plan names is passed by the owner's ruling, never at its last task (`doc-discipline` §5).
 - A frozen folder is never edited.
 - Speed is not a goal. *A wrong claim in a recorded decision reads as verified to everyone downstream.*
 - A task bigger than its item: do the part that is owed and record the rest as a finding. Smaller, because a
   premise was wrong: say the premise was wrong.
-- A recommendation against a run is not withdrawn by the go that follows it; restate it as what limits how the
-  result may be read. A conditional yes does not cover a version the checks then corrected: put the new one again.
-- Delete temporary files by exact name, never by glob. *A glob reaches what another session kept.*
+- An objection you raised still stands after the owner's go: carry it as a limit on the result. A yes covers the
+  version it was given to, not a later corrected one.
 
 ## 6. Two passes
 
@@ -97,9 +96,8 @@ that a text is coherent, not that it is true.*
    numbers, quotations, identifiers, hashes, citations, invariants stated in code comments, and every *all*, *every*,
    *none*, *only*.
 2. Resolve each against its source, never against the draft. A fix made during the pass is a new claim.
-3. Read the artifact, not a view of it: the changed text whole, never a truncated hunk; a grep anchored on the
-   concept, with what it matched read (a case-insensitive grep matches inside other words; a search for the old
-   wording misses a reworded passage).
+3. Read the artifact, not a view of it: the changed text whole, never a truncated hunk, and what a search matched,
+   read.
 4. Report what the pass found, including "nothing".
 
 *False completeness is the expensive error: "everything was handled" is the sentence that stops the next reader

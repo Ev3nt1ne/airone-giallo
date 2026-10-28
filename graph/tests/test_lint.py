@@ -96,7 +96,7 @@ class TestSchemaRules:
         code, out = run([node("REQ-01", ["all"], status="unsatisfied")], [])
         assert "L-1 bad status on REQ-01: unsatisfied" in out
         code, out = run([node("REQ-01", ["all"], status="open")], [])
-        assert "L-1 status `open` marks a gate condition until its work item closes; REQ-01 names no `homed_by`" in out
+        assert "L-1 status `open` marks a condition waiting on its work item; REQ-01 names no `homed_by`" in out
         code, out = run([node("REQ-01", ["all"], status="open", homed_by="the next release")], [])
         assert "L-1" not in out
 

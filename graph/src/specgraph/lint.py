@@ -171,7 +171,7 @@ def run_lint(meta, nodes, edges, *, root, today=None, fixing=False):
         if n.get("status", "active") not in STATUSES:
             errors.append(f"L-1 bad status on {n['id']}: {n.get('status')}")
         elif n.get("status") == "open" and not n.get("homed_by"):
-            errors.append(f"L-1 status `open` marks a gate condition until its work item closes; {n['id']} names no `homed_by`")
+            errors.append(f"L-1 status `open` marks a condition waiting on its work item; {n['id']} names no `homed_by`")
     edge_types = set(meta.get("edge_types") or (meta.get("relations") or {}).keys())
     for e in edges:
         if e["type"] not in edge_types:

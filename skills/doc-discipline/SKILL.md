@@ -62,7 +62,8 @@ Where the reasoning of a superseded claim goes depends on the material:
 | Material | The text | The reasoning survives in |
 |---|---|---|
 | the levels and the graph | refined in place | the change note, dated, append-only |
-| working notes, studies, the status file | edited in place, status tables kept current | correction entries and CHANGE OF PLAN headings (`markdown-docs` §4) |
+| working notes, studies | edited in place | correction entries and CHANGE OF PLAN headings (`markdown-docs` §4) |
+| the status file | items edited in place; a closed item leaves | the closed file, with what was chosen |
 | a frozen archive | never edited | — |
 
 ## 3. Minting an identifier

@@ -66,7 +66,8 @@ Below about fifteen documents, list and read them; above a few hundred, add a ra
 2. State the question the document answers in its first three lines; if you cannot, it is not ready.
 3. Mark what is measured (with date and method) and what is inferred, never both in one unmarked sentence. *That
    is how a guess becomes a fact nobody checks again.*
-4. A document that tracks work opens with its status table; a document that reasons has none (§4).
+4. No document carries a table of item states: work and its state live in the status file, and a document that
+   reports on items cites them by ID (`doc-discipline` §1).
 5. Write `description:` last.
 
 ## 4. Editing: correct in place, never silently
@@ -75,7 +76,8 @@ Below about fifteen documents, list and read them; above a few hundred, add a ra
   *The history is part of the value: without it the bad conclusion is worked out again.*
 - A changed approach gets a CHANGE OF PLAN heading (🔻). *Buried in a paragraph, it is missed.*
 - A rejected option keeps its reason (❌). *Without it the option comes back.*
-- Keep a status table current in the same edit. *It is read first, so a stale one misleads first.*
+- A state written anywhere but the status file is a copy: cite the item instead. *A table of states in two places is
+  updated in one, and the reader cannot tell which.*
 - Never write a count: "the suite has 212 tests", "nine items are open", "the three services". *It is wrong by the
   next commit and nobody edits a design document to fix an integer.* Cite the command that counts, not its answer.
 - A document that reasons does not report progress: "done", "landed", "not yet implemented", "the code currently

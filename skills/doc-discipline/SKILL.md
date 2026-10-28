@@ -36,12 +36,14 @@ below reduce to "the document, the graph and the code agree".
 (`graph.yml`); 3 the plan (`plan/`); 4 the AI documents (`ai-docs/`: the status file, the handoff, design, findings,
 guides); 5 the archive (`archive/`); 6 the agent layer (`AGENTS.md`, `CLAUDE.md`, `RATIONALE.md`, the skills). A
 document cites only rungs at or below its own; the archive is the exception, exempt from the link check and cited by
-nothing live beyond a category. The project's instruction file names **the cut**: every rung at or below it is public,
-every rung above it private, so a public text never points into a private one; in a one-repository project the cut
-sits at the top or the bottom and the rule still orders the citations. *A public text that cites a private one is a
-dead link to its readers or a leak, and a rung that cited upward could never be made public on its own.* Outside the
-ladder, each on the side the owner gives it: the owner's notes (`human-docs/`), downloaded sources (`sources/`, cited
-by URL through their manifest, never by path), and the code.
+nothing live beyond a category. Its log (`archive/LOG.md`) records every change made to an archived file and every
+change of a word's meaning left uncorrected there; `check-archive read` says which apply to a file. The project's
+instruction file names **the cut**: every rung at or below it is public, every rung above it private, so a public
+text never points into a private one; in a one-repository project the cut sits at the top or the bottom and the rule
+still orders the citations. *A public text that cites a private one is a dead link to its readers or a leak, and a
+rung that cited upward could never be made public on its own.* Outside the ladder, each on the side the owner gives
+it: the owner's notes (`human-docs/`), downloaded sources (`sources/`, cited by URL through their manifest, never by
+path), and the code.
 
 ## 2. Editing the specification
 
@@ -56,6 +58,11 @@ by URL through their manifest, never by path), and the code.
   the old text; the change note is where its reason survives.*
 - **Nothing is dropped silently**: refine it, move it, or archive it. Neither rule means "never modify": a stale
   table or a contradicted requirement left standing is the failure. What is forbidden is losing the *why*.
+- **Renaming a term**: every occurrence is read and changed one by one, never by a blind replacement; the archive is
+  entered only through `check-archive rename`, the owner ruling file by file; what is left standing there becomes one
+  row in the archive's conflicts table, kind `renamed` or `reused`; the glossary keeps the retired term, with the
+  date. *A blind replacement turns a word used in two senses into one wrong statement, and a retired word that is
+  reused reads correctly and means the wrong thing.*
 
 Where the reasoning of a superseded claim goes depends on the material:
 
@@ -64,7 +71,7 @@ Where the reasoning of a superseded claim goes depends on the material:
 | the levels and the graph | refined in place | the change note, dated, append-only |
 | working notes, studies | edited in place | correction entries and CHANGE OF PLAN headings (`markdown-docs` §4) |
 | the status file | items edited in place; a closed item leaves | the closed file, with what was chosen |
-| a frozen archive | never edited | — |
+| a frozen archive | never edited, but for a change the owner rules, with its row | the archive's log, `archive/LOG.md` |
 
 ## 3. Minting an identifier
 

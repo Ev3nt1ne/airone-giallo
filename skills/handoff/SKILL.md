@@ -90,3 +90,7 @@ still going, the next one must know what it writes and how to read it.*
 A log, or any session record, moves to the archive only when nothing in it is outstanding and nothing in it lives
 only there. *An archive is never re-read, so archiving a record whose facts exist nowhere else deletes them.*
 Rehouse first, archive second.
+
+The file receives its `archived:` stamp (`markdown-docs` §1) in the commit that moves it, the one edit it gets, and
+nothing else inside it changes. *The stamp is the time from which later renames apply to it; any other edit would
+make it no longer what it was.*

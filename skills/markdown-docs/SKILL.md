@@ -41,6 +41,10 @@ tags: [saving, journal]
   sed -i "s/^updated: .*/updated: $(date -u +%Y-%m-%dT%H:%M:%S+00:00)/" DOCS/the-document.md
   ```
 
+- `archived:` `YYYY-MM-DDTHH:MM:SS+00:00`, the time a file was moved into `archive/`, present only on files there,
+  written once, in the commit that moves it, and never changed. *The renames that apply to an archived file are those
+  dated after it, and a rename and an archiving on the same day still order.*
+
 A project without frontmatter need not start; where it has it, keep it complete. *A half-annotated corpus returns a
 subset that looks complete.*
 

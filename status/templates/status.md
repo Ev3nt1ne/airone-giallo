@@ -52,7 +52,7 @@ three digits from `001`, more once past `999`.
   going stale.*
 
   ```sh
-  python3 <tools>/check_status.py <this file> <the closed file>
+  check-status <this file> <the closed file>
   ```
 
 - **Every place that discusses an item names it by its ID**: a design document, a commit message, a code comment.

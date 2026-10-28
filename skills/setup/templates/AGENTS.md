@@ -15,24 +15,24 @@ later session.*
 
 | The question | The answer |
 |---|---|
-{{#spec}}
 | What the system is, why, what breaks it; what was decided | {{spec}} |
-{{/spec}}
-{{#plan}}
+{{#graph_on}}
+| What rests on what: the decisions, requirements and evidence as nodes | `{{graph_file}}` |
+{{/graph_on}}
 | What gets built, in what order, to which milestones | {{plan}} |
-{{/plan}}
 {{#status}}
 | What is left to do, and what waits on the owner | `{{status_file}}`; closed items in `{{closed_file}}` |
 {{/status}}
 {{#handoff}}
 | Where things stand, and what is in flight | `{{handoff_state}}` (process, not normative) |
 {{/handoff}}
-{{#glossary}}
 | What a term means | {{glossary}} |
-{{/glossary}}
-{{#findings}}
+| What was studied and decided along the way, and why | `{{design_dir}}` |
 | What was measured or found, and how to rerun it | {{findings}} |
-{{/findings}}
+| How a thing is done here: how-tos, reusable prompts, reference lists | `{{guides_dir}}` |
+| What stopped being true, kept readable | `{{archive_dir}}`: frozen, outside every search unless named (`.ignore`; plain `grep -r` does not read it), cited at most as a category |
+| The owner's own notes | `{{human_docs_dir}}`, as written: never cited by path, never checked |
+| Downloaded third-party material | `{{sources_manifest}}`, the manifest; the files are git-ignored and a document cites the URL |
 {{#families}}
 | Which identifiers exist, and who allocates them | {{families}} |
 {{/families}}
@@ -102,10 +102,8 @@ later session.*
 - Outward acts (pushes, tags, releases, issues, pull requests, comments, posts) are done{{#attribution}} with the
   trailer `{{attribution}}`{{/attribution}} and reported. *An act outside the repository cannot be taken back.*
 {{/free}}
-{{#umbrella}}
-- Each document gets its side, public or private, before it is written; a public text cites nothing private. *A
-  public text that points into the private side is a dead link to its readers, or a leak.*
-{{/umbrella}}
+- Each document sits on its rung of the kit's ladder and cites only rungs at or below it; {{sides}}
+  (`doc-discipline` §1). *A public text that cites a private one is a dead link to its readers or a leak.*
 - Never edited: {{#frozen}}{{frozen}}, and {{/frozen}}generated or synced copies{{#copies}} ({{copies}}){{/copies}},
   whose source is edited instead. *A frozen document's value is that it is what it was, and a copy's edit is lost
   unseen.*

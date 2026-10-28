@@ -1,0 +1,37 @@
+# {{name}}: instructions for a contributor's agent
+
+{{name}} is {{purpose}}. Invariants, and what breaks silently without them: {{invariants}}. This file is for an
+agent working in this repository on a contributor's behalf.
+
+## Where things are
+
+| The question | The answer |
+|---|---|
+| What the system is, why, what breaks it; what was decided | `{{c_docs}}` |
+{{#c_glossary}}
+| What a term means | `{{c_glossary}}` |
+{{/c_glossary}}
+{{#c_graph}}
+| What rests on what: the decisions, requirements and evidence as nodes | `{{c_graph}}` |
+{{/c_graph}}
+{{#c_plan}}
+| What gets built, in what order, to which milestones | `{{c_plan}}` |
+{{/c_plan}}
+| The checks, zero errors before every commit | {{c_checks}} |
+
+## The rules
+
+- This repository is the public side of the project: a text in it cites only what is in it. *A citation of what the
+  reader cannot open is a dead link to them, or a leak.*
+- Each document sits on its rung of the kit's ladder and cites only rungs at or below it (`doc-discipline` §1). *A
+  rung that cited upward could never stand on its own.*
+- Run the checks before every commit, and report one not run as not run. *A skipped check read as passed is a false
+  result.*
+{{#gated}}
+- Outward acts (pushes, tags, releases, issues, pull requests, comments, posts) are prepared as a local branch or a
+  draft and handed to the person you work for, who sends them. *An act outside the repository cannot be taken back.*
+{{/gated}}
+{{#free}}
+- Outward acts (pushes, tags, releases, issues, pull requests, comments, posts) are done{{#attribution}} with the
+  trailer `{{attribution}}`{{/attribution}} and reported. *An act outside the repository cannot be taken back.*
+{{/free}}

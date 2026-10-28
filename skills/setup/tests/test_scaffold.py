@@ -21,27 +21,38 @@ _spec = importlib.util.spec_from_file_location("scaffold", SCAFFOLD)
 sc = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(sc)
 
-# The full install: every piece, every map row, every optional rule. Invented values.
+# The full install: every piece, every map row, every optional rule, in the default two-repository form with the
+# contributors' file. Invented values.
 FULL = {
     "name": "Inkwell", "purpose": "a note editor whose saved notes survive a crash, for people who write offline",
     "invariants": ["a saved note survives a crash: otherwise silent data loss"], "mode": "four-hands",
-    "layout": "umbrella", "graph": "lite", "status": True,
+    "cut": "plan", "agent_layer": "both", "graph": "lite", "status": True,
     "families": {"APP": "the application", "DOC": "the documentation"}, "handoff": True,
     "outward": "free", "attribution": "Co-Authored-By: An Agent <agent@example.com>",
     "reserved": ["the file format", "anything that changes the save path"], "opinionated": True,
-    "claude_code_version": "2.9.0", "model": "example-model-1", "spec": "`docs/design.md`",
-    "plan": "`docs/plan.md`; gates `G1` to `G3`", "glossary": "`docs/glossary.md`", "findings": "`docs/findings/`",
-    "owner_notes": "`notes/`", "frozen": ["docs/archive/"], "copies": ["vendor/"], "checks": "`pytest`",
-    "prune_after": "three months",
+    "claude_code_version": "2.9.0", "model": "example-model-1", "spec": "`inkwell/docs/design.md`",
+    "plan": "`inkwell/plan/plan.md`; milestones `M1` to `M3`", "frozen": ["inkwell/docs/old/"],
+    "copies": ["inkwell/vendor/"], "checks": "`pytest`", "prune_after": "three months",
     "machine": {"resources": "8 cores, 16 GB", "load": "nothing else", "limits": "one run at a time",
                 "timings": "yes"},
 }
-MINIMAL = {"name": "Inkwell", "purpose": "a small note editor", "mode": "conductor", "status": False,
+# One private repository, nothing optional: no git needed, nothing nested.
+MINIMAL = {"name": "Inkwell", "purpose": "a small note editor", "mode": "conductor", "cut": "none", "status": False,
            "handoff": False}
+FAMILIES = {"APP": "the application"}
 
 FOUR_HANDS_ONLY = ("After building, list the choices", "Never narrow the scope",
                    "bring both rationales, the code's and the tool's", "Before adding beside what exists")
 CONDUCTOR_ONLY = ("The owner sets the direction and seldom the detail",)
+# Every record the scaffold may write, from the workspace root of a one-repository install.
+RECORDS = ("RATIONALE.md", "ai-docs/README.md", "ai-docs/status.md", "ai-docs/closed.md", "ai-docs/handoff/current.md",
+           "ai-docs/handoff/log-stage-1.md", "ai-docs/design/README.md", "ai-docs/findings/README.md",
+           "ai-docs/guides/README.md", "archive/README.md", "human-docs/README.md", "sources/README.md", "graph.yml")
+# The file that shows where each rung landed.
+RUNG_FILE = {"docs": "docs/README.md", "plan": "plan/README.md", "ai-docs": "ai-docs/status.md",
+             "archive": "archive/README.md"}
+
+needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="git is not installed")
 
 
 def install(folder, answers, *flags, capsys=None):
@@ -58,9 +69,25 @@ def project(tmp_path, name="project"):
     return folder
 
 
+def git(*args, cwd):
+    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True)
+
+
+def workspace(tmp_path, name="nido", public="inkwell"):
+    """A private workspace that is a git repository, with the public repository's folder a work tree of its own, as
+    `git submodule add` leaves it."""
+    root = project(tmp_path, name)
+    git("init", "-q", cwd=root)
+    (root / public).mkdir()
+    git("init", "-q", cwd=root / public)
+    return root
+
+
 def tree(folder):
-    """Every file under the folder with its bytes: what a run that writes nothing must leave equal."""
-    return {p.relative_to(folder): p.read_bytes() for p in sorted(folder.rglob("*")) if p.is_file()}
+    """Every file under the folder with its bytes, git's own folders aside: what a run that writes nothing must leave
+    equal."""
+    return {p.relative_to(folder): p.read_bytes() for p in sorted(folder.rglob("*"))
+            if p.is_file() and ".git" not in p.relative_to(folder).parts}
 
 
 def dead_links(folder):
@@ -87,33 +114,49 @@ def agents(folder):
     return (folder / "AGENTS.md").read_text(encoding="utf-8")
 
 
+def flat(text):
+    return " ".join(text.split())
+
+
 # ---------------------------------------------------------------- whole installs
 
+@needs_git
 def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, capsys):
     pytest.importorskip("specgraph")
-    folder = project(tmp_path)
+    folder = workspace(tmp_path)
     rc, out = install(folder, FULL, capsys=capsys)
     assert rc == 0, out
-    for rel in ("AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md", ".gitignore", "docs/status.md",
-                "docs/closed.md", "tools/check_status.py", "handoff/current.md", "handoff/log-stage-1.md",
-                "graph.yml"):
+    for rel in ("AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md", ".gitignore", ".ignore",
+                "ai-docs/README.md", "ai-docs/status.md", "ai-docs/closed.md", "ai-docs/handoff/current.md",
+                "ai-docs/handoff/log-stage-1.md", "ai-docs/design/README.md", "ai-docs/findings/README.md",
+                "ai-docs/guides/README.md", "archive/README.md", "human-docs/README.md", "sources/README.md",
+                "inkwell/AGENTS.md", "inkwell/CLAUDE.md", "inkwell/docs/README.md", "inkwell/docs/glossary.md",
+                "inkwell/graph.yml", "inkwell/plan/README.md"):
         assert (folder / rel).is_file(), rel
     assert (folder / "CLAUDE.md").read_text() == "@AGENTS.md\n"
     for path in folder.rglob("*"):
-        if path.is_file() and path.suffix in (".md", ".yml", ""):
+        if path.is_file() and ".git" not in path.parts and path.suffix in (".md", ".yml", ""):
             assert "{{" not in path.read_text(encoding="utf-8"), path
-    checker = subprocess.run([sys.executable, "tools/check_status.py", "docs/status.md", "docs/closed.md",
-                              "--graph", "graph.yml"], cwd=folder, capture_output=True, text=True)
+    # No kit code is copied into the project: the checks are the kit's commands.
+    assert not [p for p in folder.rglob("*.py")]
+    checker = subprocess.run([sys.executable, str(sc.KIT / "status" / "tools" / "check_status.py"),
+                              "ai-docs/status.md", "ai-docs/closed.md", "--graph", "inkwell/graph.yml"],
+                             cwd=folder, capture_output=True, text=True)
     assert checker.returncode == 0, checker.stdout + checker.stderr
     assert "APP-001" in checker.stdout and "DOC-001" in checker.stdout
-    lint = subprocess.run([sys.executable, "-m", "specgraph", "lint"], cwd=folder, capture_output=True, text=True)
+    lint = subprocess.run([sys.executable, "-m", "specgraph", "lint", "--registry", "inkwell/graph.yml"],
+                          cwd=folder, capture_output=True, text=True)
     assert lint.returncode == 0 and "0 error(s)" in lint.stdout, lint.stdout + lint.stderr
     assert dead_links(folder) == []
     text = agents(folder)
-    for row in ("`docs/design.md`", "`docs/status.md`", "`handoff/current.md`", "`docs/glossary.md`",
-                "`docs/findings/`", "`APP`, `DOC`", "`specgraph lint`", "--graph graph.yml", "`pytest`"):
+    for row in ("`inkwell/docs/design.md`", "`inkwell/graph.yml`", "`ai-docs/status.md`",
+                "`ai-docs/handoff/current.md`", "`inkwell/docs/glossary.md`", "`ai-docs/design/`",
+                "`ai-docs/findings/`", "`ai-docs/guides/`", "`archive/`", "`human-docs/`", "`sources/README.md`",
+                "`APP`, `DOC`", "`specgraph lint --registry inkwell/graph.yml`",
+                "`check-status ai-docs/status.md ai-docs/closed.md --graph inkwell/graph.yml`", "`pytest`"):
         assert row in text, row
     assert "[to fill" not in text
+    assert "check-status ai-docs/status.md ai-docs/closed.md" in (folder / "ai-docs/status.md").read_text()
 
 
 def test_minimal_install_writes_only_the_core(tmp_path, capsys):
@@ -121,21 +164,189 @@ def test_minimal_install_writes_only_the_core(tmp_path, capsys):
     rc, out = install(folder, MINIMAL, capsys=capsys)
     assert rc == 0, out
     written = sorted(str(p) for p in tree(folder))
-    assert written == [".gitignore", "AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md"]
+    assert written == [".gitignore", ".ignore", "AGENTS.md", "CLAUDE.md", "RATIONALE.md", "ai-docs/README.md",
+                       "ai-docs/design/README.md", "ai-docs/findings/README.md", "ai-docs/guides/README.md",
+                       "archive/README.md", "docs/README.md", "docs/glossary.md", "human-docs/README.md",
+                       "local-machine.md", "plan/README.md", "sources/README.md"]
     text = agents(folder)
-    for absent in ("status.md", "handoff/", "specgraph", "graph.yml", "Identifier"):
+    for absent in ("status.md", "handoff/", "specgraph", "graph.yml", "Identifier", "check-status"):
         assert absent not in text, absent
     assert dead_links(folder) == []
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git is not installed")
+@needs_git
 def test_the_machine_file_is_ignored_by_git(tmp_path, capsys):
     folder = project(tmp_path)
-    subprocess.run(["git", "init", "-q"], cwd=folder, check=True)
+    git("init", "-q", cwd=folder)
     rc, _ = install(folder, MINIMAL, capsys=capsys)
     assert rc == 0
-    ignored = subprocess.run(["git", "check-ignore", "local-machine.md"], cwd=folder, capture_output=True, text=True)
-    assert ignored.stdout.strip() == "local-machine.md"
+    assert git("check-ignore", "local-machine.md", cwd=folder).stdout.strip() == "local-machine.md"
+
+
+# ---------------------------------------------------------------- the ladder, the cut and the sides
+
+@needs_git
+@pytest.mark.parametrize("cut", sc.CUTS)
+def test_the_cut_puts_each_rung_on_its_side(tmp_path, capsys, cut):
+    form = sc.form_of(cut)
+    folder = workspace(tmp_path) if form == "two" else project(tmp_path)
+    rc, out = install(folder, dict(MINIMAL, cut=cut, status=True, families=FAMILIES), capsys=capsys)
+    assert rc == 0, out
+    last_public = sc.CUTS.index(cut)
+    for n, rung in enumerate(sc.RUNGS, start=1):
+        if rung not in RUNG_FILE:
+            continue
+        nested = form == "two" and n <= last_public
+        here = folder / "inkwell" / RUNG_FILE[rung] if nested else folder / RUNG_FILE[rung]
+        there = folder / RUNG_FILE[rung] if nested else folder / "inkwell" / RUNG_FILE[rung]
+        assert here.is_file() and not there.exists(), rung
+        if form == "two":
+            # A private rung is named in the allowlist; a public one is inside the gitlink and never named.
+            assert (f"!/{rung}/" in (folder / ".gitignore").read_text().splitlines()) == (not nested), rung
+    for rel in ("AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md", ".ignore"):
+        assert (folder / rel).is_file() and not (folder / "inkwell" / rel).exists(), rel
+    a = dict(sc.DEFAULTS, **MINIMAL)
+    a.update(cut=cut, graph="lite")
+    sc.validate(a)
+    graph = sc.context(a, sc.Layout.of(a), folder)["graph_file"]
+    assert graph == ("inkwell/graph.yml" if form == "two" and last_public >= 2 else "graph.yml")
+    words = flat(agents(folder))
+    expected = {"all": "everything is public", "none": "everything is private"}.get(
+        cut, f"the public side ends at {sc.RUNG_NAMES.get(cut)}")
+    assert expected in words and "(`doc-discipline` §1)" in words
+
+
+@needs_git
+def test_the_two_repository_form_refuses_without_the_public_repository(tmp_path, capsys):
+    answers = dict(MINIMAL, cut="plan")
+    missing = project(tmp_path, "missing")
+    git("init", "-q", cwd=missing)
+    rc, out = install(missing, answers, capsys=capsys)
+    assert rc == 1 and "REFUSED" in out and "git submodule add <its URL> inkwell" in out
+    assert tree(missing) == {}
+    # A plain folder of the workspace is not a repository of its own.
+    plain = project(tmp_path, "plain")
+    git("init", "-q", cwd=plain)
+    (plain / "inkwell").mkdir()
+    rc, out = install(plain, answers, capsys=capsys)
+    assert rc == 1 and "not a git work tree of its own" in out
+    assert tree(plain) == {}
+    # The dry run still shows the tree, and says the real run would stop.
+    rc, out = install(missing, answers, "--dry-run", capsys=capsys)
+    assert rc == 1 and re.search(r"WOULD +inkwell/docs/README.md", out) and "the real run would stop here" in out
+    assert tree(missing) == {}
+
+
+@needs_git
+def test_the_private_workspace_gitignore_is_an_allowlist(tmp_path, capsys):
+    folder = workspace(tmp_path)
+    rc, out = install(folder, dict(MINIMAL, cut="plan", status=True, families=FAMILIES, handoff=True),
+                      capsys=capsys)
+    assert rc == 0, out
+    rules = [ln for ln in (folder / ".gitignore").read_text().splitlines() if ln and not ln.startswith("#")]
+    assert rules[0] == "/*"
+    assert [ln for ln in rules if "inkwell" in ln] == ["!/inkwell"]
+    assert not [ln for ln in rules if "local-machine" in ln]
+    (folder / "sources" / "paper.pdf").write_text("bytes")
+    (folder / "stray.log").write_text("output")
+    for path in ("local-machine.md", "sources/paper.pdf", "stray.log"):
+        assert git("check-ignore", "-q", path, cwd=folder).returncode == 0, path
+    for path in ("AGENTS.md", "CLAUDE.md", "RATIONALE.md", ".ignore", ".gitignore", "ai-docs/status.md",
+                 "ai-docs/handoff/current.md", "archive/README.md", "human-docs/README.md", "sources/README.md",
+                 "inkwell"):
+        assert git("check-ignore", "-q", path, cwd=folder).returncode == 1, path
+
+
+def test_the_archive_is_kept_out_of_search_by_dot_ignore(tmp_path, capsys):
+    fresh, other = project(tmp_path, "fresh"), project(tmp_path, "other")
+    assert install(fresh, MINIMAL, capsys=capsys)[0] == 0
+    assert (fresh / ".ignore").read_text() == "archive/\n"
+    (other / ".ignore").write_text("target/")  # no final newline
+    install(other, MINIMAL, capsys=capsys)
+    install(other, MINIMAL, "--force", capsys=capsys)
+    assert (other / ".ignore").read_text().splitlines() == ["target/", "archive/"]
+
+
+def test_the_ai_docs_tree_has_its_five_places_and_their_readmes(tmp_path, capsys):
+    folder = project(tmp_path)
+    assert install(folder, dict(MINIMAL, status=True, families=FAMILIES, handoff=True), capsys=capsys)[0] == 0
+    index = flat((folder / "ai-docs" / "README.md").read_text())
+    for name in ("[status.md](status.md)", "[closed.md](closed.md)", "[handoff/](handoff/current.md)",
+                 "[design/]", "[findings/]", "[guides/]"):
+        assert name in index, name
+    for place, question in (("design", "what did we decide, and why?"), ("findings", "what did we observe?"),
+                            ("guides", "how do we do x here?")):
+        assert question in index.lower(), place
+        assert question in flat((folder / "ai-docs" / place / "README.md").read_text()).lower(), place
+    for readme in folder.rglob("README.md"):
+        assert "<YYYY" not in readme.read_text(), readme
+    assert "Frozen." in (folder / "archive" / "README.md").read_text()
+    assert dead_links(folder) == []
+    bare = project(tmp_path, "bare")
+    install(bare, MINIMAL, capsys=capsys)
+    assert "status.md" not in (bare / "ai-docs" / "README.md").read_text()
+
+
+@needs_git
+def test_the_sources_manifest_and_its_ignore_lines_on_each_side(tmp_path, capsys):
+    one = project(tmp_path, "one")
+    install(one, MINIMAL, capsys=capsys)
+    manifest = (one / "sources" / "README.md").read_text()
+    assert "| URL | Fetched | Licence | Hash | File |" in manifest and "cites the URL" in flat(manifest)
+    assert [ln for ln in (one / ".gitignore").read_text().splitlines() if "sources" in ln and not
+            ln.startswith("#")] == ["/sources/*", "!/sources/README.md"]
+    two = workspace(tmp_path, "two")
+    rc, out = install(two, dict(MINIMAL, cut="plan", sources="public", human_docs="public"), capsys=capsys)
+    assert rc == 0, out
+    assert (two / "inkwell" / "sources" / "README.md").is_file() and not (two / "sources").exists()
+    assert (two / "inkwell" / "human-docs" / "README.md").is_file() and not (two / "human-docs").exists()
+    root = (two / ".gitignore").read_text()
+    assert "sources" not in root and "human-docs" not in root
+    public = two / "inkwell"
+    (public / "sources" / "paper.pdf").write_text("bytes")
+    assert git("check-ignore", "-q", "sources/paper.pdf", cwd=public).returncode == 0
+    assert git("check-ignore", "-q", "sources/README.md", cwd=public).returncode == 1
+
+
+@needs_git
+def test_agent_layer_both_writes_a_contributors_file_citing_only_public_rungs(tmp_path, capsys):
+    both, private = workspace(tmp_path, "both"), workspace(tmp_path, "private")
+    answers = dict(MINIMAL, cut="plan", status=True, families=FAMILIES, handoff=True, checks="`pytest`")
+    assert install(both, dict(answers, agent_layer="both"), capsys=capsys)[0] == 0
+    assert install(private, answers, capsys=capsys)[0] == 0
+    assert not (private / "inkwell" / "AGENTS.md").exists()
+    assert (both / "inkwell" / "CLAUDE.md").read_text() == "@AGENTS.md\n"
+    text = (both / "inkwell" / "AGENTS.md").read_text()
+    for absent in ("ai-docs", "archive", "human-docs", "sources", "RATIONALE", "local-machine", "inkwell/", "owner"):
+        assert absent not in text, absent
+    for present in ("`docs/`", "`docs/glossary.md`", "`plan/`", "`pytest`", "handed to the person you work for"):
+        assert present in flat(text), present
+    assert "the contributors' `inkwell/AGENTS.md` cites only the public rungs" in flat(agents(both))
+    assert dead_links(both / "inkwell") == []
+
+
+@needs_git
+@pytest.mark.parametrize("cut", ["all", "none"])
+def test_the_one_repository_forms_nest_nothing_and_append_their_ignore_lines(tmp_path, capsys, cut):
+    folder = project(tmp_path)
+    git("init", "-q", cwd=folder)
+    rc, out = install(folder, dict(MINIMAL, cut=cut, status=True, families=FAMILIES, handoff=True), capsys=capsys)
+    assert rc == 0, out
+    assert out.startswith("FORM     one " + ("public" if cut == "all" else "private") + " repository")
+    lines = (folder / ".gitignore").read_text().splitlines()
+    assert "/*" not in lines and "/local-machine.md" in lines
+    rationale = flat((folder / "RATIONALE.md").read_text())
+    if cut == "all":
+        # A private element in a public repository stays on this device.
+        assert "/sources/" in lines and "/human-docs/" in lines
+        assert git("check-ignore", "-q", "human-docs/README.md", cwd=folder).returncode == 0
+        assert "everything is public" in flat(agents(folder))
+        assert "The owner's words" not in rationale and "no quotation" in rationale
+    else:
+        assert "/sources/*" in lines and "!/sources/README.md" in lines and "/human-docs/" not in lines
+        assert git("check-ignore", "-q", "sources/README.md", cwd=folder).returncode == 1
+        assert "everything is private" in flat(agents(folder))
+        assert "The owner's words" in rationale
 
 
 # ---------------------------------------------------------------- what the answers change
@@ -149,15 +360,6 @@ def test_conductor_and_four_hands_write_different_rules(tmp_path, capsys):
         assert phrase in on_text and phrase not in off_text, phrase
     for phrase in CONDUCTOR_ONLY:
         assert phrase in off_text and phrase not in on_text, phrase
-
-
-def test_an_umbrella_gets_the_rule_on_sides_and_one_repository_does_not(tmp_path, capsys):
-    single, umbrella = project(tmp_path, "single"), project(tmp_path, "umbrella")
-    install(single, MINIMAL, capsys=capsys)
-    install(umbrella, dict(MINIMAL, layout="umbrella"), capsys=capsys)
-    assert "gets its side" not in agents(single)
-    assert "gets its side" in agents(umbrella)
-    assert "private side" in (umbrella / "RATIONALE.md").read_text()
 
 
 def test_outward_acts_gated_or_free_with_the_trailer(tmp_path, capsys):
@@ -197,10 +399,11 @@ def test_the_first_rule_is_challenge_correct_confirm(tmp_path, capsys):
     assert rules[0].startswith("**Challenge, correct, confirm.**")
 
 
+@needs_git
 def test_no_prose_line_is_longer_than_the_kit_width(tmp_path, capsys):
-    folder = project(tmp_path)
-    install(folder, dict(FULL, graph="none"), capsys=capsys)
-    for name in ("AGENTS.md", "RATIONALE.md"):
+    folder = workspace(tmp_path)
+    assert install(folder, dict(FULL, graph="none"), capsys=capsys)[0] == 0
+    for name in ("AGENTS.md", "RATIONALE.md", "inkwell/AGENTS.md"):
         for line in (folder / name).read_text().splitlines():
             if not line.startswith("|"):
                 assert len(line) <= sc.WIDTH, line
@@ -208,14 +411,29 @@ def test_no_prose_line_is_longer_than_the_kit_width(tmp_path, capsys):
 
 # ---------------------------------------------------------------- what the script refuses
 
+@needs_git
 def test_a_dry_run_writes_nothing(tmp_path, capsys):
-    folder = project(tmp_path)
-    (folder / ".gitignore").write_text("build/\n")
+    folder = workspace(tmp_path)
     before = tree(folder)
     rc, out = install(folder, FULL, "--dry-run", capsys=capsys)
     assert rc == 0, out
     assert tree(folder) == before
-    assert "WOULD    AGENTS.md" in out and "nothing was written" in out
+    assert not (folder / "ai-docs").exists() and not (folder / "inkwell" / "docs").exists()
+    for rel in ("AGENTS.md", ".gitignore", "ai-docs/status.md", "inkwell/AGENTS.md", "inkwell/graph.yml"):
+        assert re.search(rf"WOULD +{re.escape(rel)} ", out), rel
+    assert "nothing was written" in out
+
+
+def test_a_dry_run_in_one_repository_writes_nothing_either(tmp_path, capsys):
+    folder = project(tmp_path)
+    (folder / ".gitignore").write_text("build/\n")
+    (folder / ".ignore").write_text("target/\n")
+    before = tree(folder)
+    rc, out = install(folder, dict(MINIMAL, status=True, families=FAMILIES, handoff=True), "--dry-run",
+                      capsys=capsys)
+    assert rc == 0, out
+    assert tree(folder) == before
+    assert re.search(r"WOULD +\.ignore +append: archive/", out)
 
 
 def test_an_existing_file_stops_the_whole_run(tmp_path, capsys):
@@ -228,17 +446,34 @@ def test_an_existing_file_stops_the_whole_run(tmp_path, capsys):
     assert tree(folder) == before
 
 
-def test_force_replaces_the_instructions_and_keeps_the_records(tmp_path, capsys):
+def test_force_replaces_the_instructions_and_keeps_every_record(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(sc, "specgraph_available", lambda: False)  # an existing graph file is kept before the step
     folder = project(tmp_path)
     (folder / "AGENTS.md").write_text("old rules\n")
-    (folder / "docs").mkdir()
-    (folder / "docs" / "status.md").write_text("a status file full of items\n")
-    rc, out = install(folder, dict(MINIMAL, status=True, families={"APP": "the application"}), "--force",
+    for rel in RECORDS:
+        (folder / rel).parent.mkdir(parents=True, exist_ok=True)
+        (folder / rel).write_text(f"the project's own {rel}\n")
+    rc, out = install(folder, dict(MINIMAL, status=True, families=FAMILIES, handoff=True, graph="lite"), "--force",
                       capsys=capsys)
     assert rc == 0, out
     assert agents(folder).startswith("# Inkwell")
-    assert (folder / "docs" / "status.md").read_text() == "a status file full of items\n"
-    assert re.search(r"KEPT +docs/status.md", out)
+    for rel in RECORDS:
+        assert (folder / rel).read_text() == f"the project's own {rel}\n", rel
+        assert re.search(rf"KEPT +{re.escape(rel)} ", out), rel
+
+
+def test_an_existing_docs_or_plan_folder_is_never_touched(tmp_path, capsys):
+    folder = project(tmp_path)
+    (folder / "docs").mkdir()
+    (folder / "docs" / "spec.md").write_text("the specification\n")
+    (folder / "plan").mkdir()
+    rc, out = install(folder, MINIMAL, capsys=capsys)
+    assert rc == 0, out
+    assert sorted(p.name for p in (folder / "docs").iterdir()) == ["spec.md"]
+    assert list((folder / "plan").iterdir()) == []
+    assert re.search(r"KEPT +docs/ +the folder exists", out) and re.search(r"KEPT +plan/ ", out)
+    # With no glossary to point at, the map shows the slot instead of a path that does not exist.
+    assert "What a term means | [to fill: the glossary's path]" in agents(folder)
 
 
 def test_the_graph_step_is_reported_skipped_when_specgraph_is_missing(tmp_path, capsys, monkeypatch):
@@ -274,6 +509,17 @@ def test_a_flag_overrides_the_answers_file(tmp_path, capsys):
     {"mode": "both"},
     {"name": 7},
     {"handoff": "no"},
+    {"cut": "half"},
+    {"layout": "single"},
+    {"docs_dir": "docs"},
+    {"human_docs": "public"},
+    {"sources": "shared"},
+    {"agent_layer": "both"},
+    {"agent_layer": "public", "cut": "plan"},
+    {"agent_layer": "private", "cut": "all"},
+    {"public_dir": "inkwell"},
+    {"public_dir": "ai-docs", "cut": "plan"},
+    {"public_dir": "a/b", "cut": "plan"},
 ])
 def test_invalid_answers_exit_two_and_write_nothing(tmp_path, capsys, bad):
     folder = project(tmp_path)

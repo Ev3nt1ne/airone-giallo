@@ -2,13 +2,20 @@
 
 AGENTS.md states the rules and governs; this file says where each came from. A rule the kit wrote needs no entry
 here: its reason is in AGENTS.md and in the kit's skill it points to. A rule the project adds gets one entry, in the
-form below, under the rule's name as AGENTS.md words it.{{#umbrella}} This file stays on the private side.{{/umbrella}}
+form below, under the rule's name as AGENTS.md words it. This file is on the top rung of the kit's ladder
+(`doc-discipline` §1): it is private unless the agent layer is public, and then it carries each reason without the
+story.
 
 ````markdown
 ## <the rule's name, as AGENTS.md words it>
 
+{{^layer_public}}
 - **Failure**: what happened, in which session, what it cost; a link to the log entry or the commit.
 - **The owner's words**: the ruling, verbatim, with the proposal it answered.
+{{/layer_public}}
+{{#layer_public}}
+- **Failure**: the kind of failure, in general words; no names, no quotation, no private link.
+{{/layer_public}}
 - **The reason kept in AGENTS.md**: the one general sentence, so the two can be compared.
 - **Last caught something**: the session; past the period AGENTS.md names without one, the rule is proposed for
   removal.

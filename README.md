@@ -11,6 +11,10 @@ A kit for running a long project with Claude Code agents: weeks or months of ses
 problems are continuity (a session that forgets what was decided), drift (a rule nobody enforces) and trust (a
 number nobody measured). Each piece is adoptable alone; a plugin bundles them.
 
+The kit gives a project a structure and a direction; it does not collect fixes. A rule is here because many projects
+meet the case and an agent does not find the answer on its own. What one project learned from its own incidents
+belongs in that project's memory, not here.
+
 | Piece | What it is | Where |
 |---|---|---|
 | The specification graph | A project's decisions, requirements, assumptions and threats as a graph whose truth is computed, with a lint, a cascade and a batch tool | `graph/` |
@@ -21,9 +25,8 @@ number nobody measured). Each piece is adoptable alone; a plugin bundles them.
 | The plugin | The pieces above, installable as one Claude Code plugin | `.claude-plugin/` |
 | The brand | The mark, its lockups and the rules for using them | `brand/` |
 
-The name is Italian for *yellow heron*: an elegant cousin of the yellow rubber duck. Like the bird, the
-kit is slow on purpose where it matters: a claim is checked before it is recorded, and a change is previewed before
-it is made.
+The name is Italian for *yellow heron*: the slender, elegant evolution of the yellow rubber duck. Talking to the duck
+bounces your ideas back; the heron does more with them.
 
 ## Start
 

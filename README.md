@@ -31,7 +31,23 @@ bounces your ideas back; the heron does more with them.
 
 ## Start
 
-Install the plugin, or copy the one folder you want. Each piece's folder has its own README with what it is, why,
+The skills come as one Claude Code plugin; the checkers are Python packages. In Claude Code:
+
+```
+/plugin marketplace add Ev3nt1ne/airone-giallo
+/plugin install airone-giallo@airone-giallo
+```
+
+Then, from a clone of this repository, the checkers the project will use:
+
+```
+pip install ./graph ./status ./archive
+```
+
+The skills are then `/airone-giallo:session`, `/airone-giallo:handoff`, `/airone-giallo:markdown-docs`,
+`/airone-giallo:doc-discipline` and `/airone-giallo:setup`; the commands are `specgraph`, `check-status` and
+`check-archive`. To install the kit's structure into a project, open a session at the project's root and run
+`/airone-giallo:setup`. Or copy the one folder you want: each piece's folder has its own README with what it is, why,
 and how to use it, in that order.
 
 ## Licence

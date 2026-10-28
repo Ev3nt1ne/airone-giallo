@@ -1,0 +1,11 @@
+{
+  "name": "airone-giallo",
+  "owner": { "name": "Ev3nt1ne", "url": "https://github.com/Ev3nt1ne" },
+  "plugins": [
+    {
+      "name": "airone-giallo",
+      "source": "./",
+      "description": "The Airone Giallo kit: five skills (session, handoff, markdown-docs, doc-discipline, setup) for a long project run with agents; the checkers are installed separately as Python packages."
+    }
+  ]
+}

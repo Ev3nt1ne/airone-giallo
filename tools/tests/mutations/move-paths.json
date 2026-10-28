@@ -1,0 +1,152 @@
+[
+  {
+    "file": "tools/src/move_paths.py",
+    "mutations": [
+      [
+        "P1 a hyphen before a path hides it",
+        "        return re.compile(r\"(?<![A-Za-z0-9_.@/])(\" + \"|\".join(parts) + \")\")",
+        "        return re.compile(r\"(?<![A-Za-z0-9_.@/-])(\" + \"|\".join(parts) + \")\")"
+      ],
+      [
+        "P2 a longer name is the same path",
+        "                tail = r\"(?![A-Za-z0-9_@-]|[./][A-Za-z0-9_])\"",
+        "                tail = \"\""
+      ],
+      [
+        "P3 a no-edit file is edited",
+        "            if f in self.moves and f in self.keep_content:\n                continue",
+        "            if False:\n                continue"
+      ],
+      [
+        "P4 a frozen file is edited without --frozen-ok",
+        "        if frozen and f not in self.frozen_ok:\n            self.find_dead(f, text)",
+        "        if False:\n            self.find_dead(f, text)"
+      ],
+      [
+        "P5 a frozen file's prose is edited",
+        "        if not frozen:\n            for m in RELATIVE_RE.finditer(text):",
+        "        if True:\n            for m in RELATIVE_RE.finditer(text):"
+      ],
+      [
+        "P6 the anchor is dropped",
+        "        return self.repoint(f, path, sep + anchor)",
+        "        return self.repoint(f, path, \"\")"
+      ],
+      [
+        "P7 a folder link loses its slash",
+        "        if path.endswith(\"/\") and not rel.endswith(\"/\"):",
+        "        if False:"
+      ],
+      [
+        "P8 no folder moves whole",
+        "        if all(moves[f] == new_dir + \"/\" + f[len(d) + 1:] for f in inside):\n            out[d] = new_dir",
+        "        if all(moves[f] == new_dir + \"/\" + f[len(d) + 1:] for f in inside):\n            pass"
+      ],
+      [
+        "P9 a moved file's links stay as written",
+        "        if moved is None and (new_dir == old_dir or not follow_file):",
+        "        if moved is None:"
+      ],
+      [
+        "P10 every file is text",
+        "        if name.lower().endswith(TEXT_SUFFIXES + tuple(self.also)) or name in TEXT_NAMES:",
+        "        if True:"
+      ],
+      [
+        "P11 an untracked file may move",
+        "            if old not in tracked:",
+        "            if False:"
+      ],
+      [
+        "P12 a move may overwrite",
+        "            if new in tracked or (self.root / new).exists():",
+        "            if False:"
+      ],
+      [
+        "P13 an archived file changes without its row",
+        "            if not any(row_names(cell, paths) for cell in new):",
+        "            if False:"
+      ],
+      [
+        "P14 a committed row counts as new",
+        "                if text in old:\n                    old.remove(text)",
+        "                if False:\n                    old.remove(text)"
+      ],
+      [
+        "P15 changes not staged are overwritten",
+        "            if p.stdout.strip():\n                dirty.append(f)",
+        "            if False:\n                dirty.append(f)"
+      ],
+      [
+        "P16 a move may cross repositories",
+        "            if at.repo_of(old, self.subs) != at.repo_of(new, self.subs):",
+        "            if False:"
+      ],
+      [
+        "P17 a link showing its old path keeps it",
+        "                if not frozen and \"/\" in path and shown.strip(\"`\") == path and free(m.start(1), m.end(1)):",
+        "                if False:"
+      ],
+      [
+        "P18 a rewritten path is reported as a mention",
+        "            if whole in new_paths or at.join(here, whole) in new_paths or at.join(base, whole) in new_paths:\n                continue",
+        "            if False:\n                continue"
+      ],
+      [
+        "P19 a file moved into the archive is edited",
+        "            if arriving:\n                continue",
+        "            if False:\n                continue"
+      ],
+      [
+        "P20 a folder at the top matches its bare word",
+        "                tail = r\"(?=/)\" if \"/\" not in rel else r\"(?=/|(?![A-Za-z0-9_.@-]))\"",
+        "                tail = r\"(?=/|(?![A-Za-z0-9_.@-]))\""
+      ],
+      [
+        "P21 a file at the top is rewritten by its bare name",
+        "            if \"/\" in rel or folder:",
+        "            if True:"
+      ],
+      [
+        "P22 a nested repository's paths are read from the workspace",
+        "            base = at.repo_of(f, self.subs)\n            pattern = self.rooted_pattern(base)",
+        "            base = \"\"\n            pattern = self.rooted_pattern(base)"
+      ],
+      [
+        "P23 relative paths are not re-pointed",
+        "                new = self.relative(f, token)",
+        "                new = None"
+      ],
+      [
+        "P24 git mv runs in the workspace for a nested file",
+        "            cwd = self.root / repo if repo else self.root",
+        "            cwd = self.root"
+      ],
+      [
+        "P25 --frozen-ok takes any tracked file",
+        "            if f not in tracked or self.archive_of(f) is None:",
+        "            if f not in tracked:"
+      ],
+      [
+        "P26 an archived file moves without --frozen-ok",
+        "            if self.frozen(old) and old not in self.frozen_ok:",
+        "            if False:"
+      ],
+      [
+        "P27 a dry run exits zero on a refusal",
+        "        return 1 if plan.refusals else 0",
+        "        return 0"
+      ],
+      [
+        "P28 the fallback reads a table inside a comment",
+        "        if comment or line.lstrip().startswith(\"<!--\"):",
+        "        if False:"
+      ],
+      [
+        "P29 a row naming where an archived file goes does not count",
+        "            for p in {f, self.moves.get(f, f)}:",
+        "            for p in {f}:"
+      ]
+    ]
+  }
+]

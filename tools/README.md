@@ -1,16 +1,19 @@
 # The tools
 
-A project's documents rot in ways nobody sees at the moment of the edit. A file is moved and every link to it dies;
-a public document cites a private one and the cut between the two sides leaks; a document is edited and its
-`updated:` stamp still names last month.
+A project's documents and tests rot in ways nobody sees at the moment of the edit. A file is moved and every link to
+it dies; a public document cites a private one and the cut between the two sides leaks; a document is edited and its
+`updated:` stamp still names last month; a test passes, and nobody has seen it fail when the thing it guards breaks;
+a commit message claims a hash, an identifier and "every case" that nobody resolved.
 
-This piece is commands of standard-library Python, each one file: two checks that run in a hook and in CI, and a
-mover that keeps the references true. They read a project's own values from its files or their arguments, never from
-constants: the ladder's cut, the archive's place.
+This piece is five commands, each one file of standard-library Python: two checks that run in a hook and in CI, a
+mover that keeps the references true, a mutation round, and a lister of the claims a change makes. They read a
+project's own values from its files or their arguments, never from constants: the ladder's cut, the graph file's
+`meta`, the status file's `status-meta` block, the archive's place.
 
 It is a piece of Airone Giallo, the kit described in the [repository](https://github.com/Ev3nt1ne/airone-giallo), and
 it is useful without the rest. The ladder and the archive it checks are the `doc-discipline` skill's §1; the
-frontmatter is the `markdown-docs` skill's §1.
+frontmatter is the `markdown-docs` skill's §1; the mutation round is the method of the `session` skill's verify
+reference, §6.
 
 ## Why
 
@@ -24,11 +27,15 @@ frontmatter is the `markdown-docs` skill's §1.
 - **A move re-points what it can prove and reports what it cannot.** A link and a path written from the top name
   their target; a bare file name in prose may name another file, and a script's relative path may be read from the
   folder it runs in, so those are listed for a reader, never rewritten.
+- **A test counts once it has failed for the right reason.** The round plants each bug, sees which tests fail, and
+  restores the file; a failure that names no test is void, since a syntax error fails every suite and proves none.
+- **Listing claims is the hard half of checking them.** Re-reading one's own text finds coherence, not truth; the
+  lister enumerates, settles what a lookup can settle, and leaves the rest marked for the pass.
 
 ## Start
 
 Python 3.10 or newer, standard library only, and git; the package is `airone-tools`, MIT, with no dependencies.
-`pip install ./tools` from the kit gives the commands below. Each file in [src/](src/) also runs as a script
+`pip install ./tools` from the kit gives the five commands below. Each file in [src/](src/) also runs as a script
 from the kit without installing (`python3 <kit>/tools/src/check_links.py`); none is ever copied into the project.
 *A copied script is a second copy that the kit's next version does not reach.*
 
@@ -56,9 +63,9 @@ check-frontmatter --range "$BASE..HEAD"     # BASE: the commit the change starts
 
 ## The commands
 
-Every command works on the repository holding the current folder (`--root DIR` names another) and exits 2 on a bad
-argument or a repository that cannot be read. The two checks print `error:` lines and a count, and exit 1 on a
-finding, 0 when clean.
+Every command works on the repository holding the current folder (`--root DIR` names another, `mutate anchors`
+aside) and exits 2 on a bad argument or a repository that cannot be read. The two checks print `error:` lines and a
+count, and exit 1 on a finding, 0 when clean.
 
 ### `check-links`
 
@@ -128,10 +135,53 @@ move-paths --table moves.tsv --apply            # OLD<TAB>NEW a line; a third co
   from one repository into another, an archived file without its row, and a file it would write that has changes not
   staged, since the undo is a checkout.
 
+### `mutate`
+
+Runs a mutation round (`session`'s verify reference, §6) from a JSON spec:
+
+```json
+[{"file": "src/parser.py",
+  "mutations": [["M1 an empty name is accepted", "    if not name:", "    if False:"],
+                ["M2 the fallback", "return DEFAULT", "return None", "equivalent: no caller reaches it"]]}]
+```
+
+```sh
+mutate parser-mutations.json --test "python -m pytest -q tests/test_parser.py" --timeout 300
+```
+
+Every anchor must occur exactly once before anything is planted. Each target is copied to a backup folder, named at
+the start; each mutation is planted, the tests run, the failing tests recorded, and the file restored in a `finally`;
+the round ends with an unmutated control run that must be clean, and prints a caught-by table. A mutation counts as
+caught only through a failing test named in the output (pytest, unittest, cargo and go test are read;
+`--failed-pattern` for another runner); a failure naming no test, a timeout naming none, or a run whose output misses
+`--expect-rebuild PATTERN` is void. A fourth element declares a mutation equivalent: it must survive, and its being
+caught is the failure. Every write is stamped later than the one before and ahead of the clock, since a build tool,
+and Python's own bytecode cache, can take a source as unchanged by its time. A killed round runs no `finally`:
+restore from the backup folder it named.
+
+`mutate anchors SPEC...` reads specs (files, or folders of them) and counts each anchor in its file, at the working
+tree or at `--rev REV`; a spec or target with `ran_at` is the record of a round run at that commit, listed but never
+failing. Run it before a round when code has moved, and on the commit as made.
+
+### `claims`
+
+Lists the claims a change makes, so each can be checked: the staged lines by default, `--range A..B`, or
+`--message FILE` for a commit message read as prose. It settles commit hashes with `git cat-file`; graph identifiers
+against the graph file (`--graph`, `graph.yml` by default), the families from its `meta` and the nodes by their ids;
+status identifiers against the status file and the closed file (`--status`, `ai-docs/status.md` by default), the
+families from its `status-meta` block; and section references (`§4.2`) against the headings of the document the line
+names, the line's own file, or a `--doc`. It lists numbers, quotations and the completeness words (all, every, each,
+none, only, never, always) with their lines. In code and configuration only comment lines are read.
+
+A helper, not a gate: it exits 1 only when a hash or an identifier is unknown, and an empty list means nothing
+matched, not that the change is true. Known false positive: a run of 7 to 40 hexadecimal digits with a letter and a
+digit in it is read as a commit hash, so a checksum reports as an unknown hash; read each failure before believing
+it.
+
 ## What it is not
 
 - **Not a linter of prose.** The checks hold the shape (links, dates, sides); whether a document says something true
-  is the verify pass's work.
+  is the verify pass's work, which `claims` only starts.
 - **Not a fixer.** `check-links` and `check-frontmatter` change nothing; `move-paths` changes only what it listed.
 - **Not installed by setup.** The hook lines above are the project's to copy, under its own commit rules.
 
@@ -142,6 +192,17 @@ From this folder, with pytest and git installed:
 ```sh
 pytest
 ```
+
+The mutation rounds the tests were held to are in [tests/mutations/](tests/mutations/), one spec per command and one
+for the module they share, each anchor a line of `src/`. From the repository's root:
+
+```sh
+mutate anchors tools/tests/mutations
+mutate tools/tests/mutations/check-links.json --test "cd tools && python -m pytest -q tests/test_check_links.py"
+```
+
+A round on `mutate` itself runs from a copy of `src/` outside the repository, so the round's own code is not the code
+being mutated.
 
 ## Licence
 

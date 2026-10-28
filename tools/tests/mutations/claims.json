@@ -1,0 +1,82 @@
+[
+  {
+    "file": "tools/src/list_claims.py",
+    "mutations": [
+      [
+        "C1 any object is a commit",
+        "    return p.returncode == 0 and p.stdout.strip() == \"commit\"",
+        "    return p.returncode == 0"
+      ],
+      [
+        "C2 an all-digit run is a hash",
+        "        if re.search(r\"[a-f]\", token) and re.search(r\"[0-9]\", token):",
+        "        if True:"
+      ],
+      [
+        "C3 the graph's prefixes are not read",
+        "                if m.group(1) == \"prefixes\":\n                    prefixes = values",
+        "                if m.group(1) == \"prefixes\":\n                    prefixes = []"
+      ],
+      [
+        "C4 a flow-style node is not read",
+        "            for m in re.finditer(r\"(?:^|[{,\\s-])id:\\s*['\\\"]?([A-Za-z0-9][A-Za-z0-9_.-]*)\", line):",
+        "            for m in re.finditer(r\"^\\s*-\\s+id:\\s*['\\\"]?([A-Za-z0-9][A-Za-z0-9_.-]*)\", line):"
+      ],
+      [
+        "C5 no status family is read",
+        "            if re.fullmatch(STATUS_CODE, code):\n                families.append(code)",
+        "            if re.fullmatch(STATUS_CODE, code):\n                pass"
+      ],
+      [
+        "C6 the closed file is not read",
+        "            items = [status] + ([closed] if closed and Path(closed).is_file() else [])",
+        "            items = [status]"
+      ],
+      [
+        "C7 code lines are read",
+        "    return text.lstrip().startswith(COMMENT_PREFIXES)",
+        "    return True"
+      ],
+      [
+        "C8 an identifier is read as a number too",
+        "        masked = rx.sub(\" \", masked)",
+        "        pass"
+      ],
+      [
+        "C9 every section is found",
+        "        found = [d for d in docs if d and (ctx.sections(d) or set()) >= {number}]",
+        "        found = docs"
+      ],
+      [
+        "C10 only N. headings are numbered",
+        "                m = re.match(r\"^§?\\s*([0-9]+(?:\\.[0-9]+)*)\\.?(?:\\s|$)\", heading)",
+        "                m = re.match(r\"^([0-9]+)\\.\", heading)"
+      ],
+      [
+        "C11 dates are read as numbers",
+        "    masked = DATE_RE.sub(\" \", masked)",
+        "    pass"
+      ],
+      [
+        "C12 the exit code ignores failures",
+        "    return 1 if report(lines, ctx) else 0",
+        "    return 0"
+      ],
+      [
+        "C13 line numbers restart",
+        "            n = int(m.group(1)) if m else 0",
+        "            n = 1"
+      ],
+      [
+        "C14 a named document is read from the top only",
+        "        here = at.join(posixpath.dirname(path), doc)",
+        "        here = None"
+      ],
+      [
+        "C15 completeness words are not listed",
+        "    for m in COMPLETE_RE.finditer(text):\n        yield \"completeness\", m.group(0), \"check\"",
+        "    for m in COMPLETE_RE.finditer(\"\"):\n        yield \"completeness\", m.group(0), \"check\""
+      ]
+    ]
+  }
+]

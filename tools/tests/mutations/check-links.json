@@ -1,0 +1,97 @@
+[
+  {
+    "file": "tools/src/check_links.py",
+    "mutations": [
+      [
+        "L1 a present, untracked target counts as alive",
+        "        return path in self.file_set or path in self.folders",
+        "        return path in self.file_set or path in self.folders or (self.root / path).exists()"
+      ],
+      [
+        "L2 anchors are not checked",
+        "        if dead is None and anchor and resolved in tree.file_set",
+        "        if False and anchor and resolved in tree.file_set"
+      ],
+      [
+        "L3 a dead link in the archive is an error",
+        "            (report.frozen if frozen else report.errors).append(f\"{where}: {dead}\")",
+        "            report.errors.append(f\"{where}: {dead}\")"
+      ],
+      [
+        "L4 a live citation of an archived file is not warned",
+        "        if inner not in ARCHIVE_OWN:",
+        "        if False:"
+      ],
+      [
+        "L5 the archive's own files are warned too",
+        "ARCHIVE_OWN = (\"\", \"README.md\", \"LOG.md\")",
+        "ARCHIVE_OWN = ()"
+      ],
+      [
+        "L6 a public file citing a private one passes",
+        "    if ladder.public(src) and ladder.public(target) is False:",
+        "    if False:"
+      ],
+      [
+        "L7 a file outside every rung is public",
+        "        if rung is None:\n            return None",
+        "        if rung is None:\n            return True"
+      ],
+      [
+        "L8 the cut is off by one",
+        "        return self.number(rung) <= CUTS.index(self.cut)",
+        "        return self.number(rung) < CUTS.index(self.cut)"
+      ],
+      [
+        "L9 the public folder is ignored",
+        "        if self.public_dir:\n            return at.under(path, self.public_dir)",
+        "        if False:\n            return at.under(path, self.public_dir)"
+      ],
+      [
+        "L10 an upward citation is not warned",
+        "    if a and b and b != \"archive\" and ladder.number(b) > ladder.number(a):",
+        "    if False:"
+      ],
+      [
+        "L11 an archived target gets the ladder's warning as well",
+        "    if a and b and b != \"archive\" and ladder.number(b) > ladder.number(a):",
+        "    if a and b and ladder.number(b) > ladder.number(a):"
+      ],
+      [
+        "L12 written paths are not read",
+        "    if not frozen:\n        for n, line in at.prose_lines(text):",
+        "    if False:\n        for n, line in at.prose_lines(text):"
+      ],
+      [
+        "L13 a written path is read from the workspace root only",
+        "            candidates += [at.join(tree.base(src), span), at.normal(span)]",
+        "            candidates += [at.normal(span), at.join(tree.base(src), span)]"
+      ],
+      [
+        "L14 a link from / is read from the workspace root",
+        "        return at.join(tree.base(src), path.lstrip(\"/\"))",
+        "        return at.join(\"\", path.lstrip(\"/\"))"
+      ],
+      [
+        "L15 external links are resolved as paths",
+        "        if not target or at.is_external(target):",
+        "        if not target:"
+      ],
+      [
+        "L16 a rung placed elsewhere is ignored",
+        "        paths[name] = [p.strip().removeprefix(\"./\") for p in value.split(\",\") if p.strip()]",
+        "        pass"
+      ],
+      [
+        "L17 the exit code ignores the errors",
+        "    return 1 if report.errors else 0",
+        "    return 0"
+      ],
+      [
+        "L18 a bad cut is accepted",
+        "    if cut not in CUTS:",
+        "    if False:"
+      ]
+    ]
+  }
+]

@@ -1,0 +1,82 @@
+[
+  {
+    "file": "tools/src/mutate_round.py",
+    "mutations": [
+      [
+        "R1 an anchor found twice is accepted",
+        "            if n != 1:\n                off.append(",
+        "            if n == 0:\n                off.append("
+      ],
+      [
+        "R2 the file is not restored",
+        "            shutil.copyfile(saved, path)\n            stamper.touch(path)",
+        "            stamper.touch(path)"
+      ],
+      [
+        "R3 a failure naming no test is a catch",
+        "    if code != 0 and not failed:",
+        "    if False:"
+      ],
+      [
+        "R4 an equivalent mutation caught passes",
+        "        return (\"CAUGHT, but declared equivalent\", False) if caught",
+        "        return (\"CAUGHT, but declared equivalent\", True) if caught"
+      ],
+      [
+        "R5 a survivor passes",
+        "    return (\"caught\", True) if caught else (\"SURVIVED\", False)",
+        "    return (\"caught\", True) if caught else (\"SURVIVED\", True)"
+      ],
+      [
+        "R6 the control always passes",
+        "    clean = code == 0 and not failed and (rebuild is None or re.search(rebuild, output, re.M))",
+        "    clean = True"
+      ],
+      [
+        "R7 the rebuild is not required",
+        "    if rebuild is not None and not re.search(rebuild, output, re.M):",
+        "    if False:"
+      ],
+      [
+        "R8 a timeout is a catch",
+        "        return (\"caught (timed out)\", True) if failed else (\"VOID: timed out, no failing test named\", False)",
+        "        return (\"caught (timed out)\", True)"
+      ],
+      [
+        "R9 writes are stamped with the clock",
+        "        self.last = max(self.last + 2, time.time() + 1)",
+        "        self.last = time.time()"
+      ],
+      [
+        "R10 a collection error names a test",
+        "    r\"^ERROR (\\S+::\\S+)\",",
+        "    r\"^ERROR (\\S+)\","
+      ],
+      [
+        "R11 a record's anchors fail the scan",
+        "                (records if t[\"ran_at\"] else live).append(",
+        "                live.append("
+      ],
+      [
+        "R12 --rev reads the working tree",
+        "            if rev:\n                p = at.git(root, \"show\", f\"{rev}:{rel}\")",
+        "            if False:\n                p = at.git(root, \"show\", f\"{rev}:{rel}\")"
+      ],
+      [
+        "R13 an empty anchor is accepted",
+        "            if not m[1]:",
+        "            if False:"
+      ],
+      [
+        "R14 a custom failure pattern is ignored",
+        "        patterns = tuple(args.failed_pattern) if args.failed_pattern else FAILED_PATTERNS",
+        "        patterns = FAILED_PATTERNS"
+      ],
+      [
+        "R15 the anchors scan exits zero",
+        "    return 1 if live else 0",
+        "    return 0"
+      ]
+    ]
+  }
+]

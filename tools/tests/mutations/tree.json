@@ -1,0 +1,67 @@
+[
+  {
+    "file": "tools/src/airone_tree.py",
+    "mutations": [
+      [
+        "T1 a declared submodule not yet committed is not read",
+        "    if (root / \".gitmodules\").is_file():",
+        "    if False:"
+      ],
+      [
+        "T2 a code fence is prose",
+        "        if fence is None and m:\n            fence = m.group(1)\n            continue",
+        "        if False:\n            fence = m.group(1)\n            continue"
+      ],
+      [
+        "T3 a multi-line comment is prose",
+        "                comment = True\n                line = before",
+        "                comment = False\n                line = before"
+      ],
+      [
+        "T4 a code span is prose",
+        "    return CODE_SPAN_RE.sub(lambda m: \" \" * len(m.group(0)), line)",
+        "    return line"
+      ],
+      [
+        "T5 emphasis underscores stay in the slug",
+        "    text = re.sub(r\"(?<!\\w)_+|_+(?!\\w)\", \"\", text)",
+        "    pass"
+      ],
+      [
+        "T6 a path may climb out of the root",
+        "            if not parts:\n                return None",
+        "            if not parts:\n                continue"
+      ],
+      [
+        "T7 a block list is not read",
+        "        if item and last is not None and not raw[last]:",
+        "        if False:"
+      ],
+      [
+        "T8 a setext heading has no anchor",
+        "        elif prev is not None and SETEXT_RE.match(line) and prev.strip() and not ATX_RE.match(prev) \\",
+        "        elif False and SETEXT_RE.match(line) and prev.strip() and not ATX_RE.match(prev) \\"
+      ],
+      [
+        "T9 an HTML id is no anchor",
+        "        for rx in (HTML_ANCHOR_RE, HTML_ID_RE):",
+        "        for rx in ():"
+      ],
+      [
+        "T10 the innermost repository is never found",
+        "        if (path == sub or path.startswith(sub + \"/\")) and len(sub) > len(best):",
+        "        if False:"
+      ],
+      [
+        "T11 a nested repository's files are not listed",
+        "        files += [f\"{sub}/{f}\" for f in q.stdout.split(\"\\0\") if f]",
+        "        pass"
+      ],
+      [
+        "T12 an unclosed frontmatter counts",
+        "    if not lines or lines[0].rstrip() != \"---\":\n        return None\n    for i in range(1, len(lines)):\n        if lines[i].rstrip() in (\"---\", \"...\"):\n            return i\n    return None",
+        "    if not lines or lines[0].rstrip() != \"---\":\n        return None\n    for i in range(1, len(lines)):\n        if lines[i].rstrip() in (\"---\", \"...\"):\n            return i\n    return len(lines) - 1"
+      ]
+    ]
+  }
+]

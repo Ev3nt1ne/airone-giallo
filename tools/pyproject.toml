@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "airone-tools"
 version = "0.1.0"
-description = "Checks for a project's documents: dead links and the ladder, frontmatter with its dates, and moving files with their references."
+description = "Checks for a project's documents and tests: dead links and the ladder, frontmatter, moving files with their references, a mutation round, and the claims a change makes."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -19,12 +19,14 @@ test = ["pytest"]
 check-links = "check_links:main"
 check-frontmatter = "check_frontmatter:main"
 move-paths = "move_paths:main"
+mutate = "mutate_round:main"
+claims = "list_claims:main"
 
 # Each command stays one file in src/, beside the module they share, so it still runs as a script from the kit;
 # installed, each is a top-level module. The tests in tests/ are not installed.
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["airone_tree", "check_links", "check_frontmatter", "move_paths"]
+py-modules = ["airone_tree", "check_links", "check_frontmatter", "move_paths", "mutate_round", "list_claims"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -1,0 +1,122 @@
+[
+  {
+    "file": "tools/src/check_frontmatter.py",
+    "mutations": [
+      [
+        "F1 AGENTS.md is checked",
+        "EXEMPT_NAMES = (\"AGENTS.md\", \"CLAUDE.md\")",
+        "EXEMPT_NAMES = (\"CLAUDE.md\",)"
+      ],
+      [
+        "F2 the owner's notes are checked",
+        "EXEMPT_TOP = (\"RATIONALE.md\", \".claude/\", \"human-docs/\", \"sources/\", \".github/\")",
+        "EXEMPT_TOP = (\"RATIONALE.md\", \".claude/\", \"sources/\", \".github/\")"
+      ],
+      [
+        "F3 a nested repository's top is not a top",
+        "        self.tops = [\"\"] + list(subs)",
+        "        self.tops = [\"\"]"
+      ],
+      [
+        "F4 the archive's own files are archived files",
+        "            return \"document\" if path[len(a) + 1:] in ARCHIVE_OWN else \"archived\"",
+        "            return \"archived\""
+      ],
+      [
+        "F5 an empty field passes",
+        "            if not f.get(key, \"\").strip():",
+        "            if key not in f:"
+      ],
+      [
+        "F6 an impossible date passes",
+        "        if created and not valid_date(created):",
+        "        if created and not DATE_RE.match(created):"
+      ],
+      [
+        "F7 any offset passes",
+        "TIME_RE = re.compile(r\"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\+00:00$\")",
+        "TIME_RE = re.compile(r\"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[+-][0-9]{2}:00$\")"
+      ],
+      [
+        "F8 updated before created passes",
+        "        elif updated and valid_date(created) and updated[:10] < created:",
+        "        elif False:"
+      ],
+      [
+        "F9 any status passes",
+        "        if \"status\" in f and f[\"status\"] not in self.statuses:",
+        "        if False:"
+      ],
+      [
+        "F10 tags need not be a list",
+        "        if not (value.startswith(\"[\") and value.endswith(\"]\")):",
+        "        if False:"
+      ],
+      [
+        "F11 a repeated tag passes",
+        "        repeated = sorted({t for t in items if t and items.count(t) > 1})",
+        "        repeated = []"
+      ],
+      [
+        "F12 an archived stamp outside the archive passes",
+        "        if \"archived\" in f:",
+        "        if False:"
+      ],
+      [
+        "F13 the change-of-plan marker may mean anything",
+        "            if PLAN_MARK in line and \"change of plan\" not in line.lower():",
+        "            if PLAN_MARK in line and \"plan\" not in line.lower():"
+      ],
+      [
+        "F14 a marker inside code is read",
+        "            line = at.mask_code(line)\n            if PLAN_MARK",
+        "            if PLAN_MARK"
+      ],
+      [
+        "F15 a moved created passes",
+        "        if oc is not None and nc != oc:",
+        "        if False:"
+      ],
+      [
+        "F16 a frontmatter-only change is not a change",
+        "        if without_updated(new) != without_updated(old) and nu == ou:",
+        "        if new.split(\"\\n---\", 1)[-1] != old.split(\"\\n---\", 1)[-1] and nu == ou:"
+      ],
+      [
+        "F17 a stamp moved backwards passes",
+        "        elif valid_time(nu) and valid_time(ou) and nu < ou:",
+        "        elif False:"
+      ],
+      [
+        "F18 a renamed document is read as new",
+        "            out.append((new, old if letter == \"R\" else None))",
+        "            out.append((new, None))"
+      ],
+      [
+        "F19 the working tree is read instead of the index",
+        "    args += [\"--cached\"] if new_rev is None else [old_rev, new_rev]",
+        "    args += [] if new_rev is None else [old_rev, new_rev]"
+      ],
+      [
+        "F20 a day passes for an archived stamp",
+        "        if not valid_time(stamp):",
+        "        if not valid_date(stamp[:10]):"
+      ],
+      [
+        "F21 archived files are held as documents",
+        "    if kind == \"archived\":\n        return rules.archived(path, new)",
+        "    if False:\n        return rules.archived(path, new)"
+      ],
+      [
+        "F22 --exempt is ignored",
+        "            if fnmatch.fnmatch(path, pattern) or at.under(path, p):",
+        "            if False:"
+      ],
+      [
+        "F23 the exit code ignores the findings",
+        "    return 1 if findings else 0",
+        "    return 0"
+      ]
+    ]
+  }
+]

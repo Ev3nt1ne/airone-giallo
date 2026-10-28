@@ -11,20 +11,30 @@ is copied into the project: what stays there is what the script writes. Each rul
 
 ## 1. Before asking anything
 
-- **Start on a clean tree.** `git status` must be empty, in the public repository too when there are two, so that
-  afterwards it shows exactly what the setup added and `git stash -u` or a checkout undoes it. *An install mixed into
-  uncommitted work cannot be reviewed or reverted on its own.*
+- **Start on a clean tree.** `git status` must be empty in every repository the setup writes into: the project in the
+  one-repository form; the workspace and the public repository in the two-repository form, which they are once the
+  submodule's addition below is committed. Afterwards it shows exactly what the setup added, and `git stash -u` or a
+  checkout undoes it. *An install mixed into uncommitted work cannot be reviewed or reverted on its own.*
 - **Read the repository first, and ask only what it cannot answer.** Look for an existing `AGENTS.md`, `CLAUDE.md`,
   `.gitignore`, a docs folder, a specification, a plan, a glossary, a findings folder, folders kept frozen,
   generated or vendored copies, the owner's own notes, and the test and lint commands. Take the Claude Code version
   from `claude --version` and the model from the session's own environment. Put what you found to the owner as one
   list to confirm, not as questions. *A question the repository answers costs the owner a turn and tells them the
   agent did not look.*
-- **In the two-repository form, the public repository is in place before the run.** It sits inside the private
-  workspace as a submodule folder named after the project, added by the owner or with their go:
-  `git submodule add <its URL> <name>`. The script checks that the folder is a git work tree of its own and is declared
-  in `.gitmodules`, and refuses otherwise. *The submodule records which public commit the private documents refer to; a plain copy would drift
-  from them unseen.*
+- **In the two-repository form, build the workspace before the setup, in this order, with the owner's go.**
+  1. `git init <name>-nido`, beside the project or wherever the owner keeps it, then work inside it. *The workspace is
+     the private repository; the project becomes one folder in it.*
+  2. Add the project as a submodule named after it: `git submodule add <its remote URL> <name>`, or, when it has no
+     remote yet, `git -c protocol.file.allow=always submodule add <its absolute path> <name>`. *Git refuses the file
+     transport by default; the option lifts it for that one command only.*
+  3. Commit the addition: `git commit -m "Add <name> as a submodule"`. *The setup then starts on a clean tree, and
+     the gitlink it later moves names a commit that exists.*
+
+  The submodule is a second clone of the project: from then on the work continues in `<name>-nido/<name>/`, and the
+  original checkout is left or removed as the owner prefers. *Two working copies of one repository drift apart unless
+  one is retired.* The script checks that the folder is a git work tree of its own declared in `.gitmodules`, and
+  refuses otherwise. *The submodule records which public commit the private documents refer to; a plain copy would
+  drift from them unseen.*
 - **An existing `AGENTS.md` or `CLAUDE.md` is read before anything is written.** The script refuses to replace one
   without `--force`; with the owner, decide what of it moves into the new file or into RATIONALE.md first. *A
   project's instruction file holds rulings that exist nowhere else.*
@@ -36,7 +46,7 @@ has a name in the answers file (§3).
 
 | # | Question | Recommend | What the answer changes |
 |---|---|---|---|
-| 1 | The project's name, what it is and for whom in one line, and its invariants: what breaks silently if each is violated (`name`, `purpose`, `invariants`) | the invariants now, even one; they may be left as a slot | the opening paragraph of AGENTS.md |
+| 1 | The project's name, what it is and for whom in one line, and its invariants: what breaks silently if each is violated, each written as one clause, the invariant then what breaks (`X, else Y`), since the list is read as one sentence (`name`, `purpose`, `invariants`) | the invariants now, even one; they may be left as a slot | the opening paragraph of AGENTS.md |
 | 2 | How the owner works: **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
 | 3 | The cut: the last rung of the ladder that is public (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `archive`, `all`); then, each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`), and in the two-repository form whether contributors get a short public instruction file (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
 | 4 | Which pieces: the specification graph (`graph`: `none`, `lite`, `full`), the status file (`status`, with its `families`), the handoff (`handoff`, with the first log's `stage`) | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
@@ -52,10 +62,12 @@ doubtful rung starts private: *a file moved from public to private keeps its pub
 agent layer is public and RATIONALE.md drops the owner's words from its form; `agent_layer: both` keeps the full
 layer private and adds a contributors' `AGENTS.md` that cites only public rungs.
 
-A family of the status file is a code of 2 to 5 capitals or digits starting with a capital, or two joined by a
-hyphen, and a line saying what it covers; start with one per repository or area, since a family, once declared,
-keeps its meaning. *A code chosen in haste is cited for the life of the project.* The facts of §1 go in as `spec`,
-`plan`, `glossary`, `findings` (each a path or a short phrase, written into the map as given), `owner_notes`,
+A family of the status file is a code of 2 to 5 capitals or digits starting with a capital, or two joined by a hyphen,
+and a line saying what it covers. Declare one per area of the work (the application, the documentation), never one per
+repository. *An item's family says what the work is about, and the work on one area often crosses both repositories.* A
+family, once declared, keeps its meaning. *A code chosen in haste is cited for the life of the project.* The facts of §1
+go in as `spec`, `plan`, `glossary`, `findings` (each a path or a short phrase, written into the map as given; a path is
+written from the workspace root and in backticks, as the defaults are, `` `<name>/docs/spec.md` ``), `owner_notes`,
 `frozen`, `copies`, `checks` (the project's own test and lint commands) and `prune_after` (how long a rule may go
 unneeded); `spec`, `plan`, `glossary` and `findings` default to the tree's own paths, and `public_dir` to the name in
 lower case. Anything not answered is written as a visible `[to fill: …]` slot, never guessed.
@@ -66,7 +78,7 @@ Write the answers as one JSON object to a file in the session's scratch folder, 
 
 ```json
 {"name": "Inkwell", "purpose": "a note editor whose saved notes survive a crash, for people who write offline",
- "invariants": ["a saved note survives a crash: otherwise silent data loss"], "mode": "conductor",
+ "invariants": ["a saved note survives a crash, else notes are lost silently"], "mode": "conductor",
  "cut": "plan", "graph": "lite", "families": {"APP": "the application", "DOC": "the documentation"},
  "outward": "gated", "claude_code_version": "<from claude --version>", "model": "<the session's model>",
  "machine": {"resources": "8 cores, 16 GB", "load": "nothing else", "limits": "one run at a time", "timings": "yes"}}
@@ -121,7 +133,8 @@ its output; the script's report is a claim, these measure the files.
    with the graph, reports 0 errors and prints the first free ID of each family.
 3. `check-archive` (`--archive <name>/archive` when the archive is public in the two-repository form) reports 0
    errors.
-4. The dead-link check of `markdown-docs` §6 prints nothing.
+4. The dead-link check of `markdown-docs` §6, run from the workspace root so that it walks the public folder too,
+   prints nothing.
 5. `git check-ignore local-machine.md` prints the file's name; in the two-repository form `git status` at the root
    lists only the files the allowlist names and the public folder.
 6. `grep -n 'to fill' AGENTS.md local-machine.md` lists the slots left; give them to the owner as one list.

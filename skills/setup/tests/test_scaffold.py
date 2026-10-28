@@ -47,7 +47,8 @@ CONDUCTOR_ONLY = ("The owner sets the direction and seldom the detail",)
 # Every record the scaffold may write, from the workspace root of a one-repository install.
 RECORDS = ("RATIONALE.md", "ai-docs/README.md", "ai-docs/status.md", "ai-docs/closed.md", "ai-docs/handoff/current.md",
            "ai-docs/handoff/log-stage-1.md", "ai-docs/design/README.md", "ai-docs/findings/README.md",
-           "ai-docs/guides/README.md", "archive/README.md", "human-docs/README.md", "sources/README.md", "graph.yml")
+           "ai-docs/guides/README.md", "archive/README.md", "archive/LOG.md", "human-docs/README.md",
+           "sources/README.md", "graph.yml")
 # The file that shows where each rung landed.
 RUNG_FILE = {"docs": "docs/README.md", "plan": "plan/README.md", "ai-docs": "ai-docs/status.md",
              "archive": "archive/README.md"}
@@ -130,9 +131,9 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
     for rel in ("AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md", ".gitignore", ".ignore",
                 "ai-docs/README.md", "ai-docs/status.md", "ai-docs/closed.md", "ai-docs/handoff/current.md",
                 "ai-docs/handoff/log-stage-1.md", "ai-docs/design/README.md", "ai-docs/findings/README.md",
-                "ai-docs/guides/README.md", "archive/README.md", "human-docs/README.md", "sources/README.md",
-                "inkwell/AGENTS.md", "inkwell/CLAUDE.md", "inkwell/docs/README.md", "inkwell/docs/glossary.md",
-                "inkwell/graph.yml", "inkwell/plan/README.md"):
+                "ai-docs/guides/README.md", "archive/README.md", "archive/LOG.md", "human-docs/README.md",
+                "sources/README.md", "inkwell/AGENTS.md", "inkwell/CLAUDE.md", "inkwell/docs/README.md",
+                "inkwell/docs/glossary.md", "inkwell/graph.yml", "inkwell/plan/README.md"):
         assert (folder / rel).is_file(), rel
     assert (folder / "CLAUDE.md").read_text() == "@AGENTS.md\n"
     for path in folder.rglob("*"):
@@ -148,13 +149,17 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
     lint = subprocess.run([sys.executable, "-m", "specgraph", "lint", "--graph", "inkwell/graph.yml"],
                           cwd=folder, capture_output=True, text=True)
     assert lint.returncode == 0 and "0 error(s)" in lint.stdout, lint.stdout + lint.stderr
+    archive = subprocess.run([sys.executable, str(sc.KIT / "archive" / "tools" / "check_archive.py")],
+                             cwd=folder, capture_output=True, text=True)
+    assert archive.returncode == 0 and "0 error(s)" in archive.stdout, archive.stdout + archive.stderr
     assert dead_links(folder) == []
     text = agents(folder)
     for row in ("`inkwell/docs/design.md`", "`inkwell/graph.yml`", "`ai-docs/status.md`",
                 "`ai-docs/handoff/current.md`", "`inkwell/docs/glossary.md`", "`ai-docs/design/`",
                 "`ai-docs/findings/`", "`ai-docs/guides/`", "`archive/`", "`human-docs/`", "`sources/README.md`",
                 "`APP`, `DOC`", "`specgraph lint --graph inkwell/graph.yml`",
-                "`check-status ai-docs/status.md ai-docs/closed.md --graph inkwell/graph.yml`", "`pytest`"):
+                "`check-status ai-docs/status.md ai-docs/closed.md --graph inkwell/graph.yml`", "`check-archive`",
+                "`check-archive read <file>` before reading one", "`pytest`"):
         assert row in text, row
     assert "[to fill" not in text
     assert "check-status ai-docs/status.md ai-docs/closed.md" in (folder / "ai-docs/status.md").read_text()
@@ -167,8 +172,8 @@ def test_minimal_install_writes_only_the_core(tmp_path, capsys):
     written = sorted(str(p) for p in tree(folder))
     assert written == [".gitignore", ".ignore", "AGENTS.md", "CLAUDE.md", "RATIONALE.md", "ai-docs/README.md",
                        "ai-docs/design/README.md", "ai-docs/findings/README.md", "ai-docs/guides/README.md",
-                       "archive/README.md", "docs/README.md", "docs/glossary.md", "human-docs/README.md",
-                       "local-machine.md", "plan/README.md", "sources/README.md"]
+                       "archive/LOG.md", "archive/README.md", "docs/README.md", "docs/glossary.md",
+                       "human-docs/README.md", "local-machine.md", "plan/README.md", "sources/README.md"]
     text = agents(folder)
     for absent in ("status.md", "handoff/", "specgraph", "graph.yml", "Identifier", "check-status"):
         assert absent not in text, absent
@@ -215,6 +220,12 @@ def test_the_cut_puts_each_rung_on_its_side(tmp_path, capsys, cut):
     expected = {"all": "everything is public", "none": "everything is private"}.get(
         cut, f"the public side ends at {sc.RUNG_NAMES.get(cut)}")
     assert expected in words and "(`doc-discipline` §1)" in words
+    archived = form == "two" and last_public >= sc.RUNGS.index("archive") + 1
+    command = "check-archive --archive inkwell/archive" if archived else "check-archive"
+    assert f"`{command} read <file>` before reading one" in words and f"`{command}`" in words
+    readme = (folder / "inkwell" if archived else folder) / "archive" / "README.md"
+    assert f"`{command} read <file>`" in flat(readme.read_text())
+    assert (readme.parent / "LOG.md").is_file()
 
 
 @needs_git
@@ -333,6 +344,10 @@ def test_agent_layer_both_writes_a_contributors_file_citing_only_public_rungs(tm
         assert present in flat(text), present
     assert "the contributors' `inkwell/AGENTS.md` cites only the public rungs" in flat(agents(both))
     assert dead_links(both / "inkwell") == []
+    # With the archive public, the contributors' checks include the archive's, named from the public folder.
+    public = workspace(tmp_path, "public-archive")
+    assert install(public, dict(answers, cut="archive", agent_layer="both"), capsys=capsys)[0] == 0
+    assert "`check-archive`" in (public / "inkwell" / "AGENTS.md").read_text()
 
 
 @needs_git
@@ -429,7 +444,8 @@ def test_a_dry_run_writes_nothing(tmp_path, capsys):
     assert rc == 0, out
     assert tree(folder) == before
     assert not (folder / "ai-docs").exists() and not (folder / "inkwell" / "docs").exists()
-    for rel in ("AGENTS.md", ".gitignore", "ai-docs/status.md", "inkwell/AGENTS.md", "inkwell/graph.yml"):
+    for rel in ("AGENTS.md", ".gitignore", "ai-docs/status.md", "archive/LOG.md", "inkwell/AGENTS.md",
+                "inkwell/graph.yml"):
         assert re.search(rf"WOULD +{re.escape(rel)} ", out), rel
     assert "nothing was written" in out
 

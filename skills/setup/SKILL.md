@@ -82,8 +82,9 @@ python3 <kit>/skills/setup/scaffold.py --answers ANSWERS.json
 What it writes, the dry run lists file by file: at the workspace root the agent layer (`AGENTS.md`, `CLAUDE.md`,
 `RATIONALE.md`, the git-ignored `local-machine.md`), `.ignore` with `archive/` and the `.gitignore`, an allowlist
 in the two-repository form; on each rung's side `ai-docs/` with the status file, the handoff and a README for each
-of its places, `archive/README.md`, a README in `docs/` (with a glossary) and in `plan/` when the folder is new, and
-`graph.yml`; `human-docs/README.md` and the `sources/README.md` manifest on their chosen sides.
+of its places, `archive/README.md` and the archive's log `archive/LOG.md`, a README in `docs/` (with a glossary) and
+in `plan/` when the folder is new, and `graph.yml`; `human-docs/README.md` and the `sources/README.md` manifest on
+their chosen sides.
 
 `--help` lists every answer as a flag; a flag overrides the file. Show the owner the dry run before the real
 one. *The preview is where a wrong answer costs nothing.*
@@ -96,10 +97,10 @@ one. *The preview is where a wrong answer costs nothing.*
   script exists to prevent.*
 - **An existing file stops the whole run before anything is written.** `--force` replaces the instruction files
   (AGENTS.md, CLAUDE.md, the machine file, the contributors' files, the workspace's allowlist `.gitignore`); a record
-  (RATIONALE.md, the status file, the closed file, the handoff, the graph file, the folders' READMEs) is never
-  replaced, even then, and is reported KEPT. An existing `docs/` or `plan/` is never written into, and `.ignore` and a
-  one-repository `.gitignore` only get the lines they lack. *An empty status file written over a full one deletes the
-  project's history.*
+  (RATIONALE.md, the status file, the closed file, the handoff, the archive's log, the graph file, the folders'
+  READMEs) is never replaced, even then, and is reported KEPT. An existing `docs/` or `plan/` is never written into,
+  and `.ignore` and a one-repository `.gitignore` only get the lines they lack. *An empty status file written over a
+  full one deletes the project's history.*
 
 The templates in `templates/` use the syntax the script implements: `{{name}}` is a value, `{{#name}}…{{/name}}`
 keeps its body when the answer is true or non-empty, `{{^name}}…{{/name}}` when it is false or empty; a tag alone on a
@@ -109,20 +110,22 @@ and the answer it reads, with a test.
 
 ## 4. After the script
 
-The checks are the kit's installed commands, never copies in the project: `pip install ./graph ./status` from the
-kit, or from the plugin's copy of it, gives `specgraph` and `check-status`. Ask the owner to install them. *A copied
-script is a second copy that the kit's next version does not reach.* Run each check and read its output; the script's
-report is a claim, these measure the files.
+The checks are the kit's installed commands, never copies in the project: `pip install ./graph ./status ./archive`
+from the kit, or from the plugin's copy of it, gives `specgraph`, `check-status` and `check-archive`. Ask the owner to
+install them. *A copied script is a second copy that the kit's next version does not reach.* Run each check and read
+its output; the script's report is a claim, these measure the files.
 
 1. With the graph: `specgraph lint` reports 0 errors (`--graph <name>/graph.yml` when the graph is public in the
    two-repository form).
 2. With the status file: `check-status ai-docs/status.md ai-docs/closed.md`, adding `--graph` and the graph's path
    with the graph, reports 0 errors and prints the first free ID of each family.
-3. The dead-link check of `markdown-docs` §6 prints nothing.
-4. `git check-ignore local-machine.md` prints the file's name; in the two-repository form `git status` at the root
+3. `check-archive` (`--archive <name>/archive` when the archive is public in the two-repository form) reports 0
+   errors.
+4. The dead-link check of `markdown-docs` §6 prints nothing.
+5. `git check-ignore local-machine.md` prints the file's name; in the two-repository form `git status` at the root
    lists only the files the allowlist names and the public folder.
-5. `grep -n 'to fill' AGENTS.md local-machine.md` lists the slots left; give them to the owner as one list.
-6. Read the written AGENTS.md whole with the owner. *They will be bound by it; the first reading is theirs.*
+6. `grep -n 'to fill' AGENTS.md local-machine.md` lists the slots left; give them to the owner as one list.
+7. Read the written AGENTS.md whole with the owner. *They will be bound by it; the first reading is theirs.*
 
 Then propose a local commit of what was installed, by the project's own commit rules: in the two-repository form one
 in the public repository first, then one in the private workspace with the updated gitlink, *so the gitlink names a

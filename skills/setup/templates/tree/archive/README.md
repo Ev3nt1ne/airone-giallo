@@ -12,8 +12,12 @@ tags: [archive]
 Rung 5 of the kit's ladder (`doc-discipline` §1): where a document goes when it stops being true or needed and must
 stay readable.
 
-- **Frozen.** Nothing here is edited; a correction is a new live document that cites the archived one. *An archived
-  document's value is that it is what it was.*
+- **Frozen.** A correction is a new live document that cites the archived one, never an edit here. An archived file
+  is edited only with a row in [LOG.md](LOG.md), the archive's log, in the same commit. *An archived document's value
+  is that it is what it was, and an edit without its row hides that it no longer is.*
+- **Read with its conflicts.** Before reading an archived file, run `{{archive_check}} read <file>`: it prints the
+  words whose meaning changed after the file was frozen, from the log. *A word renamed or reused since reads as
+  current, with the wrong meaning.*
 - **Out of every search unless named.** The workspace's `.ignore` holds `archive/`, which ripgrep, fd and Claude
   Code's search honour; plain `grep -r` does not, so a search over the archive names it on purpose. *An archived claim
   found by a search for current ones is read as current.*

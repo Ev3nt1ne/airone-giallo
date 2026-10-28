@@ -17,19 +17,20 @@ never runs `git submodule` itself.
 
 What it writes: at the workspace root the agent layer (AGENTS.md, CLAUDE.md, RATIONALE.md, local-machine.md, which is
 git-ignored), `.ignore` with the line `archive/`, and the `.gitignore` (an allowlist in the two-repository form, a few
-appended lines otherwise); on each rung's side `archive/README.md`, `ai-docs/` with its five places (the status file
-and the handoff when chosen), a README in `plan/` and in `docs/` (with a glossary) only when the folder is new, and
-`graph.yml` through `python -m specgraph init`; outside the ladder `human-docs/README.md` and the `sources/README.md`
-manifest, each on its chosen side; with `agent_layer: both`, a contributors' AGENTS.md and CLAUDE.md in the public
-folder. It copies no script into the project: the checks are the kit's installed commands.
+appended lines otherwise); on each rung's side `archive/README.md` and the archive's log `archive/LOG.md`, `ai-docs/`
+with its five places (the status file and the handoff when chosen), a README in `plan/` and in `docs/` (with a
+glossary) only when the folder is new, and `graph.yml` through `python -m specgraph init`; outside the ladder
+`human-docs/README.md` and the `sources/README.md` manifest, each on its chosen side; with `agent_layer: both`, a
+contributors' AGENTS.md and CLAUDE.md in the public folder. It copies no script into the project: the checks are the
+kit's installed commands.
 
 The rule it exists to obey: never report success for a step it did not perform. Every step is reported as done,
 kept, skipped or failed, and the exit code follows the report: 0 when every step was done or kept, 1 when any was
 refused, skipped or failed, 2 when the answers are invalid; a dry run exits 0 unless the real run would be refused.
 Before writing anything it checks every target: an existing file stops the whole run unless --force, so a refusal
 never leaves half an install. With --force the instruction files are replaced, but a record (the status file, the
-closed file, the handoff, RATIONALE.md, the graph file, the folders' READMEs) is kept as it is, since replacing it
-with an empty one would delete the project's history.
+closed file, the handoff, the archive's log, RATIONALE.md, the graph file, the folders' READMEs) is kept as it is,
+since replacing it with an empty one would delete the project's history.
 
 Standard library only; the graph step runs specgraph in a child process when it is importable.
 """
@@ -50,6 +51,7 @@ HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates"
 KIT = HERE.parent.parent
 STATUS_TEMPLATES = KIT / "status" / "templates"
+ARCHIVE_TEMPLATES = KIT / "archive" / "templates"
 HANDOFF_TEMPLATE = KIT / "skills" / "handoff" / "references" / "handoff-template.md"
 
 MODES = ("conductor", "four-hands")
@@ -362,6 +364,9 @@ def context(a, lay, target):
         codes = ", ".join(code(c) for c in a["families"])
         families.append(f"{codes} for work items, allocated by `{status_file}` (its checker prints the next free ID)")
 
+    archive = lay.at("archive", "archive")
+    # The archive's checker reads `archive` from where it runs, the workspace root; anywhere else it is named.
+    archive_check = "check-archive" if archive == "archive" else f"check-archive --archive {archive}"
     lint = ""
     if graph_file:
         lint = "`specgraph lint`" if graph_file == "graph.yml" else f"`specgraph lint --graph {graph_file}`"
@@ -369,9 +374,10 @@ def context(a, lay, target):
     if a["status"]:
         graph_flag = f" --graph {graph_file}" if graph_file else ""
         checks.append(f"`check-status {status_file} {closed_file}{graph_flag}`")
+    checks.append(f"`{archive_check}`")
     if a["checks"]:
         checks.append(a["checks"])
-    if not checks:
+    if checks == [f"`{archive_check}`"]:  # the kit's archive check alone: the project's own are still to come
         checks.append(SLOT.format("the project's test and lint commands"))
 
     if a["handoff"]:
@@ -390,10 +396,12 @@ def context(a, lay, target):
     if a["status"] and lay.public("ai-docs"):
         graph_flag = f" --graph {local(graph_file)}" if graph_file else ""
         c_checks.append(f"`check-status {local(status_file)} {local(closed_file)}{graph_flag}`")
+    if lay.public("archive"):
+        c_archive = local(archive)
+        c_checks.append("`check-archive`" if c_archive == "archive" else f"`check-archive --archive {c_archive}`")
     if a["checks"]:
         c_checks.append(a["checks"])
 
-    archive = lay.at("archive", "archive")
     human_docs = lay.outside(a["human_docs"], "human-docs") + "/"
     m = a["machine"]
     return {
@@ -411,6 +419,7 @@ def context(a, lay, target):
         "glossary": a["glossary"] or (code(glossary_file) if has_glossary else SLOT.format("the glossary's path")),
         "findings": a["findings"] or code(f"{ai}/findings/"),
         "design_dir": f"{ai}/design/", "guides_dir": f"{ai}/guides/", "archive_dir": f"{archive}/",
+        "archive_check": archive_check,
         "human_docs_dir": human_docs,
         "sources_manifest": lay.outside(a["sources"], "sources") + "/README.md",
         "families": "; ".join(families), "open": opening, "checks": "; ".join(checks),
@@ -480,6 +489,10 @@ def status_files(a, ctx, now):
                           f"check-status {ctx['status_file']} {ctx['closed_file']}", "status.md template")
     closed = STATUS_TEMPLATES.joinpath("closed.md").read_text(encoding="utf-8")
     return stamp_frontmatter(status, now), stamp_frontmatter(closed, now)
+
+
+def archive_log(now):
+    return stamp_frontmatter(ARCHIVE_TEMPLATES.joinpath("LOG.md").read_text(encoding="utf-8"), now)
 
 
 def specgraph_available():
@@ -584,7 +597,10 @@ def plan(a, lay, ctx, now, target):
     for place, what in (("design", "what was decided, and why"), ("findings", "what was observed"),
                         ("guides", "how a thing is done here")):
         steps.append(Step(f"{ai}/{place}/README.md", what, tree(f"ai-docs/{place}/README.md"), record=True))
-    steps.append(Step(f"{archive}/README.md", "what the archive is (rung 5)", tree("archive/README.md"), record=True))
+    log = archive_log(now)
+    steps += [Step(f"{archive}/README.md", "what the archive is (rung 5)", tree("archive/README.md"), record=True),
+              Step(f"{archive}/LOG.md", "the archive's log: changes to archived files, vocabulary conflicts",
+                   lambda: log, record=True)]
 
     for rung, files in (("docs", ("README.md", "glossary.md")), ("graph", ()), ("plan", ("README.md",))):
         if rung == "graph":

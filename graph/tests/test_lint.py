@@ -187,7 +187,7 @@ class TestSchemaRules:
             p = write(dict(META, orphan_ok={}), [node("ASM-01", ["all"])], [], d)
             text = p.read_text().replace("  statement:", "  where: twice\n  statement:", 1)
             p.write_text(text)
-            code, out = call(["lint", "--registry", str(p)])
+            code, out = call(["lint", "--graph", str(p)])
         assert "ERROR L-1 graph.yml cannot be read" in out
         assert "duplicate key 'where'" in out
         assert code == 1
@@ -202,9 +202,9 @@ class TestSchemaRules:
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "graph.yml"
             p.write_text(text)
-            call(["lint", "--registry", str(p), "--fix"])
+            call(["lint", "--graph", str(p), "--fix"])
             line = [l for l in p.read_text().splitlines() if "ASM-01" in l][0]
-            code, out = call(["lint", "--registry", str(p), "--today", "2024-06-01"])
+            code, out = call(["lint", "--graph", str(p), "--today", "2024-06-01"])
         assert line.count("fingerprint") == 1
         assert line.endswith('fingerprint: "043a7187"}'), line
         assert "ERROR" not in out
@@ -745,16 +745,16 @@ class TestWhere:
             forms = dict(META["where_forms"], folder_files=["README.md", "log/*.md"])
             meta = dict(META, orphan_ok={}, where_aliases={"design.md": "docs/design.md"}, where_forms=forms)
             p = write(meta, nodes, [], d)
-            code, out = call(["lint", "--registry", str(p)])
+            code, out = call(["lint", "--graph", str(p)])
             assert "W11" not in out
             # a copy of the graph file elsewhere resolves under --root, as the batch tool's copies do
             with tempfile.TemporaryDirectory() as d2:
                 p2 = write(meta, nodes, [], d2)
-                assert "W11 ATK-02" in call(["lint", "--registry", str(p2)])[1]
-                assert "W11" not in call(["lint", "--registry", str(p2), "--root", str(root)])[1]
+                assert "W11 ATK-02" in call(["lint", "--graph", str(p2)])[1]
+                assert "W11" not in call(["lint", "--graph", str(p2), "--root", str(root)])[1]
             # the alias is read from meta: without it, design.md does not resolve
             p = write(dict(META, orphan_ok={}, where_aliases={}), nodes[:1], [], d)
-            code, out = call(["lint", "--registry", str(p)])
+            code, out = call(["lint", "--graph", str(p)])
             assert "W11 ATK-01: `where` names a document that does not resolve: design.md" in out
 
 
@@ -808,7 +808,7 @@ class TestWhereFormsFromMeta:
             (Path(d) / "notes" / "log" / "5.md").write_text("## 5. Five\n")
             nodes = [node("ATK-01", ["all"], where="notes/ §5")]
             p = write(dict(META, orphan_ok={}), nodes, [], d)
-            assert "W11 ATK-01: `where` cites a section no heading starts with: §5" in call(["lint", "--registry", str(p)])[1]
+            assert "W11 ATK-01: `where` cites a section no heading starts with: §5" in call(["lint", "--graph", str(p)])[1]
             forms = dict(META["where_forms"], folder_files=["README.md", "log/*.md"])
             p = write(dict(META, orphan_ok={}, where_forms=forms), nodes, [], d)
-            assert "W11" not in call(["lint", "--registry", str(p)])[1]
+            assert "W11" not in call(["lint", "--graph", str(p)])[1]

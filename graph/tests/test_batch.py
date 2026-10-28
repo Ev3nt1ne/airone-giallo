@@ -84,7 +84,7 @@ class TestPreviewAndApply:
         p = Path(d) / "graph.yml"
         p.write_text(REGISTRY)
         (Path(d) / "spec.md").write_text("# Spec\n\n## 1. One\n")
-        call(["lint", "--registry", str(p), "--fix"])
+        call(["lint", "--graph", str(p), "--fix"])
         return p
 
     def test_an_additive_batch_is_read_as_a_and_applied(self):
@@ -95,11 +95,11 @@ class TestPreviewAndApply:
                          'cut mid-write.", where: "spec.md §1"}\'}\n'
                          '  - {op: add_edge, after_edge: [DEC-journal, satisfies, REQ-01], line: "{from: DEC-journal, type: '
                          'mitigates, to: ATK-01}"}\n')
-            code, out = call(["batch", str(b), "--registry", str(p)])
+            code, out = call(["batch", str(b), "--graph", str(p)])
             assert "tier A, additive" in out
             assert "ATK-01" in out.split("2. outcomes that change")[1]      # the new node's outcome appears
             assert "ATK-01" not in p.read_text()                             # a preview writes nothing
-            code, out = call(["batch", str(b), "--registry", str(p), "--apply", "--additive"])
+            code, out = call(["batch", str(b), "--graph", str(p), "--apply", "--additive"])
             assert "applied 2 operations" in out and code == 0, out
             assert "ATK-01" in p.read_text()
 
@@ -108,9 +108,9 @@ class TestPreviewAndApply:
             p = self.setup_registry(d)
             b = Path(d) / "b.yml"
             b.write_text("ops:\n  - {op: remove_edge, from: DEC-journal, type: satisfies, to: REQ-01}\n")
-            code, out = call(["batch", str(b), "--registry", str(p)])
+            code, out = call(["batch", str(b), "--graph", str(p)])
             assert "REQ-01                   holds -> not argued yet on all" in out
             assert "tier review" in out
-            code, out = call(["batch", str(b), "--registry", str(p), "--apply", "--additive"])
+            code, out = call(["batch", str(b), "--graph", str(p), "--apply", "--additive"])
             assert code == 1 and "--additive refused" in out
             assert "satisfies" in p.read_text()

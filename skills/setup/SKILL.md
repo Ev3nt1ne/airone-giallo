@@ -114,7 +114,7 @@ kit, or from the plugin's copy of it, gives `specgraph` and `check-status`. Ask 
 script is a second copy that the kit's next version does not reach.* Run each check and read its output; the script's
 report is a claim, these measure the files.
 
-1. With the graph: `specgraph lint` reports 0 errors (`--registry <name>/graph.yml` when the graph is public in the
+1. With the graph: `specgraph lint` reports 0 errors (`--graph <name>/graph.yml` when the graph is public in the
    two-repository form).
 2. With the status file: `check-status ai-docs/status.md ai-docs/closed.md`, adding `--graph` and the graph's path
    with the graph, reports 0 errors and prints the first free ID of each family.

@@ -22,17 +22,17 @@ def readme_block(name):
 def test_init_writes_each_profile_and_it_lints_clean(tmp_path):
     for profile in ("lite", "full"):
         p = tmp_path / f"{profile}.yml"
-        code, out = call(["init", "--profile", profile, "--registry", str(p)])
+        code, out = call(["init", "--profile", profile, "--graph", str(p)])
         assert code == 0 and p.exists()
         assert yaml.safe_load(p.read_text())["meta"]["profile"] == profile
-        code, out = call(["lint", "--registry", str(p)])
+        code, out = call(["lint", "--graph", str(p)])
         assert code == 0 and "0 error(s), 0 warning(s)" in out, out
 
 
 def test_init_never_overwrites(tmp_path):
     p = tmp_path / "graph.yml"
     p.write_text("keep me")
-    code, out = call(["init", "--registry", str(p)])
+    code, out = call(["init", "--graph", str(p)])
     assert code == 1 and p.read_text() == "keep me"
 
 
@@ -62,9 +62,9 @@ def test_the_readme_example_lints_clean_in_lite_and_full():
         with tempfile.TemporaryDirectory() as d:
             reg, data = _readme_registry(d, meta)
             assert len(data["nodes"]) == 5
-            call(["lint", "--registry", str(reg), "--fix"])
-            code, out = call(["lint", "--registry", str(reg), "--today", "2026-11-01"])
+            call(["lint", "--graph", str(reg), "--fix"])
+            code, out = call(["lint", "--graph", str(reg), "--today", "2026-11-01"])
             assert code == 0 and "0 error(s), 0 warning(s)" in out, (profile, out)
             assert "0 assertion(s) fail somewhere, 0 more not argued yet somewhere; 0 threat(s) undefended" in out
-            code, out = call(["lint", "--registry", str(reg), "--what-if", "ASM-01", "--today", "2026-11-01"])
+            code, out = call(["lint", "--graph", str(reg), "--what-if", "ASM-01", "--today", "2026-11-01"])
             assert "UNSATISFIED — every satisfier lost (DEC-journal)" in out, out

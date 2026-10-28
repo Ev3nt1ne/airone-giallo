@@ -53,7 +53,7 @@ def run(nodes, edges, *extra, base=None, **meta_over):
     meta.update(meta_over)
     with tempfile.TemporaryDirectory() as d:
         p = write(meta, nodes, edges, d)
-        return call(["lint", "--registry", str(p), *extra])
+        return call(["lint", "--graph", str(p), *extra])
 
 
 def graph(nodes, edges, *args, base=None, **meta_over):
@@ -62,7 +62,7 @@ def graph(nodes, edges, *args, base=None, **meta_over):
     meta.update(meta_over)
     with tempfile.TemporaryDirectory() as d:
         p = write(meta, nodes, edges, d)
-        return call([*args, "--registry", str(p)])[1]
+        return call([*args, "--graph", str(p)])[1]
 
 
 def node(nid, domain=None, **kw):

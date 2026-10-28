@@ -364,7 +364,7 @@ def context(a, lay, target):
 
     lint = ""
     if graph_file:
-        lint = "`specgraph lint`" if graph_file == "graph.yml" else f"`specgraph lint --registry {graph_file}`"
+        lint = "`specgraph lint`" if graph_file == "graph.yml" else f"`specgraph lint --graph {graph_file}`"
     checks = [lint] if lint else []
     if a["status"]:
         graph_flag = f" --graph {graph_file}" if graph_file else ""
@@ -493,7 +493,7 @@ def graph_action(profile, folder):
                     f"(pip install <kit>/graph), then run in {folder}: specgraph init --profile {profile}")
         where = target / folder
         proc = subprocess.run([sys.executable, "-m", "specgraph", "init", "--profile", profile,
-                               "--registry", "graph.yml"], cwd=where, capture_output=True, text=True)
+                               "--graph", "graph.yml"], cwd=where, capture_output=True, text=True)
         out = (proc.stdout + proc.stderr).strip()
         # Measure the artifact, not the command: the file must exist and carry its meta.
         graph = where / "graph.yml"

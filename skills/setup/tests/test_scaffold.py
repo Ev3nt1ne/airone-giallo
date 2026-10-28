@@ -145,7 +145,7 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
                              cwd=folder, capture_output=True, text=True)
     assert checker.returncode == 0, checker.stdout + checker.stderr
     assert "APP-001" in checker.stdout and "DOC-001" in checker.stdout
-    lint = subprocess.run([sys.executable, "-m", "specgraph", "lint", "--registry", "inkwell/graph.yml"],
+    lint = subprocess.run([sys.executable, "-m", "specgraph", "lint", "--graph", "inkwell/graph.yml"],
                           cwd=folder, capture_output=True, text=True)
     assert lint.returncode == 0 and "0 error(s)" in lint.stdout, lint.stdout + lint.stderr
     assert dead_links(folder) == []
@@ -153,7 +153,7 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
     for row in ("`inkwell/docs/design.md`", "`inkwell/graph.yml`", "`ai-docs/status.md`",
                 "`ai-docs/handoff/current.md`", "`inkwell/docs/glossary.md`", "`ai-docs/design/`",
                 "`ai-docs/findings/`", "`ai-docs/guides/`", "`archive/`", "`human-docs/`", "`sources/README.md`",
-                "`APP`, `DOC`", "`specgraph lint --registry inkwell/graph.yml`",
+                "`APP`, `DOC`", "`specgraph lint --graph inkwell/graph.yml`",
                 "`check-status ai-docs/status.md ai-docs/closed.md --graph inkwell/graph.yml`", "`pytest`"):
         assert row in text, row
     assert "[to fill" not in text

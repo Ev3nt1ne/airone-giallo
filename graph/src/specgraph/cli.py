@@ -21,7 +21,7 @@ def prog_name():
 
 
 def _registry_arg(p):
-    p.add_argument("--registry", metavar="PATH", default="graph.yml",
+    p.add_argument("--graph", metavar="PATH", default="graph.yml",
                    help="the graph file (default: graph.yml in the current folder)")
 
 
@@ -78,7 +78,7 @@ def profile_text(name):
 
 
 def cmd_init(a):
-    path = Path(a.registry)
+    path = Path(a.graph)
     if path.exists():
         print(f"{path} exists; not overwritten", file=sys.stderr)
         return 1
@@ -88,7 +88,7 @@ def cmd_init(a):
 
 
 def cmd_lint(a):
-    reg = Path(a.registry)
+    reg = Path(a.graph)
     try:
         meta, nodes, edges = load(reg)
     except yaml.YAMLError as ex:
@@ -122,14 +122,14 @@ def main(argv=None):
     if a.cmd == "batch":
         today = datetime.date.fromisoformat(a.today) if a.today else None
         try:
-            return batch.run(a.batch, a.registry, a.root, a.apply, a.additive, today)
+            return batch.run(a.batch, a.graph, a.root, a.apply, a.additive, today)
         except batch.BatchError as ex:
             print(ex, file=sys.stderr)
             return 1
     if a.cmd == "actual":
-        return batch.actual(a.rev, a.registry)
-    data = read_registry(a.registry)
-    name = Path(a.registry).name
+        return batch.actual(a.rev, a.graph)
+    data = read_registry(a.graph)
+    name = Path(a.graph).name
     if a.cmd == "near":
         return view.run("near", a.words, data, name, at=a.at)
     if a.cmd == "show":

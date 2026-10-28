@@ -105,8 +105,8 @@ later session.*
 - Each document sits on its rung of the kit's ladder and cites only rungs at or below it; {{sides}}
   (`doc-discipline` §1). *A public text that cites a private one is a dead link to its readers or a leak.*
 - Never edited: {{#frozen}}{{frozen}}, and {{/frozen}}generated or synced copies{{#copies}} ({{copies}}){{/copies}},
-  whose source is edited instead. *A frozen document's value is that it is what it was, and a copy's edit is lost
-  unseen.*
+  whose source is edited instead; an archived file only with a row in `{{archive_dir}}/LOG.md`, the owner having
+  ruled. *A frozen document's value is that it is what it was, and a copy's edit is lost unseen.*
 - Ask before every edit, however small, of a file that steers later sessions: this one, `CLAUDE.md`, the skills, the
   memory, the hooks; a change in a proposal the owner confirmed counts as asked. A rule enters from a named failure,
   its reason here and its story in RATIONALE.md; one unneeded for {{prune_after}} is proposed for removal. *These

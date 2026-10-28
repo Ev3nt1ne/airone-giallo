@@ -46,25 +46,25 @@ def test_the_lite_profile_is_a_subset_of_the_full_one():
             assert set(ends[side]) <= set(full["relations"][rel][side]) | ({"assertion"} & set(ends[side])), rel
 
 
-def _readme_registry(d, meta):
+def _readme_graph_file(d, meta):
     nodes_edges = yaml.safe_load(readme_block("nodes and edges"))
-    reg = Path(d) / "graph.yml"
+    graph_path = Path(d) / "graph.yml"
     text = "meta: " + yaml.safe_dump(meta, default_flow_style=True, width=10**6)
     text += readme_block("nodes and edges")
-    reg.write_text(text)
+    graph_path.write_text(text)
     (Path(d) / "design.md").write_text(readme_block("design.md"))
-    return reg, nodes_edges
+    return graph_path, nodes_edges
 
 
 def test_the_readme_example_lints_clean_in_lite_and_full():
     for profile in ("lite", "full"):
         meta = yaml.safe_load(cli.profile_text(profile))["meta"]
         with tempfile.TemporaryDirectory() as d:
-            reg, data = _readme_registry(d, meta)
+            graph_path, data = _readme_graph_file(d, meta)
             assert len(data["nodes"]) == 5
-            call(["lint", "--graph", str(reg), "--fix"])
-            code, out = call(["lint", "--graph", str(reg), "--today", "2026-11-01"])
+            call(["lint", "--graph", str(graph_path), "--fix"])
+            code, out = call(["lint", "--graph", str(graph_path), "--today", "2026-11-01"])
             assert code == 0 and "0 error(s), 0 warning(s)" in out, (profile, out)
             assert "0 assertion(s) fail somewhere, 0 more not argued yet somewhere; 0 threat(s) undefended" in out
-            code, out = call(["lint", "--graph", str(reg), "--what-if", "ASM-01", "--today", "2026-11-01"])
+            code, out = call(["lint", "--graph", str(graph_path), "--what-if", "ASM-01", "--today", "2026-11-01"])
             assert "UNSATISFIED — every satisfier lost (DEC-journal)" in out, out

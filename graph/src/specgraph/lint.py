@@ -16,7 +16,7 @@ from pathlib import Path
 
 from .engine import DEFAULT_OUTSIDE, Logic, build_indexes, grid_of, node_domains
 from .places import DomainError
-from .registry import GONE, fingerprint
+from .graph_file import GONE, fingerprint
 from .where import Forms, check_where
 
 STATUSES = {"active", "candidate", "suspect", "open", "retired", "superseded"}   # declared, never truth
@@ -412,5 +412,5 @@ def summary_lines(res, n_nodes, n_edges, prog="lint"):
     return lines
 
 
-def where_root(registry_path, root=None):
-    return Path(root).resolve() if root else Path(registry_path).resolve().parent
+def where_root(graph_path, root=None):
+    return Path(root).resolve() if root else Path(graph_path).resolve().parent

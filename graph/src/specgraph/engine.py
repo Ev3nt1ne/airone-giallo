@@ -11,7 +11,7 @@ supported only through itself fails. What holds is computed from the graph, neve
 stands where everything it requires holds; questions, checks, records and justifications carry no truth value.
 """
 from .places import DomainError, Grid
-from .registry import GONE
+from .graph_file import GONE
 
 DEFAULT_OUTSIDE = ["record", "justification"]   # kinds outside the argument: nothing rests on them
 

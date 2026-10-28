@@ -65,7 +65,7 @@ class TestOccasions:
         assert gb.review_occasions(before, {**before, ("REQ-01", "Z2.BETA"): "holds"}) == {}
 
 
-REGISTRY = """meta: {prefixes: [DEC, REQ, ASM, ATK], slug_prefixes: [DEC], axes: [],
+GRAPH_TEXT = """meta: {prefixes: [DEC, REQ, ASM, ATK], slug_prefixes: [DEC], axes: [],
   assertion_kinds: [requirement, assumption, decision], other_kinds: [threat],
   supports: [given, chosen, premises, satisfier], domain_kinds: [requirement, assumption, decision, threat],
   relations: {requires: {from: [assertion], to: [requirement, assumption, decision]},
@@ -80,16 +80,16 @@ edges:
 
 
 class TestPreviewAndApply:
-    def setup_registry(self, d):
+    def setup_graph_file(self, d):
         p = Path(d) / "graph.yml"
-        p.write_text(REGISTRY)
+        p.write_text(GRAPH_TEXT)
         (Path(d) / "spec.md").write_text("# Spec\n\n## 1. One\n")
         call(["lint", "--graph", str(p), "--fix"])
         return p
 
     def test_an_additive_batch_is_read_as_a_and_applied(self):
         with tempfile.TemporaryDirectory() as d:
-            p = self.setup_registry(d)
+            p = self.setup_graph_file(d)
             b = Path(d) / "b.yml"
             b.write_text('ops:\n  - {op: add_node, after: DEC-journal, line: \'{id: ATK-01, kind: threat, statement: "Power is '
                          'cut mid-write.", where: "spec.md §1"}\'}\n'
@@ -105,7 +105,7 @@ class TestPreviewAndApply:
 
     def test_a_batch_that_moves_an_outcome_is_refused_as_additive(self):
         with tempfile.TemporaryDirectory() as d:
-            p = self.setup_registry(d)
+            p = self.setup_graph_file(d)
             b = Path(d) / "b.yml"
             b.write_text("ops:\n  - {op: remove_edge, from: DEC-journal, type: satisfies, to: REQ-01}\n")
             code, out = call(["batch", str(b), "--graph", str(p)])

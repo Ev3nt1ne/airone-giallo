@@ -31,7 +31,7 @@ def _no_duplicate_keys(loader, node, deep=False):
 StrictLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _no_duplicate_keys)
 
 
-def read_registry(path):
+def read_graph_file(path):
     data = yaml.load(Path(path).read_text(encoding="utf-8"), Loader=StrictLoader) or {}
     data.setdefault("meta", {})
     data["meta"] = data["meta"] or {}
@@ -41,7 +41,7 @@ def read_registry(path):
 
 
 def load(path):
-    data = read_registry(path)
+    data = read_graph_file(path)
     return data["meta"], data["nodes"], data["edges"]
 
 

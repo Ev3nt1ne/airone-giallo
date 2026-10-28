@@ -139,7 +139,7 @@ def draw(nid, nodes, edges, logic, depth, dot):
     print("\n".join(lines))
 
 
-def run(mode, args, data, registry_name, at=None, depth=2, dot=False):
+def run(mode, args, data, graph_file_name, at=None, depth=2, dot=False):
     """One read-side command; returns the exit code."""
     meta = data.get("meta", {})
     grid = grid_of(meta)
@@ -238,7 +238,7 @@ def run(mode, args, data, registry_name, at=None, depth=2, dot=False):
             return 1
         hits = args
     if not hits:
-        print(f"no node matches {' '.join(args)!r}{' at ' + at if at else ''} ({registry_name}, {len(nodes)} nodes)")
+        print(f"no node matches {' '.join(args)!r}{' at ' + at if at else ''} ({graph_file_name}, {len(nodes)} nodes)")
         return 1
     for nid in hits:
         show(nid, nodes, edges, logic)

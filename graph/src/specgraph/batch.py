@@ -38,7 +38,7 @@ import yaml
 
 from .engine import read_as_logic
 from .lint import report_cascade, run_lint, summary_lines, where_root
-from .registry import fix_fingerprints, load, read_registry
+from .graph_file import fix_fingerprints, load, read_graph_file
 from . import view
 
 NEUTRAL_EDGES = ("verified-by", "evidenced-by", "awaits")
@@ -113,8 +113,8 @@ def apply_ops(text, ops):
 
 
 def outcomes(path):
-    reg = read_registry(Path(path))
-    lg = read_as_logic(reg["meta"], reg["nodes"], reg["edges"])
+    data = read_graph_file(Path(path))
+    lg = read_as_logic(data["meta"], data["nodes"], data["edges"])
     return {(n, e): view.outcome(lg, n, e)[0] for e in lg.elements for n in lg.at(e)[0]}
 
 
@@ -197,27 +197,27 @@ def _fixed_copy(d, text):
     return copy
 
 
-def run(batch_path, registry, root=None, apply=False, additive=False, today=None):
+def run(batch_path, graph_path, root=None, apply=False, additive=False, today=None):
     batch = yaml.safe_load(Path(batch_path).read_text(encoding="utf-8"))
     ops = batch["ops"]
-    reg = Path(registry)
-    root = where_root(reg, root)
-    new_text = apply_ops(reg.read_text(encoding="utf-8"), ops)
+    graph_path = Path(graph_path)
+    root = where_root(graph_path, root)
+    new_text = apply_ops(graph_path.read_text(encoding="utf-8"), ops)
     if additive:
         with tempfile.TemporaryDirectory() as d:
             copy = _fixed_copy(d, new_text)
-            before, after = outcomes(reg), outcomes(copy)
+            before, after = outcomes(graph_path), outcomes(copy)
         moved_ids = {k[0] for k in set(before) | set(after) if before.get(k, "absent") != after.get(k, "absent")}
         t = tier(ops, moved_ids, new_text)
         if t != "A":
             raise BatchError(f"--additive refused: the preview reads this batch as tier {t}, not A ({TIER_TEXT[t]})")
     if apply:
-        reg.write_text(new_text, encoding="utf-8")
-        res, nodes, _ = lint_file(reg, root, today)          # before the fix: L-6 names the changed statements
+        graph_path.write_text(new_text, encoding="utf-8")
+        res, nodes, _ = lint_file(graph_path, root, today)   # before the fix: L-6 names the changed statements
         drifted = res.drifted
-        fix_fingerprints(reg, nodes)
-        res, nodes, edges = lint_file(reg, root, today)
-        print(f"applied {len(ops)} operations to {reg.name} and refreshed fingerprints")
+        fix_fingerprints(graph_path, nodes)
+        res, nodes, edges = lint_file(graph_path, root, today)
+        print(f"applied {len(ops)} operations to {graph_path.name} and refreshed fingerprints")
         print("   " + (f"statements changed: {', '.join(drifted)}" if drifted else "no statement changed"))
         print("   " + summary_lines(res, len(nodes), len(edges))[-1])
         return 1 if res.errors else 0
@@ -227,7 +227,7 @@ def run(batch_path, registry, root=None, apply=False, additive=False, today=None
         verdict = [f"ERROR {e}" for e in res.errors] + [summary_lines(res, len(nodes), len(edges))[-1]]
         print(f"batch {batch.get('name', batch_path)}: {len(ops)} operations")
         print("1. the lint on the changed copy:\n   " + "\n   ".join(verdict))
-        before, after = outcomes(reg), outcomes(copy)
+        before, after = outcomes(graph_path), outcomes(copy)
         moved = moved_outcomes(before, after)
         print_moved(moved)
         t = tier(ops, set(moved), new_text)
@@ -239,10 +239,10 @@ def run(batch_path, registry, root=None, apply=False, additive=False, today=None
                 print(f"     {n:<24} on {', '.join(es)}")
         if batch.get("whatif", True) is False:
             def readings(path):
-                r = read_registry(path)
+                r = read_graph_file(path)
                 lg = read_as_logic(r["meta"], r["nodes"], r["edges"])
                 return {n: lg.needs_satisfier(n) for n in lg.live}
-            r0, r1 = readings(reg), readings(copy)
+            r0, r1 = readings(graph_path), readings(copy)
             differ = sorted(n for n in r0.keys() | r1.keys() if r0.get(n) != r1.get(n))
             print(f"3. the engine's reading of each live node (needs a satisfier or not): {len(r0)} before, "
                   f"{len(r1)} after; differ on {differ or 'none'}")
@@ -257,19 +257,19 @@ def run(batch_path, registry, root=None, apply=False, additive=False, today=None
     return 0
 
 
-def actual(rev, registry):
+def actual(rev, graph_path):
     """The change a past batch made: outcomes on every place, the graph file at a git revision against the working
     file, printed as the preview prints its section 2, so the two can be compared line by line."""
-    reg = Path(registry).resolve()
-    top = subprocess.run(["git", "-C", str(reg.parent), "rev-parse", "--show-toplevel"], capture_output=True,
+    graph_path = Path(graph_path).resolve()
+    top = subprocess.run(["git", "-C", str(graph_path.parent), "rev-parse", "--show-toplevel"], capture_output=True,
                          text=True, check=True).stdout.strip()
-    rel = reg.relative_to(Path(top).resolve()).as_posix()
+    rel = graph_path.relative_to(Path(top).resolve()).as_posix()
     old_text = subprocess.run(["git", "-C", top, "show", f"{rev}:{rel}"], capture_output=True, text=True,
                               check=True).stdout
     with tempfile.TemporaryDirectory() as d:
         old = Path(d) / "graph.yml"
         old.write_text(old_text, encoding="utf-8")
-        before, after = outcomes(old), outcomes(reg)
+        before, after = outcomes(old), outcomes(graph_path)
     print_moved(moved_outcomes(before, after))
     return 0
 

@@ -17,17 +17,18 @@ import pytest
 import yaml
 
 from specgraph.lint import engine_summary, run_lint
-from specgraph.registry import load
+from specgraph.graph_file import load
 
-REG = os.environ.get("SPECGRAPH_EQUALITY_REGISTRY")
+GRAPH_PATH = os.environ.get("SPECGRAPH_EQUALITY_REGISTRY")
 CFG = os.environ.get("SPECGRAPH_EQUALITY_CONFIG")
-pytestmark = pytest.mark.skipif(not (REG and CFG), reason="SPECGRAPH_EQUALITY_REGISTRY and SPECGRAPH_EQUALITY_CONFIG unset")
+pytestmark = pytest.mark.skipif(not (GRAPH_PATH and CFG),
+                                reason="SPECGRAPH_EQUALITY_REGISTRY and SPECGRAPH_EQUALITY_CONFIG unset")
 
 
 @pytest.fixture(scope="module")
 def case():
     cfg = yaml.safe_load(Path(CFG).read_text())
-    meta, nodes, edges = load(REG)
+    meta, nodes, edges = load(GRAPH_PATH)
     meta = dict(meta)
     meta.update(cfg.get("meta") or {})
     meta["axes"] = cfg.get("axes") or []

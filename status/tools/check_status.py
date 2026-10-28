@@ -267,17 +267,17 @@ def check_date(where, column, cell, errors):
         errors.append(f"{where}: {column} '{text}' is not a date YYYY-MM-DD")
 
 
-def check(register_path, closed_path=None, graph_path=None):
+def check(status_path, closed_path=None, graph_path=None):
     """Return (errors, next IDs by family, notes)."""
     errors, notes = [], []
-    register = read_doc(register_path, False, errors)
+    status = read_doc(status_path, False, errors)
     closed = read_doc(closed_path, True, errors) if closed_path else Doc("")
-    families = read_families(register, errors)
+    families = read_families(status, errors)
     if not closed_path:
         notes.append("no closed file given: the next IDs count the status file only")
 
     seen = {}
-    for row in register.rows + closed.rows:
+    for row in status.rows + closed.rows:
         if not check_row(row, families, errors):
             continue
         if row.id in seen:
@@ -294,14 +294,14 @@ def check(register_path, closed_path=None, graph_path=None):
     graph_prefixes, graph_ids, graph_body = read_graph(graph_path) if graph_path else (set(), set(), [])
     shared = [code for code in families if code.split("-")[0] in graph_prefixes]
     for code in shared:
-        errors.append(f"{register.path}: family {code} is also a family of the graph; a "
+        errors.append(f"{status.path}: family {code} is also a family of the graph; a "
                       f"citation of either would be ambiguous")
 
     highest = {code: 0 for code in families}
     for row in seen.values():
         family, counter = parse_id(row.id, families)
         highest[family] = max(highest[family], int(counter))
-    for doc in (register, closed):
+    for doc in (status, closed):
         for n, span in doc.mentions:
             if (n, span) in doc.own_ids:
                 continue
@@ -333,7 +333,7 @@ def check(register_path, closed_path=None, graph_path=None):
                               f"node, a node never cites an item")
 
     next_ids = {code: f"{code}-{highest[code] + 1:03d}" for code in families}
-    return errors, next_ids, (register, closed, notes)
+    return errors, next_ids, (status, closed, notes)
 
 
 def main(argv=None):
@@ -343,13 +343,13 @@ def main(argv=None):
     parser.add_argument("--graph", metavar="GRAPH", help="the specification graph's file (graph.yml)")
     args = parser.parse_args(argv)
     try:
-        errors, next_ids, (register, closed, notes) = check(args.status, args.closed, args.graph)
+        errors, next_ids, (status, closed, notes) = check(args.status, args.closed, args.graph)
     except OSError as e:
         print(f"cannot read {e.filename}: {e.strerror}", file=sys.stderr)
         return 2
     for e in errors:
         print(f"error: {e}")
-    summary = f"{register.path}: {len(register.rows)} open item(s)"
+    summary = f"{status.path}: {len(status.rows)} open item(s)"
     if args.closed:
         summary += f"; {closed.path}: {len(closed.rows)} closed item(s)"
     print(summary)

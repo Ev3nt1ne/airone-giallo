@@ -10,7 +10,7 @@ import yaml
 
 from . import batch, view
 from .lint import report_cascade, run_lint, summary_lines, what_if_lines, where_root
-from .registry import fix_fingerprints, load, read_registry
+from .graph_file import fix_fingerprints, load, read_graph_file
 
 PROFILES = ("lite", "full")
 
@@ -20,7 +20,7 @@ def prog_name():
     return "python -m specgraph" if name in ("", "__main__.py", "-c") else name
 
 
-def _registry_arg(p):
+def _graph_arg(p):
     p.add_argument("--graph", metavar="PATH", default="graph.yml",
                    help="the graph file (default: graph.yml in the current folder)")
 
@@ -32,10 +32,10 @@ def parser():
 
     p = sub.add_parser("init", help="write an empty graph file with its meta")
     p.add_argument("--profile", choices=PROFILES, default="lite")
-    _registry_arg(p)
+    _graph_arg(p)
 
     p = sub.add_parser("lint", help="check the graph; with --what-if, simulate a change")
-    _registry_arg(p)
+    _graph_arg(p)
     p.add_argument("--fix", action="store_true", help="write fingerprints back into the graph file")
     p.add_argument("--what-if", metavar="ID|PLACE", help="simulate revising a node, or what we believe about a place")
     p.add_argument("--today", metavar="YYYY-MM-DD", help="the date L-9 measures staleness from (default: today)")
@@ -44,21 +44,21 @@ def parser():
     p = sub.add_parser("near", help="nodes whose id, statement or `where` holds every word")
     p.add_argument("words", nargs="+")
     p.add_argument("--at", metavar="PLACE", help="only nodes whose domain covers PLACE")
-    _registry_arg(p)
+    _graph_arg(p)
     p = sub.add_parser("show", help="those nodes, with what the engine computes and their edges")
     p.add_argument("ids", nargs="+")
-    _registry_arg(p)
+    _graph_arg(p)
     p = sub.add_parser("why", help="a node's justification, premises, checks, open problems, and why it holds or not")
     p.add_argument("id")
-    _registry_arg(p)
+    _graph_arg(p)
     p = sub.add_parser("at", help="the nodes placed on a place, grouped by what holds there")
     p.add_argument("place")
-    _registry_arg(p)
+    _graph_arg(p)
     p = sub.add_parser("draw", help="a node's neighbourhood as Mermaid, or Graphviz with --dot")
     p.add_argument("id")
     p.add_argument("--depth", type=int, default=2)
     p.add_argument("--dot", action="store_true")
-    _registry_arg(p)
+    _graph_arg(p)
 
     p = sub.add_parser("batch", help="preview a batch of changes; --apply to apply it")
     p.add_argument("batch")
@@ -66,10 +66,10 @@ def parser():
     p.add_argument("--additive", action="store_true", help="apply only if the preview reads the batch as tier A")
     p.add_argument("--root", metavar="DIR")
     p.add_argument("--today", metavar="YYYY-MM-DD")
-    _registry_arg(p)
+    _graph_arg(p)
     p = sub.add_parser("actual", help="what changed since a git revision: outcomes on every place")
     p.add_argument("rev")
-    _registry_arg(p)
+    _graph_arg(p)
     return ap
 
 
@@ -88,15 +88,15 @@ def cmd_init(a):
 
 
 def cmd_lint(a):
-    reg = Path(a.graph)
+    graph_path = Path(a.graph)
     try:
-        meta, nodes, edges = load(reg)
+        meta, nodes, edges = load(graph_path)
     except yaml.YAMLError as ex:
-        print(f"  ERROR L-1 {reg.name} cannot be read: {' '.join(str(ex).split())}")
+        print(f"  ERROR L-1 {graph_path.name} cannot be read: {' '.join(str(ex).split())}")
         print(f"{prog_name()} lint: 1 error(s), 0 warning(s)")
         return 1
     today = datetime.date.fromisoformat(a.today) if a.today else None
-    res = run_lint(meta, nodes, edges, root=where_root(reg, a.root), today=today, fixing=a.fix)
+    res = run_lint(meta, nodes, edges, root=where_root(graph_path, a.root), today=today, fixing=a.fix)
     if res.drifted:
         print(f"L-6 CHANGED since last review: {', '.join(res.drifted)}")
         print("\n".join(report_cascade(res.logic, res.drifted)))
@@ -106,7 +106,7 @@ def cmd_lint(a):
         if code is not None:
             return code
     if a.fix:
-        missing = fix_fingerprints(reg, nodes)
+        missing = fix_fingerprints(graph_path, nodes)
         res.errors += [f"--fix could not locate node line for {m}" for m in missing]
         print(f"--fix: fingerprints written for {len(nodes)} nodes")
     print("\n".join(summary_lines(res, len(nodes), len(edges), prog=f"{prog_name()} lint")))
@@ -128,7 +128,7 @@ def main(argv=None):
             return 1
     if a.cmd == "actual":
         return batch.actual(a.rev, a.graph)
-    data = read_registry(a.graph)
+    data = read_graph_file(a.graph)
     name = Path(a.graph).name
     if a.cmd == "near":
         return view.run("near", a.words, data, name, at=a.at)

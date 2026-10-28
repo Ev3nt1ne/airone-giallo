@@ -234,3 +234,18 @@ def test_the_slug_follows_the_forges(repo):
     assert cl.at.slug("Ünïcode & symbols §4") == "ünïcode--symbols-4"
     assert cl.at.slug("snake_case [a link](x.md)") == "snake_case-a-link"
     assert cl.at.slug("_Emphasis_ and __strong__") == "emphasis-and-strong"
+
+
+def test_an_exempt_folder_is_not_scanned_as_a_source(repo):
+    """A template's links resolve only once it is written into a project: --exempt keeps it out of the scan, while a
+    dead link elsewhere is still an error, and the exempt file is still a valid target."""
+    repo.write({
+        "templates/tree/README.md": FM + "# Index\n\nSee [the status file](status.md).\n",
+        "docs/notes.md": FM + "See [the template](../templates/tree/README.md) and [a dead one](missing.md).\n",
+    }).commit()
+    code, errors, warnings, archived = check(repo)
+    assert code == 1 and len(errors) == 2
+    code, errors, warnings, archived = check(repo, "--exempt", "templates/")
+    assert code == 1 and len(errors) == 1 and "missing.md" in errors[0]
+    code, errors, warnings, archived = check(repo, "--exempt", "templates/*/README.md")
+    assert len(errors) == 1

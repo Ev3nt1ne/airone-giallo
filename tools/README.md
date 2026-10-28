@@ -82,6 +82,8 @@ the top of the repository holding the file. Links inside code and HTML comments 
   A citation from a rung to a higher one is a warning. `--rung NAME=PATH[,PATH]` places a rung elsewhere, from the
   workspace root (`--rung docs=documentation/`). A file outside every rung has no side in one repository and is not
   held to the cut.
+- `--exempt PATH` (repeatable) keeps a folder or a glob out of the scan as a source: a template whose links resolve
+  only once it is written into a project. The kit checks itself with `check-links --exempt skills/setup/templates/`.
 
 ```text
 $ check-links --public inkwell

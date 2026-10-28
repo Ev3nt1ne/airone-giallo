@@ -28,6 +28,7 @@ Exit 1 on any error, 2 on a bad argument or a tree that cannot be read. Standard
 """
 
 import argparse
+import fnmatch
 import posixpath
 import re
 import sys
@@ -247,11 +248,21 @@ def check_file(tree, report, src):
                     judge(tree, report, src, n, f"`{shown}`", path, "names")
 
 
-def check(root, ladder=None, archive_dirs=None):
+def exempted(path, patterns):
+    """A source matching an --exempt pattern (a glob, or a folder it is under) is not scanned: its links are meant to
+    resolve somewhere else, as a template's do once it is written into a project."""
+    for pattern in patterns:
+        p = pattern.strip("/")
+        if fnmatch.fnmatch(path, pattern) or at.under(path, p):
+            return True
+    return False
+
+
+def check(root, ladder=None, archive_dirs=None, exempt=()):
     tree = Tree(root, ladder, archive_dirs)
     report = Report()
     for src in tree.files:
-        if src.lower().endswith((".md", ".markdown")):
+        if src.lower().endswith((".md", ".markdown")) and not exempted(src, exempt):
             report.files += 1
             check_file(tree, report, src)
     return report, tree
@@ -266,6 +277,9 @@ def parser():
                    help="place a rung elsewhere: paths from the workspace root, comma-separated; repeatable")
     p.add_argument("--root", metavar="DIR", help="the repository to check (default: the one holding the current "
                                                  "folder)")
+    p.add_argument("--exempt", metavar="PATH", action="append", default=[],
+                   help="a folder or a glob whose files are not scanned as sources (repeatable): templates whose links "
+                        "resolve only once written elsewhere")
     p.add_argument("--quiet", action="store_true", help="print the errors and the totals, not the warnings or the "
                                                         "archive's dead links")
     return p
@@ -279,7 +293,7 @@ def main(argv=None):
         if ladder and ladder.public_dir and not (root / ladder.public_dir).is_dir():
             raise at.Usage(f"--public {ladder.public_dir}: no such folder in {root}")
         archive_dirs = ladder.paths["archive"] if ladder else None
-        report, tree = check(root, ladder, archive_dirs)
+        report, tree = check(root, ladder, archive_dirs, args.exempt)
     except at.Usage as e:
         print(e, file=sys.stderr)
         return 2

@@ -21,9 +21,9 @@ later session.*
 {{#plan}}
 | What gets built, in what order, to which milestones | {{plan}} |
 {{/plan}}
-{{#register}}
-| What is left to do, and what waits on the owner | `{{register_file}}`; closed items in `{{closed_file}}` |
-{{/register}}
+{{#status}}
+| What is left to do, and what waits on the owner | `{{status_file}}`; closed items in `{{closed_file}}` |
+{{/status}}
 {{#handoff}}
 | Where things stand, and what is in flight | `{{handoff_state}}` (process, not normative) |
 {{/handoff}}

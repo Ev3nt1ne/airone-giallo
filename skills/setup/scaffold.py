@@ -9,16 +9,16 @@ JSON file, from flags, or both; a flag overrides the file. `--help` lists every 
 defaults.
 
 What it writes, in the target folder: AGENTS.md (with the opinionated layer appended when chosen), CLAUDE.md,
-RATIONALE.md, local-machine.md (git-ignored), lines appended to .gitignore; with the register, the register and its
-closed file in the docs folder and the checker in tools/; with the handoff, the state and the first log in handoff/;
-with the graph, graph.yml through `python -m specgraph init`.
+RATIONALE.md, local-machine.md (git-ignored), lines appended to .gitignore; with the status file, the status file and
+its closed file in the docs folder and the checker in tools/; with the handoff, the state and the first log in
+handoff/; with the graph, graph.yml through `python -m specgraph init`.
 
 The rule it exists to obey: never report success for a step it did not perform. Every step is reported as done,
 kept, skipped or failed, and the exit code follows the report: 0 when every step was done or kept, 1 when any was
 refused, skipped or failed, 2 when the answers are invalid; a dry run exits 0 unless the real run would be
 refused. Before writing anything it checks every target: an
 existing file stops the whole run unless --force, so a refusal never leaves half an install. With --force the
-instruction files are replaced, but a record (the register, the closed file, the handoff, RATIONALE.md, the
+instruction files are replaced, but a record (the status file, the closed file, the handoff, RATIONALE.md, the
 graph file) is kept as it is, since replacing it with an empty one would delete the project's history.
 
 Standard library only; the graph step runs specgraph in a child process when it is importable.
@@ -38,22 +38,22 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates"
 KIT = HERE.parent.parent
-REGISTER_TEMPLATES = KIT / "register" / "templates"
-REGISTER_CHECKER = KIT / "register" / "tools" / "check_register.py"
+REGISTER_TEMPLATES = KIT / "status" / "templates"
+REGISTER_CHECKER = KIT / "status" / "tools" / "check_status.py"
 HANDOFF_TEMPLATE = KIT / "skills" / "handoff" / "references" / "handoff-template.md"
 
 MODES = ("hands-off", "hands-on")
 LAYOUTS = ("single", "umbrella")
 GRAPHS = ("none", "lite", "full")
 OUTWARD = ("gated", "free")
-# The register checker's own grammar for a family code; a code it would reject is refused here, before writing.
+# The status checker's own grammar for a family code; a code it would reject is refused here, before writing.
 FAMILY_RE = re.compile(r"^[A-Z][A-Z0-9]{1,4}(?:-[A-Z][A-Z0-9]{1,4})?$")
 # What the written file shows where the owner has not answered yet; `grep -n 'to fill'` lists what is left. Square
 # brackets, not angle ones: `<to fill: x>` is a valid HTML tag to a Markdown renderer, which would hide it.
 SLOT = "[to fill: {}]"
 
 DEFAULTS = {
-    "invariants": [], "layout": "single", "graph": "none", "register": True, "families": {}, "handoff": True,
+    "invariants": [], "layout": "single", "graph": "none", "status": True, "families": {}, "handoff": True,
     "stage": "stage-1", "outward": "gated", "attribution": "", "reserved": [], "opinionated": False,
     "claude_code_version": "", "model": "", "spec": "", "plan": "", "glossary": "", "findings": "",
     "owner_notes": "", "frozen": [], "copies": [], "checks": "", "prune_after": "", "docs_dir": "docs",
@@ -193,7 +193,7 @@ def validate(a):
             raise AnswerError(f"'{key}' is {a[key]!r}; it must be one of {', '.join(allowed)}")
     if a["attribution"] and a["outward"] != "free":
         raise AnswerError("an attribution trailer is written only when outward acts are free")
-    for key in ("register", "handoff", "opinionated"):
+    for key in ("status", "handoff", "opinionated"):
         if not isinstance(a[key], bool):
             raise AnswerError(f"'{key}' must be true or false")
     for key in ("invariants", "reserved", "frozen", "copies"):
@@ -201,9 +201,9 @@ def validate(a):
             raise AnswerError(f"'{key}' must be a list of strings")
     if not isinstance(a["families"], dict):
         raise AnswerError("'families' must map a code to what it covers")
-    if a["register"]:
+    if a["status"]:
         if not a["families"]:
-            raise AnswerError("the register needs at least one family (a code and what it covers)")
+            raise AnswerError("the status file needs at least one family (a code and what it covers)")
         for code, what in a["families"].items():
             if not FAMILY_RE.match(code):
                 raise AnswerError(f"family code {code!r}: 2 to 5 capitals or digits starting with a capital, "
@@ -227,22 +227,22 @@ def code(path):
 def context(a):
     """The values the templates read, derived from the answers. What is not answered shows as a visible slot."""
     docs = a["docs_dir"].rstrip("/")
-    register_file, closed_file = f"{docs}/register.md", f"{docs}/closed.md"
+    register_file, closed_file = f"{docs}/status.md", f"{docs}/closed.md"
     handoff_state = "handoff/current.md"
 
     families = []
     if a["graph"] != "none":
         families.append("the statement families declared in `graph.yml`'s meta, allocated by `graph.yml`")
-    if a["register"]:
+    if a["status"]:
         codes = ", ".join(code(c) for c in a["families"])
         families.append(f"{codes} for work items, allocated by `{register_file}` (its checker prints the next free ID)")
 
     checks = []
     if a["graph"] != "none":
         checks.append("`specgraph lint`")
-    if a["register"]:
+    if a["status"]:
         graph_flag = " --graph graph.yml" if a["graph"] != "none" else ""
-        checks.append(f"`python3 tools/check_register.py {register_file} {closed_file}{graph_flag}`")
+        checks.append(f"`python3 tools/check_status.py {register_file} {closed_file}{graph_flag}`")
     if a["checks"]:
         checks.append(a["checks"])
     if not checks:
@@ -250,7 +250,7 @@ def context(a):
 
     if a["handoff"]:
         opening = code(handoff_state)
-    elif a["register"]:
+    elif a["status"]:
         opening = f"`git log` since the last session and `{register_file}`"
     else:
         opening = "`git log` since the last session"
@@ -265,8 +265,8 @@ def context(a):
         "model": a["model"] or SLOT.format("model"),
         "hands_on": a["mode"] == "hands-on", "hands_off": a["mode"] == "hands-off",
         "umbrella": a["layout"] == "umbrella",
-        "register": a["register"], "handoff": a["handoff"],
-        "register_file": register_file, "closed_file": closed_file, "handoff_state": handoff_state,
+        "status": a["status"], "handoff": a["handoff"],
+        "status_file": register_file, "closed_file": closed_file, "handoff_state": handoff_state,
         "spec": a["spec"], "plan": a["plan"], "glossary": a["glossary"], "findings": a["findings"],
         "families": "; ".join(families), "open": opening, "checks": "; ".join(checks),
         "reserved": a["reserved"], "owner_notes": a["owner_notes"],
@@ -321,13 +321,13 @@ def handoff_files(stage, now):
 
 
 def register_files(a, ctx, now):
-    reg = REGISTER_TEMPLATES.joinpath("register.md").read_text(encoding="utf-8")
+    reg = REGISTER_TEMPLATES.joinpath("status.md").read_text(encoding="utf-8")
     fams = "\n".join(f"  {c}: {w}" for c, w in a["families"].items())
     reg = replace_once(reg, "  <CODE>: <what the family covers: a repository, or an area of one>", fams,
-                       "register.md template")
-    reg = replace_once(reg, "python3 <tools>/check_register.py <this file> <the closed file>",
-                       f"python3 tools/check_register.py {ctx['register_file']} {ctx['closed_file']}",
-                       "register.md template")
+                       "status.md template")
+    reg = replace_once(reg, "python3 <tools>/check_status.py <this file> <the closed file>",
+                       f"python3 tools/check_status.py {ctx['status_file']} {ctx['closed_file']}",
+                       "status.md template")
     closed = REGISTER_TEMPLATES.joinpath("closed.md").read_text(encoding="utf-8")
     return stamp_frontmatter(reg, now), stamp_frontmatter(closed, now)
 
@@ -366,12 +366,12 @@ def plan(a, ctx, now):
         Step("local-machine.md", "this device's resources and limits (git-ignored)",
              lambda: render(TEMPLATES.joinpath("local-machine.md").read_text(encoding="utf-8"), ctx)),
     ]
-    if a["register"]:
+    if a["status"]:
         reg, closed = register_files(a, ctx, now)
         steps += [
-            Step(ctx["register_file"], "the register", lambda: reg, record=True),
+            Step(ctx["status_file"], "the status file", lambda: reg, record=True),
             Step(ctx["closed_file"], "the closed file", lambda: closed, record=True),
-            Step("tools/check_register.py", "the register's checker",
+            Step("tools/check_status.py", "the status file's checker",
                  lambda: REGISTER_CHECKER.read_text(encoding="utf-8")),
         ]
     if a["handoff"]:
@@ -489,8 +489,8 @@ def parser():
     p.add_argument("--mode", choices=MODES)
     p.add_argument("--layout", choices=LAYOUTS, help="default: single")
     p.add_argument("--graph", choices=GRAPHS, help="default: none")
-    p.add_argument("--register", action=argparse.BooleanOptionalAction, default=None, help="default: on")
-    p.add_argument("--family", action="append", metavar="CODE=WHAT", help="repeatable: a register family")
+    p.add_argument("--status", action=argparse.BooleanOptionalAction, default=None, help="default: on")
+    p.add_argument("--family", action="append", metavar="CODE=WHAT", help="repeatable: a family of the status file")
     p.add_argument("--handoff", action=argparse.BooleanOptionalAction, default=None, help="default: on")
     p.add_argument("--stage", help="the name of the first log's stage (default: stage-1)")
     p.add_argument("--outward", choices=OUTWARD, help="default: gated")

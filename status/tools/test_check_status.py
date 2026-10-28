@@ -1,6 +1,6 @@
-"""Tests for check_register.py, on invented registers written to a temporary folder.
+"""Tests for check_status.py, on invented status files written to a temporary folder.
 
-Run from the repository's root: pytest register/tools
+Run from the repository's root: pytest status/tools
 """
 
 import importlib.util
@@ -10,11 +10,11 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE.parent / "templates"
-_spec = importlib.util.spec_from_file_location("check_register", HERE / "check_register.py")
+_spec = importlib.util.spec_from_file_location("check_status", HERE / "check_status.py")
 cr = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(cr)
 
-META = """```register-meta
+META = """```status-meta
 families:
   APP: the application
   DOC: the documentation
@@ -36,7 +36,7 @@ def closed_row(id_, kind="decision", title="Storage format", outcome="done", cho
 
 
 def register(awaiting="", accepted="", deferred="", meta=META, extra=""):
-    return (f"# Register\n\n{meta}\n## Awaiting your decision\n\n{OPEN_HEAD}{awaiting}\n"
+    return (f"# Status\n\n{meta}\n## Awaiting your decision\n\n{OPEN_HEAD}{awaiting}\n"
             f"## Accepted, not yet built\n\n{OPEN_HEAD}{accepted}\n"
             f"## Deferred, with a trigger\n\n{OPEN_HEAD}{deferred}\n{extra}")
 
@@ -48,12 +48,12 @@ def closed(rows=""):
 def run(tmp_path, reg, clo=None, graph=None):
     """Write the files given and check them; return the errors and the next IDs."""
     paths = {}
-    for name, text in (("register.md", reg), ("closed.md", clo), ("graph.yml", graph)):
+    for name, text in (("status.md", reg), ("closed.md", clo), ("graph.yml", graph)):
         if text is not None:
             paths[name] = tmp_path / name
             paths[name].write_text(text, encoding="utf-8")
     errors, next_ids, _ = cr.check(*(str(paths[k]) if k in paths else None
-                                     for k in ("register.md", "closed.md", "graph.yml")))
+                                     for k in ("status.md", "closed.md", "graph.yml")))
     return errors, next_ids
 
 
@@ -75,7 +75,7 @@ edges:
 """
 
 
-# --- a valid register, and the next IDs ---------------------------------------------------------------------------
+# --- a valid status file, and the next IDs ------------------------------------------------------------------------
 
 def test_valid_pair_passes(tmp_path):
     errors, _ = run(tmp_path, register(awaiting=row("APP-001", kind="decision", trigger="CSV or JSON?"),
@@ -104,7 +104,7 @@ def test_a_gap_is_not_an_error(tmp_path):
 
 
 def test_the_templates_pass_once_a_family_is_declared(tmp_path):
-    reg = (TEMPLATES / "register.md").read_text(encoding="utf-8")
+    reg = (TEMPLATES / "status.md").read_text(encoding="utf-8")
     reg = "\n".join("  APP: the application" if line.startswith("  <CODE>:") else line for line in reg.split("\n"))
     clo = (TEMPLATES / "closed.md").read_text(encoding="utf-8")
     errors, next_ids = run(tmp_path, reg, clo)
@@ -150,7 +150,7 @@ def test_an_id_that_is_not_an_id_is_an_error(tmp_path):
 
 
 def test_a_two_part_family_is_accepted(tmp_path):
-    meta = "```register-meta\nfamilies:\n  WEB-API: the web service's interface\n```\n"
+    meta = "```status-meta\nfamilies:\n  WEB-API: the web service's interface\n```\n"
     errors, next_ids = run(tmp_path, register(accepted=row("WEB-API-004"), meta=meta), closed())
     assert errors == []
     assert next_ids == {"WEB-API": "WEB-API-005"}
@@ -171,23 +171,23 @@ def test_a_cited_number_is_never_handed_out(tmp_path):
 
 def test_no_meta_block_is_an_error(tmp_path):
     errors, next_ids = run(tmp_path, register(meta=""), closed())
-    only_error(errors, "register-meta")
+    only_error(errors, "status-meta")
     assert next_ids == {}
 
 
 def test_an_invalid_family_code_is_an_error(tmp_path):
-    errors, _ = run(tmp_path, register(meta="```register-meta\nfamilies:\n  app: lower case\n```\n"), closed())
+    errors, _ = run(tmp_path, register(meta="```status-meta\nfamilies:\n  app: lower case\n```\n"), closed())
     only_error(errors, "'app'", "not a family code")
 
 
 def test_a_family_declared_twice_is_an_error(tmp_path):
-    meta = "```register-meta\nfamilies:\n  APP: one\n  APP: two\n```\n"
+    meta = "```status-meta\nfamilies:\n  APP: one\n  APP: two\n```\n"
     errors, _ = run(tmp_path, register(meta=meta), closed())
     only_error(errors, "declared twice")
 
 
 def test_an_unknown_meta_key_is_an_error(tmp_path):
-    meta = "```register-meta\nfamilies:\n  APP: one\nfamilys:\n  DOC: two\n```\n"
+    meta = "```status-meta\nfamilies:\n  APP: one\nfamilys:\n  DOC: two\n```\n"
     errors, _ = run(tmp_path, register(meta=meta), closed())
     only_error(errors, "unknown key 'familys'")
 
@@ -303,10 +303,10 @@ def test_a_superseded_item_naming_itself_is_not_enough(tmp_path):
 
 
 def test_without_a_closed_file_a_note_says_so(tmp_path):
-    r = tmp_path / "register.md"
+    r = tmp_path / "status.md"
     r.write_text(register(), encoding="utf-8")
     _, _, (_, _, notes) = cr.check(str(r))
-    assert any("register only" in n for n in notes)
+    assert any("status file only" in n for n in notes)
 
 
 # --- the graph ----------------------------------------------------------------------------------------------------
@@ -334,7 +334,7 @@ def test_a_node_citing_an_item_is_an_error(tmp_path):
 
 
 def test_a_family_shared_with_the_graph_is_an_error(tmp_path):
-    meta = "```register-meta\nfamilies:\n  REQ: requests\n```\n"
+    meta = "```status-meta\nfamilies:\n  REQ: requests\n```\n"
     errors, _ = run(tmp_path, register(meta=meta), closed(), GRAPH)
     only_error(errors, "REQ", "ambiguous")
 
@@ -345,7 +345,7 @@ def test_the_command_exits_one_on_an_error_and_zero_when_clean(tmp_path):
     bad, good = tmp_path / "bad.md", tmp_path / "good.md"
     bad.write_text(register(accepted=row("APP-001", owner="")), encoding="utf-8")
     good.write_text(register(accepted=row("APP-001")), encoding="utf-8")
-    script = str(HERE / "check_register.py")
+    script = str(HERE / "check_status.py")
     r_bad = subprocess.run([sys.executable, script, str(bad)], capture_output=True, text=True)
     r_good = subprocess.run([sys.executable, script, str(good)], capture_output=True, text=True)
     assert r_bad.returncode == 1, r_bad.stdout
@@ -354,6 +354,6 @@ def test_the_command_exits_one_on_an_error_and_zero_when_clean(tmp_path):
 
 
 def test_the_command_exits_two_when_a_file_cannot_be_read(tmp_path):
-    r = subprocess.run([sys.executable, str(HERE / "check_register.py"), str(tmp_path / "absent.md")],
+    r = subprocess.run([sys.executable, str(HERE / "check_status.py"), str(tmp_path / "absent.md")],
                        capture_output=True, text=True)
     assert r.returncode == 2

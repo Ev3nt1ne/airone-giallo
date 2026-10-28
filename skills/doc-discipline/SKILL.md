@@ -62,7 +62,7 @@ Where the reasoning of a superseded claim goes depends on the material:
 | Material | The text | The reasoning survives in |
 |---|---|---|
 | the levels and the graph | refined in place | the change note, dated, append-only |
-| working notes, studies, registers | edited in place, status tables kept current | correction entries and CHANGE OF PLAN headings (`markdown-docs` §4) |
+| working notes, studies, the status file | edited in place, status tables kept current | correction entries and CHANGE OF PLAN headings (`markdown-docs` §4) |
 | a frozen archive | never edited | — |
 
 ## 3. Minting an identifier
@@ -70,12 +70,12 @@ Where the reasoning of a superseded claim goes depends on the material:
 One allocator per family; **an identifier in neither allocator does not exist.** The graph allocates
 statement IDs (requirements, decisions, assumptions, threats): with the specification graph (`graph/` in this kit)
 it is `graph.yml`, otherwise a table of identifier, one-sentence statement and the place that defines it. The
-register (`register/` in this kit) allocates work-item IDs: what is left to do. Both are append-only: never
+status file (`status/` in this kit) allocates work-item IDs: what is left to do. Both are append-only: never
 renumber, never reuse. *Two allocators for one family eventually give one number to two things, and every citation
 of it becomes ambiguous.* An item may cite a node; a node never cites an item. *A node states what holds and
 outlives the work; a citation of work inside it goes stale when the work closes.*
 
-The steps below mint a statement; a work item takes the next free ID the register's checker prints.
+The steps below mint a statement; a work item takes the next free ID the status file's checker prints.
 
 1. **Check it is not there.** Search the graph for the statement (with the graph, `specgraph near WORD…`), then
    take the next free number in the family: `grep -o 'REQ-[0-9]*' graph.yml | sort -uV | tail -1`.
@@ -157,7 +157,7 @@ Nothing in it is applied before the owner rules; their answers are written in as
 How a commit is made (staging, the message's form, branches, remotes) is the project's own commit skill's business;
 these are the rules this discipline adds to it.
 
-- **One logical task, with its bookkeeping**: the ticked items, the register rows, the change-note lines go in the
+- **One logical task, with its bookkeeping**: the ticked items, the status file's rows, the change-note lines go in the
   commit of the work that caused them. *A later "update the docs" commit makes the history say a thing became true
   later than it did.*
 - **A decision or a specification change gets its own commit**, its body saying whether the cascade (§4) was read

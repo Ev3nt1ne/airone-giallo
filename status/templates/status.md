@@ -1,13 +1,13 @@
 ---
-title: Register
+title: Status
 description: What work is open, what waits on the owner's decision, what is accepted but not built and what is deferred until when; each item named by an ID that never changes, with a link to its reason.
-type: register
+type: status
 created: <YYYY-MM-DD>
 updated: <YYYY-MM-DDTHH:MM:SS+00:00>
-tags: [register]
+tags: [status]
 ---
 
-# Register
+# Status
 
 This file answers one question: what work is left, and what of it needs the owner first?
 
@@ -15,11 +15,11 @@ This file answers one question: what work is left, and what of it needs the owne
   done; where one disagrees with this file, this file is right and the other has drifted. *Status kept in two places is
   updated in one, and the reader cannot tell which.*
 - **It holds work, not design.** Facts, requirements and the decisions in force live in the design documents (or
-  the specification graph); an item links to where its reason lives. *A register that explains goes stale at the
+  the specification graph); an item links to where its reason lives. *A status file that explains goes stale at the
   speed of the design and is read at the speed of the work.*
 - **It indexes items, never documents.** *An index of documents goes stale as they move, and misleads with
   confidence.*
-- **An item leaves when it closes**, into [closed.md](closed.md), recording the choice made. *A register too long
+- **An item leaves when it closes**, into [closed.md](closed.md), recording the choice made. *A status file too long
   to read whole gets skimmed, and the skim misses the item that mattered.*
 - **A suspected defect found while reading code becomes an item here**, and is not fixed on the spot: it goes to
   *Awaiting your decision* when fixing it takes a judgement, to *Accepted* when the fix is plain. *A fix made in
@@ -29,7 +29,7 @@ This file answers one question: what work is left, and what of it needs the owne
 
 ## How an item is identified
 
-```register-meta
+```status-meta
 families:
   <CODE>: <what the family covers: a repository, or an area of one>
 ```
@@ -52,7 +52,7 @@ three digits from `001`, more once past `999`.
   going stale.*
 
   ```sh
-  python3 <tools>/check_register.py <this file> <the closed file>
+  python3 <tools>/check_status.py <this file> <the closed file>
   ```
 
 - **Every place that discusses an item names it by its ID**: a design document, a commit message, a code comment.

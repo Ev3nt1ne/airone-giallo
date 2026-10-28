@@ -25,7 +25,7 @@ _spec.loader.exec_module(sc)
 FULL = {
     "name": "Inkwell", "purpose": "a note editor whose saved notes survive a crash, for people who write offline",
     "invariants": ["a saved note survives a crash: otherwise silent data loss"], "mode": "hands-on",
-    "layout": "umbrella", "graph": "lite", "register": True,
+    "layout": "umbrella", "graph": "lite", "status": True,
     "families": {"APP": "the application", "DOC": "the documentation"}, "handoff": True,
     "outward": "free", "attribution": "Co-Authored-By: An Agent <agent@example.com>",
     "reserved": ["the file format", "anything that changes the save path"], "opinionated": True,
@@ -36,7 +36,7 @@ FULL = {
     "machine": {"resources": "8 cores, 16 GB", "load": "nothing else", "limits": "one run at a time",
                 "timings": "yes"},
 }
-MINIMAL = {"name": "Inkwell", "purpose": "a small note editor", "mode": "hands-off", "register": False,
+MINIMAL = {"name": "Inkwell", "purpose": "a small note editor", "mode": "hands-off", "status": False,
            "handoff": False}
 
 HANDS_ON_ONLY = ("After building, list the choices", "Never narrow the scope",
@@ -94,15 +94,15 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
     folder = project(tmp_path)
     rc, out = install(folder, FULL, capsys=capsys)
     assert rc == 0, out
-    for rel in ("AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md", ".gitignore", "docs/register.md",
-                "docs/closed.md", "tools/check_register.py", "handoff/current.md", "handoff/log-stage-1.md",
+    for rel in ("AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md", ".gitignore", "docs/status.md",
+                "docs/closed.md", "tools/check_status.py", "handoff/current.md", "handoff/log-stage-1.md",
                 "graph.yml"):
         assert (folder / rel).is_file(), rel
     assert (folder / "CLAUDE.md").read_text() == "@AGENTS.md\n"
     for path in folder.rglob("*"):
         if path.is_file() and path.suffix in (".md", ".yml", ""):
             assert "{{" not in path.read_text(encoding="utf-8"), path
-    checker = subprocess.run([sys.executable, "tools/check_register.py", "docs/register.md", "docs/closed.md",
+    checker = subprocess.run([sys.executable, "tools/check_status.py", "docs/status.md", "docs/closed.md",
                               "--graph", "graph.yml"], cwd=folder, capture_output=True, text=True)
     assert checker.returncode == 0, checker.stdout + checker.stderr
     assert "APP-001" in checker.stdout and "DOC-001" in checker.stdout
@@ -110,7 +110,7 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
     assert lint.returncode == 0 and "0 error(s)" in lint.stdout, lint.stdout + lint.stderr
     assert dead_links(folder) == []
     text = agents(folder)
-    for row in ("`docs/design.md`", "`docs/register.md`", "`handoff/current.md`", "`docs/glossary.md`",
+    for row in ("`docs/design.md`", "`docs/status.md`", "`handoff/current.md`", "`docs/glossary.md`",
                 "`docs/findings/`", "`APP`, `DOC`", "`specgraph lint`", "--graph graph.yml", "`pytest`"):
         assert row in text, row
     assert "[to fill" not in text
@@ -123,7 +123,7 @@ def test_minimal_install_writes_only_the_core(tmp_path, capsys):
     written = sorted(str(p) for p in tree(folder))
     assert written == [".gitignore", "AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md"]
     text = agents(folder)
-    for absent in ("register.md", "handoff/", "specgraph", "graph.yml", "Identifier"):
+    for absent in ("status.md", "handoff/", "specgraph", "graph.yml", "Identifier"):
         assert absent not in text, absent
     assert dead_links(folder) == []
 
@@ -232,13 +232,13 @@ def test_force_replaces_the_instructions_and_keeps_the_records(tmp_path, capsys)
     folder = project(tmp_path)
     (folder / "AGENTS.md").write_text("old rules\n")
     (folder / "docs").mkdir()
-    (folder / "docs" / "register.md").write_text("a register full of items\n")
-    rc, out = install(folder, dict(MINIMAL, register=True, families={"APP": "the application"}), "--force",
+    (folder / "docs" / "status.md").write_text("a status file full of items\n")
+    rc, out = install(folder, dict(MINIMAL, status=True, families={"APP": "the application"}), "--force",
                       capsys=capsys)
     assert rc == 0, out
     assert agents(folder).startswith("# Inkwell")
-    assert (folder / "docs" / "register.md").read_text() == "a register full of items\n"
-    assert re.search(r"KEPT +docs/register.md", out)
+    assert (folder / "docs" / "status.md").read_text() == "a status file full of items\n"
+    assert re.search(r"KEPT +docs/status.md", out)
 
 
 def test_the_graph_step_is_reported_skipped_when_specgraph_is_missing(tmp_path, capsys, monkeypatch):
@@ -268,8 +268,8 @@ def test_a_flag_overrides_the_answers_file(tmp_path, capsys):
 
 
 @pytest.mark.parametrize("bad", [
-    {"register": True, "families": {}},
-    {"register": True, "families": {"app": "lower case"}},
+    {"status": True, "families": {}},
+    {"status": True, "families": {"app": "lower case"}},
     {"attribution": "Signed-off-by: x"},
     {"mode": "both"},
     {"name": 7},

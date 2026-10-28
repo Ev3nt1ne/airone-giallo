@@ -1,4 +1,4 @@
-# The register
+# The status file
 
 A long project has two kinds of record, and they age differently. What the system *is* (its requirements,
 decisions, assumptions) changes slowly and is argued in design documents or in the specification graph. What is
@@ -6,7 +6,7 @@ decisions, assumptions) changes slowly and is argued in design documents or in t
 built) changes every session. When the second kind is written into the first, a design document ends up saying
 "not yet implemented" months after it was, and nobody can tell which of two documents is current.
 
-The register is the one file that holds the work: what waits on the owner's decision, what is accepted but not
+The status file is the one file that holds the work: what waits on the owner's decision, what is accepted but not
 built, what is deferred until a named trigger. Each item has an ID that never changes and a link to where its reason
 lives. A second file, the closed file, keeps every item that left, with what was chosen. A checker reads both,
 reports what breaks the rules and prints the next free ID in each family.
@@ -19,16 +19,16 @@ finding may cite an item.
 ## Why
 
 - **One file owns status.** Status kept in two places is updated in one, so where another document disagrees with
-  the register, the register is right and the other has drifted.
-- **Work and design are kept apart.** The graph and the design documents state what holds; the register states
+  the status file, the status file is right and the other has drifted.
+- **Work and design are kept apart.** The graph and the design documents state what holds; the status file states
   what is left to do, because the two go stale on different schedules.
 - **An ID names the item and nothing that can change.** It holds only what is fixed at birth, a family and a
   counter, so a change of kind, owner or area never breaks a citation.
 - **IDs are never renumbered or reused.** A reused ID makes every old citation point at the wrong item, in commit
   messages and code comments nobody will edit.
-- **The register is the allocator, and the next ID is derived.** A number written down goes stale without anything
-  noticing; the checker counts the closed file too, since a number that left the register is still taken.
-- **Closed items leave, with what was chosen.** A register too long to read whole gets skimmed, and "done" without
+- **The status file is the allocator, and the next ID is derived.** A number written down goes stale without anything
+  noticing; the checker counts the closed file too, since a number that left the status file is still taken.
+- **Closed items leave, with what was chosen.** A status file too long to read whole gets skimmed, and "done" without
   the choice sends the next session to work it out again.
 - **It indexes items, never documents.** An index of documents goes stale as they move, and misleads with
   confidence.
@@ -39,13 +39,13 @@ finding may cite an item.
 
 Python 3.10 or newer, standard library only.
 
-1. Copy [templates/register.md](templates/register.md) and [templates/closed.md](templates/closed.md) into the
-   project's documentation folder, and [tools/check_register.py](tools/check_register.py) into its tools. The rules
+1. Copy [templates/status.md](templates/status.md) and [templates/closed.md](templates/closed.md) into the
+   project's documentation folder, and [tools/check_status.py](tools/check_status.py) into its tools. The rules
    are the templates' headers; edit them only to fit the project's words.
-2. Declare the families in the register's `register-meta` block, one line each, a code and what it covers:
+2. Declare the families in the status file's `status-meta` block, one line each, a code and what it covers:
 
    ````markdown
-   ```register-meta
+   ```status-meta
    families:
      APP: the application
      DOC: the documentation
@@ -57,11 +57,11 @@ Python 3.10 or newer, standard library only.
 3. Run the checker:
 
    ```sh
-   python3 tools/check_register.py docs/register.md docs/closed.md
+   python3 tools/check_status.py docs/status.md docs/closed.md
    ```
 
    ```text
-   docs/register.md: 0 open item(s); docs/closed.md: 0 closed item(s)
+   docs/status.md: 0 open item(s); docs/closed.md: 0 closed item(s)
    next free ID per family:
      APP-001
      DOC-001
@@ -78,7 +78,7 @@ Python 3.10 or newer, standard library only.
    | `APP-001` | decision | Export format for reports | [design.md §4](design.md) | owner | CSV, or JSON lines? | 2026-01-05 |
    ```
 
-   When it closes, its row leaves the register and a row goes into the closed file, saying what was chosen:
+   When it closes, its row leaves the status file and a row goes into the closed file, saying what was chosen:
 
    ```markdown
    | ID | Kind | Title | Outcome | Chosen | Reopen if | Reason | Closed |
@@ -100,12 +100,12 @@ cites an item: a node states what holds, which outlives the work, and a citation
 work closes. Give the graph file to check both directions:
 
 ```sh
-python3 tools/check_register.py docs/register.md docs/closed.md --graph graph.yml
+python3 tools/check_status.py docs/status.md docs/closed.md --graph graph.yml
 ```
 
-Every cited node must then exist in the graph, no node may mention an item's ID, and no register family may share
-a code with a graph family, since a citation of either would be ambiguous. Without `--graph`, a citation of a node is
-allowed and not checked. The checker reads the graph file's text as `specgraph` writes it, without PyYAML.
+Every cited node must then exist in the graph, no node may mention an item's ID, and no family of the status file
+may share a code with a graph family, since a citation of either would be ambiguous. Without `--graph`, a citation of
+a node is allowed and not checked. The checker reads the graph file's text as `specgraph` writes it, without PyYAML.
 
 ## What it is not
 
@@ -120,7 +120,7 @@ allowed and not checked. The checker reads the graph file's text as `specgraph` 
 From the repository's root, with pytest installed:
 
 ```sh
-pytest register/tools
+pytest status/tools
 ```
 
 ## Licence

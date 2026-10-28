@@ -28,7 +28,7 @@ tags: [saving, journal]
 - `type:` answers "every decision record" without reading anything. The project fixes the list.
 - `status:` is the document's lifecycle (`active`, `closed`, `superseded` by default), only on types that can be
   finished. *It answers "which plans are live" without opening a file, if nobody invents a fourth value.* It is never
-  a work item's status: that lives in the project's one register.
+  a work item's status: that lives in the project's one status file.
 - `tags:` prefer an existing tag to a new one. *Two tags for one subject split every query.*
 - `created:` `YYYY-MM-DD`, written once, never changed, not on a move or a rewrite. *It is what makes "what did we
   think in spring?" answerable.*
@@ -80,7 +80,7 @@ Below about fifteen documents, list and read them; above a few hundred, add a ra
   next commit and nobody edits a design document to fix an integer.* Cite the command that counts, not its answer.
 - A document that reasons does not report progress: "done", "landed", "not yet implemented", "the code currently
   does". *Such words are true for one commit and the prose around them for months, so they go stale on a different
-  schedule.* Progress lives in the register (`register/` in this kit); a plan or log
+  schedule.* Progress lives in the status file (`status/` in this kit); a plan or log
   may record what it delivered, dated and in the past tense.
 - Operational documents (runbooks, setup, recovery) change in the same session as the change they describe. *An
   out-of-date one is trusted.*

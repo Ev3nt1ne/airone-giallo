@@ -34,18 +34,18 @@ has a name in the answers file (§3).
 | 1 | The project's name, what it is and for whom in one line, and its invariants: what breaks silently if each is violated (`name`, `purpose`, `invariants`) | the invariants now, even one; they may be left as a slot | the opening paragraph of AGENTS.md |
 | 2 | How the owner works: **hands-off** (directs, wants explanations and recommendations, seldom the technical detail) or **hands-on** (codes, judges every line, gives prototypes) (`mode`) | no default: ask, after describing both | hands-on adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; hands-off adds the sentence on directions as leads to explore |
 | 3 | One repository, or an umbrella with public parts (`layout`: `single`, `umbrella`) | `single` unless public parts already exist | `umbrella` adds the rule that each document gets its side, public or private, before it is written, and marks RATIONALE.md as private |
-| 4 | Which pieces: the specification graph (`graph`: `none`, `lite`, `full`), the register (`register`, with its `families`), the handoff (`handoff`, with the first log's `stage`) | the register and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
+| 4 | Which pieces: the specification graph (`graph`: `none`, `lite`, `full`), the status file (`status`, with its `families`), the handoff (`handoff`, with the first log's `stage`) | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
 | 5 | Outward acts (pushes, tags, releases, issues, pull requests, comments, posts): **gated**, prepared as a branch or a draft for the owner to send, or **free**, done and reported, with an attribution trailer if they want one (`outward`, `attribution`) | `gated` | the outward rule |
 | 6 | Decisions the owner reserves beyond the project decisions of `session` §2 (`reserved`) | none to start; add as they surface | one sentence in the first rule on deciding |
 | 7 | This machine: its resources, what else runs on it, the run limits, whether timings measured here count as results (`machine`) | fill what the session can see (`nproc`, `free -h`, `df -h .`) and have the owner confirm | `local-machine.md`, git-ignored, one per device |
 | 8 | The kit author's opinionated layer: comments state invariants (hands-on only), every fix has a test, irreversible acts offered as such (`opinionated`) | off; offer it, never assume it | the rules appended under their own heading: three for hands-on, two for hands-off |
 
-A register family is a code of 2 to 5 capitals or digits starting with a capital, or two joined by a hyphen, and a
-line saying what it covers; start with one per repository or area, since a family, once declared, keeps its meaning.
-*A code chosen in haste is cited for the life of the project.* The facts of §1 go in as `spec`, `plan`, `glossary`,
-`findings` (each a path or a short phrase, written into the map as given), `owner_notes`, `frozen`, `copies`,
-`checks` (the project's own test and lint commands) and `prune_after` (how long a rule may go unneeded). Anything not
-answered is written as a visible `[to fill: …]` slot, never guessed.
+A family of the status file is a code of 2 to 5 capitals or digits starting with a capital, or two joined by a
+hyphen, and a line saying what it covers; start with one per repository or area, since a family, once declared,
+keeps its meaning. *A code chosen in haste is cited for the life of the project.* The facts of §1 go in as `spec`,
+`plan`, `glossary`, `findings` (each a path or a short phrase, written into the map as given), `owner_notes`,
+`frozen`, `copies`, `checks` (the project's own test and lint commands) and `prune_after` (how long a rule may go
+unneeded). Anything not answered is written as a visible `[to fill: …]` slot, never guessed.
 
 ## 3. Running the script
 
@@ -76,8 +76,8 @@ one. *The preview is where a wrong answer costs nothing.*
   in the report. 2: the answers are invalid. *A setup that says "done" over a step it skipped is the failure this
   script exists to prevent.*
 - **An existing file stops the whole run before anything is written.** `--force` replaces the instruction files
-  (AGENTS.md, CLAUDE.md, the machine file, the checker); a record (RATIONALE.md, the register, the closed file, the
-  handoff, the graph file) is never replaced, even then, and is reported KEPT. *An empty register written over a full
+  (AGENTS.md, CLAUDE.md, the machine file, the checker); a record (RATIONALE.md, the status file, the closed file, the
+  handoff, the graph file) is never replaced, even then, and is reported KEPT. *An empty status file written over a full
   one deletes the project's history.*
 
 The templates in `templates/` use the syntax the script implements: `{{name}}` is a value, `{{#name}}…{{/name}}`
@@ -90,7 +90,7 @@ unnoticed. To change what a project gets, edit the template and the answer it re
 Run each check and read its output; the script's report is a claim, these measure the files.
 
 1. With the graph: `specgraph lint` reports 0 errors.
-2. With the register: `python3 tools/check_register.py <docs>/register.md <docs>/closed.md`, adding
+2. With the status file: `python3 tools/check_status.py <docs>/status.md <docs>/closed.md`, adding
    `--graph graph.yml` with the graph, reports 0 errors and prints the first free ID of each family.
 3. The dead-link check of `markdown-docs` §6 prints nothing.
 4. `git check-ignore local-machine.md` prints the file's name.

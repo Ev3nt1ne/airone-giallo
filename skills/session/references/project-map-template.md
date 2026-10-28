@@ -27,7 +27,7 @@ never guess from the prefix.
 | What gets built, in what order, to which milestones | `<plan>` | <where each phase's status lives> |
 | How one phase is carried out | `<phase files>` | <the milestone's exit criteria> |
 | Does this statement exist, and where is it defined | `<graph file>` | the allocator of statement IDs |
-| What is left to do, and what waits on the owner | `<register>` | the allocator of work-item IDs |
+| What is left to do, and what waits on the owner | `<status file>` | the allocator of work-item IDs |
 | What a term means, in plain words | `<glossary>` | |
 | Where things stand, and what is in flight | `<handoff state>` | process, not normative |
 | What was decided by the owner, in their words | `<decisions record or log>` | |
@@ -39,7 +39,7 @@ never guess from the prefix.
 
 | Family | Form | Names | Allocated by |
 |---|---|---|---|
-| `<PREFIX>` | `<PREFIX>-NN` or `<PREFIX>-slug` | <what kind of thing> | `<graph file or register>` |
+| `<PREFIX>` | `<PREFIX>-NN` or `<PREFIX>-slug` | <what kind of thing> | `<graph file or status file>` |
 
 ### Entry points
 
@@ -69,7 +69,7 @@ plan. It shows the shape of a filled map, not a recommended layout.
 | What gets built, in what order, to which milestones | `docs/plan.md` | §2 holds each phase's status and names its milestones |
 | How one phase is carried out | `docs/phases/phase-NN-<slug>.md` | pitfalls, the milestone's exit criteria at the bottom |
 | Does this statement exist | `graph.yml` | `specgraph show ID` |
-| What is left to do | `docs/register.md` | the checker prints the next free ID |
+| What is left to do | `docs/status.md` | the checker prints the next free ID |
 | Where things stand, what is in flight | `handoff/current.md` | process, not normative |
 | What we used to think | `docs/archive/` | frozen; out of every search unless named |
 
@@ -77,13 +77,13 @@ plan. It shows the shape of a filled map, not a recommended layout.
 |---|---|---|---|
 | `REQ`, `ASM`, `ATK`, `QST` | `REQ-01` | a requirement, an assumption, a threat, an open question | `graph.yml` |
 | `DEC` | `DEC-journal` | a decision, by slug | `graph.yml` |
-| `ED` | `ED-001` | a work item; **not a statement**, never cited by one | `docs/register.md` |
+| `ED` | `ED-001` | a work item; **not a statement**, never cited by one | `docs/status.md` |
 
 **"Why does saving write a journal first?"** `specgraph show DEC-journal` prints the one sentence, *a save writes a
 journal entry, then replaces the file*, with `where: design.md §2`. If the question was what was decided, that
 answers it; if it was why this and not a copy-on-write file, read the one subsection of §2 and nothing else.
 
-**"Is phase 2 done?"** The register holds no open item for phase 2, but the milestone at the bottom of the phase file
+**"Is phase 2 done?"** The status file holds no open item for phase 2, but the milestone at the bottom of the phase file
 has no ruling, and its exit criteria ask for the crash test run a thousand times on two file systems. The work is done;
 the phase is not. *A phase closes at its milestone's ruling, not at its last task.*
 

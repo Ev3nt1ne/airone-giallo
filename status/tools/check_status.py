@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Check a project's register and its closed file, and print the next free ID in each family.
+"""Check a project's status file and its closed file, and print the next free ID in each family.
 
-    python3 check_register.py REGISTER [CLOSED] [--graph GRAPH]
+    python3 check_status.py STATUS [CLOSED] [--graph GRAPH]
 
-REGISTER holds the open items and the `register-meta` block that declares the families; CLOSED holds the closed
+STATUS holds the open items and the `status-meta` block that declares the families; CLOSED holds the closed
 items. With --graph, every citation of a graph node is checked against the specification graph's file, and
 the graph file is checked for citations of items. Exits 1 on any error, 2 when a file cannot be read. Standard
 library only, so it runs wherever Python 3.10 does.
@@ -17,7 +17,7 @@ from datetime import date
 from pathlib import Path
 
 KINDS = ("decision", "question", "defect", "enhancement", "chore")
-# A register section's heading, lower-cased and stripped of everything but letters and spaces, gives its status.
+# A section heading of the status file, lower-cased and stripped of everything but letters and spaces, gives its status.
 SECTIONS = {
     "awaiting your decision": "awaiting",
     "accepted not yet built": "accepted",
@@ -57,7 +57,7 @@ class Doc:
     path: str
     rows: list = field(default_factory=list)
     mentions: list = field(default_factory=list)  # (line, code span text)
-    meta: list = field(default_factory=list)  # (line, text) of each register-meta block
+    meta: list = field(default_factory=list)  # (line, text) of each status-meta block
     own_ids: set = field(default_factory=set)  # (line, ID) of each item row's own ID cell, not a citation
 
 
@@ -92,7 +92,7 @@ def read_doc(path, closed, errors):
         if (fence is None and m) or closes:
             if fence is None:
                 fence = m.group(1)
-                if m.group(2) == "register-meta":
+                if m.group(2) == "status-meta":
                     meta_start, meta_lines = n, []
             else:
                 if meta_start is not None:
@@ -158,10 +158,10 @@ def read_table(doc, table, heading, closed, expected, errors):
 
 def read_families(doc, errors):
     if not doc.meta:
-        errors.append(f"{doc.path}: no ```register-meta block declaring the families")
+        errors.append(f"{doc.path}: no ```status-meta block declaring the families")
         return {}
     if len(doc.meta) > 1:
-        errors.append(f"{doc.path}:{doc.meta[1][0]}: a second register-meta block; there is one")
+        errors.append(f"{doc.path}:{doc.meta[1][0]}: a second status-meta block; there is one")
     families, in_families = {}, False
     for n, line in doc.meta[0][1]:
         if not line.strip() or line.lstrip().startswith("#"):
@@ -170,7 +170,7 @@ def read_families(doc, errors):
             key = line.split(":", 1)[0].strip()
             in_families = key == "families"
             if not in_families:
-                errors.append(f"{doc.path}:{n}: unknown key '{key}' in register-meta; it holds families:")
+                errors.append(f"{doc.path}:{n}: unknown key '{key}' in status-meta; it holds families:")
             continue
         if not in_families:
             continue
@@ -184,7 +184,7 @@ def read_families(doc, errors):
         else:
             families[code] = meaning.strip()
     if not families and not any("family code" in e for e in errors):
-        errors.append(f"{doc.path}:{doc.meta[0][0]}: the register-meta block declares no family")
+        errors.append(f"{doc.path}:{doc.meta[0][0]}: the status-meta block declares no family")
     return families
 
 
@@ -227,7 +227,7 @@ def check_row(row, families, errors):
         errors.append(f"{where}: not an ID of the form FAMILY-nnn")
         return False
     if m.group(1) not in families:
-        errors.append(f"{where}: family {m.group(1)} is not declared in the register-meta block")
+        errors.append(f"{where}: family {m.group(1)} is not declared in the status-meta block")
         return False
     if not COUNTER_RE.match(m.group(2)) or int(m.group(2)) == 0:
         errors.append(f"{where}: the counter is three digits or more, from 001")
@@ -273,7 +273,7 @@ def check(register_path, closed_path=None, graph_path=None):
     closed = read_doc(closed_path, True, errors) if closed_path else Doc("")
     families = read_families(register, errors)
     if not closed_path:
-        notes.append("no closed file given: the next IDs count the register only")
+        notes.append("no closed file given: the next IDs count the status file only")
 
     seen = {}
     for row in register.rows + closed.rows:
@@ -283,7 +283,7 @@ def check(register_path, closed_path=None, graph_path=None):
             first = seen[row.id]
             if (first.section == "closed") != (row.section == "closed"):
                 errors.append(f"{first.path}:{first.line}: {row.id} is closed ({row.path}:{row.line}) and still "
-                              f"in the register; a closed item lives in the closed file only")
+                              f"in the status file; a closed item lives in the closed file only")
             else:
                 errors.append(f"{row.path}:{row.line}: {row.id} is used again (first at {first.path}:"
                               f"{first.line}); an ID is never reused")
@@ -336,13 +336,13 @@ def check(register_path, closed_path=None, graph_path=None):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Check a register and its closed file; print the next free IDs.")
-    parser.add_argument("register", help="the register: open items and the register-meta block")
+    parser = argparse.ArgumentParser(description="Check a status file and its closed file; print the next free IDs.")
+    parser.add_argument("status", help="the status file: open items and the status-meta block")
     parser.add_argument("closed", nargs="?", help="the closed file")
     parser.add_argument("--graph", metavar="GRAPH", help="the specification graph's file (graph.yml)")
     args = parser.parse_args(argv)
     try:
-        errors, next_ids, (register, closed, notes) = check(args.register, args.closed, args.graph)
+        errors, next_ids, (register, closed, notes) = check(args.status, args.closed, args.graph)
     except OSError as e:
         print(f"cannot read {e.filename}: {e.strerror}", file=sys.stderr)
         return 2

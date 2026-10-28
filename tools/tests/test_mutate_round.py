@@ -2,6 +2,7 @@
 restore, and the anchors verb."""
 
 import io
+from pathlib import Path
 import json
 import sys
 
@@ -224,3 +225,11 @@ def test_anchors_bad_arguments_exit_two(calc, tmp_path):
     bad = calc.root / "bad.json"
     bad.write_text("{")
     assert mutate(calc, "anchors", bad)[0] == 2
+
+
+def test_the_kits_own_mutation_specs_still_anchor(monkeypatch):
+    """The specs committed under tests/mutations are live records of the rounds the tools were held to: an anchor that
+    stops matching once the code moves is drift the next round would refuse, so the suite refuses it first."""
+    kit = Path(__file__).resolve().parents[2]
+    monkeypatch.chdir(kit)
+    assert mr.main(["anchors", "tools/tests/mutations"]) == 0

@@ -109,7 +109,8 @@ project fixes its own markers, one meaning each, in its instruction file.
   leaves every inbound link dead, and nothing warns.*
 - Run anything that rewrites files on a clean tree, so `git checkout -- .` undoes it.
 - A frozen folder (an archive kept unchanged) gets its dead links reported, not repaired.
-- Finish every move by proving no local link is dead; no output is the bar:
+- Finish every move by proving no local link is dead. The kit's `check-links` (its tools piece) does it, anchors and
+  the ladder's sides included; without it, this loop, no output being the bar:
 
 ```sh
 find . -name '*.md' -not -path './.git/*' | while read -r f; do

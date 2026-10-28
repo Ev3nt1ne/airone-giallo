@@ -4,9 +4,9 @@ A project's documents rot in ways nobody sees at the moment of the edit. A file 
 a public document cites a private one and the cut between the two sides leaks; a document is edited and its
 `updated:` stamp still names last month.
 
-This piece is two commands of standard-library Python, each one file, checks that run in a hook and in CI. They read
-a project's own values from its files or their arguments, never from constants: the ladder's cut, the archive's
-place.
+This piece is commands of standard-library Python, each one file: two checks that run in a hook and in CI, and a
+mover that keeps the references true. They read a project's own values from its files or their arguments, never from
+constants: the ladder's cut, the archive's place.
 
 It is a piece of Airone Giallo, the kit described in the [repository](https://github.com/Ev3nt1ne/airone-giallo), and
 it is useful without the rest. The ladder and the archive it checks are the `doc-discipline` skill's §1; the
@@ -19,7 +19,11 @@ frontmatter is the `markdown-docs` skill's §1.
 - **The tracked tree is the tree.** A file present here but not tracked is missing in every other clone, so a link to
   it is dead; a file staged for the commit being made is in it.
 - **The archive is frozen, and its rot is information.** A link inside it that a later move killed is counted and
-  never repaired in passing; a change to an archived file goes with a row in its log.
+  never repaired in passing; a change to an archived file goes with a row in its log, and the mover refuses one
+  without it.
+- **A move re-points what it can prove and reports what it cannot.** A link and a path written from the top name
+  their target; a bare file name in prose may name another file, and a script's relative path may be read from the
+  folder it runs in, so those are listed for a reader, never rewritten.
 
 ## Start
 
@@ -52,8 +56,9 @@ check-frontmatter --range "$BASE..HEAD"     # BASE: the commit the change starts
 
 ## The commands
 
-Every command reads the repository holding the current folder (`--root DIR` names another), prints `error:` lines and
-a count, and exits 0 when clean, 1 on a finding and 2 on a bad argument or a repository that cannot be read.
+Every command works on the repository holding the current folder (`--root DIR` names another) and exits 2 on a bad
+argument or a repository that cannot be read. The two checks print `error:` lines and a count, and exit 1 on a
+finding, 0 when clean.
 
 ### `check-links`
 
@@ -97,11 +102,37 @@ anywhere, and at a repository's top `RATIONALE.md`, `.claude/`, `human-docs/` (t
 rules), `sources/` and `.github/`; `--exempt PATH` adds a folder or a glob. In the archive a file carries its
 `archived:` stamp in the time form and nothing else is checked; its README and log are documents like any other.
 
+### `move-paths`
+
+Moves tracked files with `git mv` and re-points every reference to them in the tracked text files: Markdown links
+and HTML `href` and `src`, paths written relative to the file (`../plan/x.md`), and paths written from the top of the
+repository holding the file, in prose, scripts, YAML, TOML and HTML (`--also .json` for more). A dry run by default,
+every edit listed with its file and line; `--apply` does it.
+
+```sh
+move-paths docs/design.md docs/spec.md          # one file, or a folder and every file in it
+move-paths --table moves.tsv --apply            # OLD<TAB>NEW a line; a third column `no` keeps a file's content
+```
+
+- A folder at the top is matched only with its slash (`plan/`), and a file at the top only in a link: their bare
+  names are words in prose. Every other mention of a moved file's name is listed and left alone; read the list
+  before applying.
+- Nothing in the archive is edited, its log included; a link there that the move kills is listed as information. A
+  file moved into the archive is not edited either: archiving changes nothing in it but the stamp, written by hand
+  in the same commit.
+- `--frozen-ok FILE` lets an archived file's link targets be re-pointed (its prose never), and only when the staged
+  `archive/LOG.md` holds a new row in its Changes table naming that file; moving an archived file needs the same.
+  The rows are read with the archive's own checker when `airone-archive` is installed, else by the same reading
+  done here; the report says which.
+- `--apply` refuses, before anything moves, a file not tracked, a target that exists, two files to one path, a move
+  from one repository into another, an archived file without its row, and a file it would write that has changes not
+  staged, since the undo is a checkout.
+
 ## What it is not
 
 - **Not a linter of prose.** The checks hold the shape (links, dates, sides); whether a document says something true
   is the verify pass's work.
-- **Not a fixer.** `check-links` and `check-frontmatter` change nothing.
+- **Not a fixer.** `check-links` and `check-frontmatter` change nothing; `move-paths` changes only what it listed.
 - **Not installed by setup.** The hook lines above are the project's to copy, under its own commit rules.
 
 ## Tests

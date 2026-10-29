@@ -138,11 +138,6 @@
         "        return 0"
       ],
       [
-        "P28 the fallback reads a table inside a comment",
-        "        if comment or line.lstrip().startswith(\"<!--\"):",
-        "        if False:"
-      ],
-      [
         "P29 a row naming where an archived file goes does not count",
         "            for p in {f, self.moves.get(f, f)}:",
         "            for p in {f}:"

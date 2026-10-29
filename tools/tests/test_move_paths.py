@@ -2,7 +2,6 @@
 reported, the archive's guard and its log, and the refusals."""
 
 import contextlib
-import importlib.util
 import io
 import subprocess
 from pathlib import Path
@@ -12,7 +11,6 @@ import pytest
 import move_paths as mp
 from conftest import Repo, run_tool
 
-KIT = Path(__file__).resolve().parents[2]
 P = "plan/phase-9"
 FILES = {
     # a note that stays, linking to what moves
@@ -227,26 +225,16 @@ def test_a_file_moved_into_the_archive_is_not_edited(repo):
     assert "`archived:` stamp by hand" in out
 
 
-def test_both_readings_of_the_log_agree(tree, monkeypatch):
-    """The archive's checker, read from the kit when it is there, and the fallback give the same verdicts."""
-    source = KIT / "archive" / "tools" / "check_archive.py"
-    if not source.is_file():
-        pytest.skip("the archive's checker is not beside the tools")
-    spec = importlib.util.spec_from_file_location("check_archive", source)
-    archive = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(archive)
+def test_the_log_is_read_as_the_archives_checker_reads_it(tree):
+    """The rows come from check-archive's own reading of the log, so a row inside an HTML comment, the template's
+    example table, counts for neither tool."""
     head = "| Date | File | What | Why, and who decided | Commit |\n|---|---|---|---|---|\n"
     hidden = with_rows("r.md").replace(head, "<!-- an example, a table of its own:\n" + head + row("s.md") +
                                        "\n-->\n\n" + head)
     tree.write({"archive/LOG.md": hidden}).stage()
-    verdicts = []
-    for reader in (archive, None):
-        monkeypatch.setattr(mp, "_archive", reader)
-        verdicts.append((plan(tree, frozen_ok={"archive/r.md"}).refusals,
-                         plan(tree, frozen_ok={"archive/r.md", "archive/s.md"}).refusals))
-    assert verdicts[0] == verdicts[1]
-    # r.md has its row; the row naming s.md is an example table inside a comment, which neither reading counts
-    assert verdicts[0][0] == [] and len(verdicts[0][1]) == 1 and "archive/s.md" in verdicts[0][1][0]
+    assert plan(tree, frozen_ok={"archive/r.md"}).refusals == []
+    refusals = plan(tree, frozen_ok={"archive/r.md", "archive/s.md"}).refusals
+    assert len(refusals) == 1 and "archive/s.md" in refusals[0]
 
 
 def test_a_folder_at_the_top_is_matched_only_with_its_slash(repo):

@@ -1,20 +1,19 @@
 """Tests for check_status.py, on invented status files written to a temporary folder.
 
-Run from the repository's root: pytest status/tools
+Run from the tools' folder: pytest
 """
 
-import importlib.util
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
+import check_status as cr
+
 HERE = Path(__file__).resolve().parent
-TEMPLATES = HERE.parent / "templates"
-_spec = importlib.util.spec_from_file_location("check_status", HERE / "check_status.py")
-cr = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(cr)
+SRC = HERE.parent / "src"
+TEMPLATES = HERE.parents[1] / "skills" / "setup" / "templates" / "tree" / "ai-docs"
 
 META = """```status-meta
 families:
@@ -347,7 +346,7 @@ def test_the_command_exits_one_on_an_error_and_zero_when_clean(tmp_path):
     bad, good = tmp_path / "bad.md", tmp_path / "good.md"
     bad.write_text(status(accepted=row("APP-001", owner="")), encoding="utf-8")
     good.write_text(status(accepted=row("APP-001")), encoding="utf-8")
-    script = str(HERE / "check_status.py")
+    script = str(SRC / "check_status.py")
     r_bad = subprocess.run([sys.executable, script, str(bad)], capture_output=True, text=True)
     r_good = subprocess.run([sys.executable, script, str(good)], capture_output=True, text=True)
     assert r_bad.returncode == 1, r_bad.stdout
@@ -356,7 +355,7 @@ def test_the_command_exits_one_on_an_error_and_zero_when_clean(tmp_path):
 
 
 def test_the_command_exits_two_when_a_file_cannot_be_read(tmp_path):
-    r = subprocess.run([sys.executable, str(HERE / "check_status.py"), str(tmp_path / "absent.md")],
+    r = subprocess.run([sys.executable, str(SRC / "check_status.py"), str(tmp_path / "absent.md")],
                        capture_output=True, text=True)
     assert r.returncode == 2
 
@@ -366,6 +365,6 @@ def test_the_package_command_names_the_checker_main():
     meta = tomllib.loads((HERE.parent / "pyproject.toml").read_text(encoding="utf-8"))
     module, _, func = meta["project"]["scripts"]["check-status"].partition(":")
     layout = meta["tool"]["setuptools"]
-    assert layout["py-modules"] == [module]
-    assert (HERE.parent / layout["package-dir"][""] / f"{module}.py") == HERE / "check_status.py"
+    assert module in layout["py-modules"]
+    assert (HERE.parent / layout["package-dir"][""] / f"{module}.py") == SRC / "check_status.py"
     assert callable(getattr(cr, func, None))

@@ -164,7 +164,7 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
             assert "{{" not in path.read_text(encoding="utf-8"), path
     # No kit code is copied into the project: the checks are the kit's commands.
     assert not [p for p in folder.rglob("*.py")]
-    checker = subprocess.run([sys.executable, str(sc.KIT / "status" / "tools" / "check_status.py"),
+    checker = subprocess.run([sys.executable, str(sc.KIT / "tools" / "src" / "check_status.py"),
                               "ai-docs/status.md", "ai-docs/closed.md", "--graph", "inkwell/graph.yml"],
                              cwd=folder, capture_output=True, text=True)
     assert checker.returncode == 0, checker.stdout + checker.stderr
@@ -174,7 +174,7 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
     assert lint.returncode == 0 and "0 error(s)" in lint.stdout, lint.stdout + lint.stderr
     # Each repository's archive passes its checker, the public one named from the workspace root.
     for args in ([], ["--archive", "inkwell/archive"]):
-        archive = subprocess.run([sys.executable, str(sc.KIT / "archive" / "tools" / "check_archive.py"), *args],
+        archive = subprocess.run([sys.executable, str(sc.KIT / "tools" / "src" / "check_archive.py"), *args],
                                  cwd=folder, capture_output=True, text=True)
         assert archive.returncode == 0 and "0 error(s)" in archive.stdout, (args, archive.stdout + archive.stderr)
     assert dead_links(folder) == []

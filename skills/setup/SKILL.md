@@ -124,9 +124,9 @@ and the answer it reads, with a test.
 
 ## 4. After the script
 
-The checks are the kit's installed commands, never copies in the project: `pip install ./graph ./status ./archive
-./tools` from the kit, or from the plugin's copy of it, gives `specgraph`, `check-status`, `check-archive`,
-`check-links` and `check-frontmatter`, with the tools' other commands. Ask the owner to install them. *A copied script
+The checks are the kit's installed commands, never copies in the project: `pip install ./graph ./tools` from the
+kit, or from the plugin's copy of it, gives `specgraph`, `check-status`, `check-archive`, `check-links` and
+`check-frontmatter`, with the tools' other commands. Ask the owner to install them. *A copied script
 is a second copy that the kit's next version does not reach.* The two document checks read the tracked tree, so first
 stage what the script wrote, `git add` in each repository it wrote into; staging is undone by `git reset`. Run each
 check and read its output; the script's report is a claim, these measure the files.

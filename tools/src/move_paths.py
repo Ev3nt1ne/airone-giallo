@@ -31,7 +31,7 @@ such a change too. A file moved into the archive is not edited: archiving change
 --apply refuses, before anything moves, when a file it would write has changes not staged (the undo is a checkout,
 which would take them too), when a move crosses from one repository into another, or when an archived file would
 change without its row. Exit 0 on a dry run or an applied plan, 1 on a refusal, 2 on a bad argument or table.
-Standard library only; the archive's rows are read with airone-archive's checker when it is installed.
+Standard library only; the archive's log is read with the archive's own checker, check-archive, beside this file.
 """
 
 import argparse
@@ -41,13 +41,7 @@ import sys
 from dataclasses import dataclass, field
 
 import airone_tree as at
-
-try:  # The archive's own reading of its log, when its package is installed; the fallback below reads the same rows.
-    import check_archive as _archive
-    ROW_READER = "the archive's checker (airone-archive)"
-except ImportError:  # pragma: no cover - depends on the environment
-    _archive = None
-    ROW_READER = "move-paths' own reading of the Changes table (airone-archive is not installed)"
+import check_archive
 
 TEXT_SUFFIXES = (".md", ".markdown", ".py", ".sh", ".bash", ".zsh", ".fish", ".ps1", ".bat", ".cmd", ".yml",
                  ".yaml", ".toml", ".html", ".htm", ".cfg", ".ini", ".mk", ".rs", ".go", ".js", ".mjs", ".cjs",
@@ -67,44 +61,14 @@ class Refusal(Exception):
 # ---------------------------------------------------------------- the archive's log
 
 def changes_rows(text):
-    """The Changes table's rows of an archive log: [(the row's text, its File cell)], read outside code fences and
-    HTML comments, where the log's template keeps its example rows."""
-    if _archive is not None:
-        return [(r.text, r.cells["file"]) for r in _archive.read_log(text or "", "log").changes]
-    rows, in_table = [], False
-    fence, comment = None, False
-    for line in (text or "").splitlines():
-        if comment or line.lstrip().startswith("<!--"):
-            comment = "-->" not in line
-            in_table = False
-            continue
-        m = at.FENCE_RE.match(line)
-        if m and fence is None:
-            fence = m.group(1)
-            continue
-        if fence is not None:
-            if line.strip().startswith(fence):
-                fence = None
-            continue
-        s = line.strip()
-        if not s.startswith("|"):
-            in_table = False
-            continue
-        cells = [c.strip() for c in re.split(r"(?<!\\)\|", s.strip("|"))]
-        names = [" ".join(re.sub(r"[^a-z ]", " ", c.lower()).split()) for c in cells]
-        if names[:2] == ["date", "file"]:
-            in_table = True
-            continue
-        if in_table and not all(re.fullmatch(r":?-+:?", c) for c in cells) and len(cells) >= 2:
-            rows.append((s, cells[1]))
-    return rows
+    """The Changes table's rows of an archive log, as the archive's checker reads them: [(the row's text, its File
+    cell)], outside code fences and HTML comments, where the log's template keeps its example rows."""
+    return [(r.text, r.cells["file"]) for r in check_archive.read_log(text or "", "log").changes]
 
 
 def row_names(cell, paths):
-    if _archive is not None:
-        return _archive.names(cell, paths)
-    values = re.findall(r"`([^`\n]+)`", cell) + re.findall(r"\]\(([^)\s]+)", cell) or [cell.strip().strip("*_`")]
-    return any(v.strip().split("#", 1)[0].removeprefix("./") in paths for v in values)
+    """Whether a File cell names one of the paths, by the checker's own reading of a cell."""
+    return check_archive.names(cell, paths)
 
 
 # ---------------------------------------------------------------- the plan
@@ -410,7 +374,7 @@ class Plan:
                     paths |= {p, inner, f"{posixpath.basename(archive)}/{inner}", p[len(repo) + 1:] if repo else p}
             if not any(row_names(cell, paths) for cell in new):
                 self.refusals.append(f"{f} is archived and this plan changes it: the staged {log} has no new row in "
-                                     f"its Changes table naming it (rows read by {ROW_READER})")
+                                     f"its Changes table naming it")
 
     # -- output
 

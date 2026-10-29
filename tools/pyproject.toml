@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "airone-tools"
 version = "0.1.0"
-description = "Checks for a project's documents and tests: dead links and the ladder, frontmatter, moving files with their references, a mutation round, and the claims a change makes."
+description = "The kit's checks and helpers for a project's documents and tests: the status file, the archive, dead links and the ladder, frontmatter, moving files with their references, a mutation round, and the claims a change makes."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -16,6 +16,8 @@ test = ["pytest"]
 
 # The commands' names are set here and nowhere else in the code.
 [project.scripts]
+check-status = "check_status:main"
+check-archive = "check_archive:main"
 check-links = "check_links:main"
 check-frontmatter = "check_frontmatter:main"
 move-paths = "move_paths:main"
@@ -26,7 +28,8 @@ claims = "list_claims:main"
 # installed, each is a top-level module. The tests in tests/ are not installed.
 [tool.setuptools]
 package-dir = {"" = "src"}
-py-modules = ["airone_tree", "check_links", "check_frontmatter", "move_paths", "mutate_round", "list_claims"]
+py-modules = ["airone_tree", "check_status", "check_archive", "check_links", "check_frontmatter", "move_paths",
+              "mutate_round", "list_claims"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

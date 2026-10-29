@@ -351,7 +351,7 @@ def check(archive, now=None):
         errors += check_log(log, root)
     else:
         log = Log(str(log_path))
-        errors.append(f"{log_path}: the archive has no log; start it from the kit's archive/templates/LOG.md")
+        errors.append(f"{log_path}: the archive has no log; start it from the kit's skills/setup/templates/tree/archive/LOG.md")
 
     files = archived_files(archive)
     stamps = {}

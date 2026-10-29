@@ -41,7 +41,7 @@ The skills come as one Claude Code plugin; the checkers are Python packages. In 
 Then, from a clone of this repository, the checkers the project will use:
 
 ```
-pip install ./graph ./status ./archive ./tools
+pip install ./graph ./tools
 ```
 
 The skills are then `/airone-giallo:session`, `/airone-giallo:handoff`, `/airone-giallo:markdown-docs`,

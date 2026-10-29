@@ -51,8 +51,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates"
 KIT = HERE.parent.parent
-STATUS_TEMPLATES = KIT / "status" / "templates"
-ARCHIVE_TEMPLATES = KIT / "archive" / "templates"
+# The status file, the closed file and the archive's log are written as they are, their dates stamped, not rendered.
+STATUS_TEMPLATES = TEMPLATES / "tree" / "ai-docs"
+ARCHIVE_TEMPLATES = TEMPLATES / "tree" / "archive"
 HANDOFF_TEMPLATE = KIT / "skills" / "handoff" / "references" / "handoff-template.md"
 
 MODES = ("conductor", "four-hands")

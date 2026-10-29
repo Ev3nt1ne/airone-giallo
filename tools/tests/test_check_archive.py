@@ -1,10 +1,9 @@
 """Tests for check_archive.py, on invented archives in temporary git repositories with real commits; the committer's
 date is set through the environment, so a stamp can be compared with the commit that moved its file in.
 
-Run from the repository's root: pytest archive/tools
+Run from the tools' folder: pytest
 """
 
-import importlib.util
 import os
 import shutil
 import subprocess
@@ -14,11 +13,11 @@ from pathlib import Path
 
 import pytest
 
+import check_archive as ca
+
 HERE = Path(__file__).resolve().parent
-TEMPLATES = HERE.parent / "templates"
-_spec = importlib.util.spec_from_file_location("check_archive", HERE / "check_archive.py")
-ca = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(ca)
+SRC = HERE.parent / "src"
+TEMPLATES = HERE.parents[1] / "skills" / "setup" / "templates" / "tree" / "archive"
 
 needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="git is not installed")
 
@@ -104,7 +103,7 @@ def only_error(errors, *words):
 
 
 def cli(*args, cwd):
-    return subprocess.run([sys.executable, str(HERE / "check_archive.py"), *args], cwd=cwd, capture_output=True,
+    return subprocess.run([sys.executable, str(SRC / "check_archive.py"), *args], cwd=cwd, capture_output=True,
                           text=True)
 
 
@@ -512,6 +511,6 @@ def test_the_package_command_names_the_checker_main():
     meta = tomllib.loads((HERE.parent / "pyproject.toml").read_text(encoding="utf-8"))
     module, _, func = meta["project"]["scripts"]["check-archive"].partition(":")
     layout = meta["tool"]["setuptools"]
-    assert layout["py-modules"] == [module]
-    assert (HERE.parent / layout["package-dir"][""] / f"{module}.py") == HERE / "check_archive.py"
+    assert module in layout["py-modules"]
+    assert (HERE.parent / layout["package-dir"][""] / f"{module}.py") == SRC / "check_archive.py"
     assert callable(getattr(ca, func, None))

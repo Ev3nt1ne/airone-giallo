@@ -218,9 +218,6 @@ def validate(a):
     for key in REQUIRED:
         if not isinstance(a.get(key), str) or not a[key].strip():
             raise AnswerError(f"'{key}' is required, as text")
-    if a["cut"] == ARCHIVE:
-        raise AnswerError("cut 'archive' is gone: the archive is not a rung, each repository has its own archive/ on "
-                          "its side; the last public rung is 'ai-docs', or 'all' for one public repository")
     for key, allowed in (("mode", MODES), ("cut", CUTS), ("human_docs", SIDES), ("sources", SIDES),
                          ("agent_layer", ("",) + LAYERS), ("graph", GRAPHS), ("outward", OUTWARD)):
         if a[key] not in allowed:

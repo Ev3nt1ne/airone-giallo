@@ -414,6 +414,27 @@ def test_read_lists_every_conflict_and_exits_one_when_the_freeze_is_unknown(tmp_
     assert code == 1 and "unknown" in out and out.count("  2026-") == 2
 
 
+@needs_git
+def test_read_finds_the_archive_from_the_files_path_when_none_is_named(tmp_path, capsys):
+    """Each repository has its own archive; `read` run from the workspace root on a file in the public repository's
+    archive takes that archive, the nearest folder above the file holding a log, without --archive."""
+    repo = Repo(tmp_path / "nido")
+    public = Repo(tmp_path / "nido" / "inkwell")
+    public.archive_file("design.md", DAY2)
+    public.write("archive/LOG.md", log(conflicts=[conflict("2026-03-07T10:00:00+00:00")]))
+    repo.write("archive/LOG.md", log(conflicts=[conflict(DAY1, old="the root's word")]))
+    cwd = os.getcwd()
+    os.chdir(repo.root)
+    try:
+        code = ca.main(["read", "inkwell/archive/design.md"])
+    finally:
+        os.chdir(cwd)
+    out = capsys.readouterr().out
+    assert code == 0 and "the register" in out and "the root's word" not in out, out
+    # A file in no archive is refused with the default archive's name, as before.
+    assert ca.main(["read", str(repo.root / "docs" / "glossary.md")]) == 2
+
+
 def test_read_refuses_a_file_outside_the_archive(tmp_path, capsys):
     repo = Repo(tmp_path, git=False)
     assert ca.main(["--archive", str(repo.archive), "read", str(repo.root / "docs" / "glossary.md")]) == 2

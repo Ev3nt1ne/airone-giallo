@@ -145,7 +145,7 @@ def test_with_a_cut_a_public_file_citing_a_private_one_is_an_error(repo):
     # Citing upward on one side is a warning; the agent layer cites everything; the AI documents' rung may cite the
     # agent layer only with a warning.
     assert any("docs/spec.md:1: the ladder: rung 1 (docs) links to rung 3 (plan)" in w for w in warnings)
-    assert any("ai-docs/status.md:1: the ladder: rung 4 (ai-docs) links to rung 6 (agent)" in w for w in warnings)
+    assert any("ai-docs/status.md:1: the ladder: rung 4 (ai-docs) links to rung 5 (agent)" in w for w in warnings)
     assert not any(w.startswith("AGENTS.md") and "the ladder" in w for w in warnings)
     # An archived file cited from a lower rung is the archive's warning, never the ladder's as well.
     assert [w for w in warnings if "archive/x.md" in w and w.startswith("ai-docs")] == [
@@ -157,10 +157,11 @@ def test_with_a_cut_a_public_file_citing_a_private_one_is_an_error(repo):
 
 def test_the_cut_moves_the_side(repo):
     ladder_tree(repo)
-    code, errors, _, _ = check(repo, "--cut", "ai-docs")
-    # the archive and the agent layer are private at this cut
-    assert len(errors) == 2 and all(e.startswith("ai-docs/status.md:1: the ladder") for e in errors), errors
-    assert any("../AGENTS.md" in e for e in errors) and any("../archive/x.md" in e for e in errors)
+    code, errors, warnings, _ = check(repo, "--cut", "ai-docs")
+    # The agent layer is private at this cut; the archive is off the ladder, so in one repository it has no side and
+    # citing a file in it is the archive's own warning, never the ladder's error.
+    only(errors, "ai-docs/status.md:1: the ladder", "../AGENTS.md")
+    assert any("../archive/x.md" in w and "category" in w for w in warnings)
     code, errors, _, _ = check(repo, "--cut", "all")
     assert code == 0 and errors == []
     code, errors, _, _ = check(repo, "--cut", "docs")
@@ -173,6 +174,20 @@ def test_a_rung_can_be_placed_elsewhere(repo):
     assert check(repo, "--cut", "plan")[1] == []
     code, errors, _, _ = check(repo, "--cut", "plan", "--rung", "docs=documentation/")
     only(errors, "documentation/spec.md", "the ladder")
+
+
+def test_the_archive_can_be_placed_elsewhere_and_is_not_a_rung(repo):
+    """--archive names the frozen folder; a folder named archive/ elsewhere is then live, and --rung does not know the
+    archive, since it is not on the ladder."""
+    repo.write({"attic/old.md": "[gone](../docs/gone.md)\n", "archive/tools.md": "[gone](gone.md)\n",
+                "docs/a.md": "[old](../attic/old.md)\n"}).commit()
+    code, errors, warnings, archived = check(repo)
+    assert code == 1 and len(errors) == 1 and "attic/old.md" in errors[0] and len(archived) == 1
+    code, errors, warnings, archived = check(repo, "--archive", "attic/")
+    assert code == 1 and len(errors) == 1 and "archive/tools.md" in errors[0]
+    assert len(archived) == 1 and "attic/old.md" in archived[0]
+    only(warnings, "docs/a.md", "attic/old.md", "category")
+    assert run_tool("check_links", "--cut", "plan", "--rung", "archive=attic/", cwd=repo.root)[0] == 2
 
 
 # --- the ladder, two repositories ------------------------------------------------------------------------------------

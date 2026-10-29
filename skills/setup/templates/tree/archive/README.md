@@ -9,13 +9,14 @@ tags: [archive]
 
 # The archive
 
-Rung 5 of the kit's ladder (`doc-discipline` §1): where a document goes when it stops being true or needed and must
-stay readable.
+This repository's archive, beside the kit's ladder rather than on it (`doc-discipline` §1): where a document of this
+repository goes when it stops being true or needed and must stay readable. It stays on this repository's side, so
+archiving never moves a document between public and private.
 
 - **Frozen.** A correction is a new live document that cites the archived one, never an edit here. An archived file
   is edited only with a row in [LOG.md](LOG.md), the archive's log, in the same commit. *An archived document's value
   is that it is what it was, and an edit without its row hides that it no longer is.*
-- **Read with its conflicts.** Before reading an archived file, run `{{archive_check}} read <file>`: it prints the
+- **Read with its conflicts.** Before reading an archived file, run `check-archive read <file>`: it prints the
   words whose meaning changed after the file was frozen, from the log. *A word renamed or reused since reads as
   current, with the wrong meaning.*
 - **Out of every search unless named.** The workspace's `.ignore` holds `archive/`, which ripgrep, fd and Claude

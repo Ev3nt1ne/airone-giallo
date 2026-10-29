@@ -48,17 +48,19 @@ has a name in the answers file (§3).
 |---|---|---|---|
 | 1 | The project's name, what it is and for whom in one line, and its invariants: what breaks silently if each is violated, each written as one clause, the invariant then what breaks (`X, else Y`), since the list is read as one sentence (`name`, `purpose`, `invariants`) | the invariants now, even one; they may be left as a slot | the opening paragraph of AGENTS.md |
 | 2 | How the owner works: **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
-| 3 | The cut: the last rung of the ladder that is public (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `archive`, `all`); then, each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`), and in the two-repository form whether contributors get a short public instruction file (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
+| 3 | The cut: the last rung of the ladder that is public (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `all`); then, each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`), and in the two-repository form whether contributors get a short public instruction file (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
 | 4 | Which pieces: the specification graph (`graph`: `none`, `lite`, `full`), the status file (`status`, with its `families`), the handoff (`handoff`, with the first log's `stage`) | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
 | 5 | Outward acts (pushes, tags, releases, issues, pull requests, comments, posts): **gated**, prepared as a branch or a draft for the owner to send, or **free**, done and reported, with an attribution trailer if they want one (`outward`, `attribution`) | `gated` | the outward rule |
 | 6 | Decisions the owner reserves beyond the project decisions of `session` §2 (`reserved`) | none to start; add as they surface | one sentence in the first rule on deciding |
 | 7 | This machine: its resources, what else runs on it, the run limits, whether timings measured here count as results (`machine`) | fill what the session can see (`nproc`, `free -h`, `df -h .`) and have the owner confirm | `local-machine.md`, git-ignored, one per device |
 | 8 | The kit author's opinionated layer: comments state invariants (Four-Hands only), every fix has a test, irreversible acts offered as such (`opinionated`) | off; offer it, never assume it | the rules appended under their own heading: three for Four-Hands, two for Conductor |
 
-The ladder is `doc-discipline` §1: 1 `docs/`, 2 `graph.yml`, 3 `plan/`, 4 `ai-docs/`, 5 `archive/`, 6 the agent
-layer; each rung cites only rungs at or below it, so every rung at or below the cut is public and every rung above it
-private. *One cut instead of a side per document keeps every public text free of links into the private side.* A
-doubtful rung starts private: *a file moved from public to private keeps its public history.* With `cut: all` the
+The ladder is `doc-discipline` §1: 1 `docs/`, 2 `graph.yml`, 3 `plan/`, 4 `ai-docs/`, 5 the agent layer; each rung
+cites only rungs at or below it, so every rung at or below the cut is public and every rung above it private. *One
+cut instead of a side per document keeps every public text free of links into the private side.* A doubtful rung
+starts private: *a file moved from public to private keeps its public history.* The archive is not a rung and has no
+side to answer: each repository gets its own, `archive/` at its top, so an archived document stays on the side it
+was on. With `cut: all` the
 agent layer is public and RATIONALE.md drops the owner's words from its form; `agent_layer: both` keeps the full
 layer private and adds a contributors' `AGENTS.md` that cites only public rungs.
 
@@ -92,10 +94,10 @@ python3 <kit>/skills/setup/scaffold.py --answers ANSWERS.json
 ```
 
 What it writes, the dry run lists file by file: at the workspace root the agent layer (`AGENTS.md`, `CLAUDE.md`,
-`RATIONALE.md`, the git-ignored `local-machine.md`), `.ignore` with `archive/` and the `.gitignore`, an allowlist
-in the two-repository form; on each rung's side `ai-docs/` with the status file, the handoff and a README for each
-of its places, `archive/README.md` and the archive's log `archive/LOG.md`, a README in `docs/` and in `plan/` when the
-folder is new, `docs/glossary.md` when absent and no other glossary is answered, and `graph.yml`;
+`RATIONALE.md`, the git-ignored `local-machine.md`) and the `.gitignore`, an allowlist in the two-repository form; at
+the top of each repository `.ignore` with `archive/`, `archive/README.md` and the archive's log `archive/LOG.md`; on
+each rung's side `ai-docs/` with the status file, the handoff and a README for each of its places, a README in
+`docs/` and in `plan/` when the folder is new, `docs/glossary.md` when absent and no other glossary is answered, and `graph.yml`;
 `human-docs/README.md` and the `sources/README.md` manifest on their chosen sides.
 
 `--help` lists every answer as a flag; a flag overrides the file. Show the owner the dry run before the real
@@ -133,8 +135,8 @@ check and read its output; the script's report is a claim, these measure the fil
    two-repository form).
 2. With the status file: `check-status ai-docs/status.md ai-docs/closed.md`, adding `--graph` and the graph's path
    with the graph, reports 0 errors and prints the first free ID of each family.
-3. `check-archive` (`--archive <name>/archive` when the archive is public in the two-repository form) reports 0
-   errors.
+3. `check-archive` reports 0 errors, and in the two-repository form `check-archive --archive <name>/archive` too,
+   the public repository's own archive named from the workspace root.
 4. `check-links --cut <cut>` reports 0 errors; in the two-repository form `check-links --public <name> --cut <cut>`,
    from the workspace root, so that it walks the public folder and holds both sides to the cut.
 5. `check-frontmatter --all` reports 0 errors; from the workspace root it reads the public folder too.

@@ -50,8 +50,7 @@ RECORDS = ("RATIONALE.md", "ai-docs/README.md", "ai-docs/status.md", "ai-docs/cl
            "ai-docs/guides/README.md", "archive/README.md", "archive/LOG.md", "human-docs/README.md",
            "sources/README.md", "graph.yml")
 # The file that shows where each rung landed.
-RUNG_FILE = {"docs": "docs/README.md", "plan": "plan/README.md", "ai-docs": "ai-docs/status.md",
-             "archive": "archive/README.md"}
+RUNG_FILE = {"docs": "docs/README.md", "plan": "plan/README.md", "ai-docs": "ai-docs/status.md"}
 
 needs_git = pytest.mark.skipif(shutil.which("git") is None, reason="git is not installed")
 
@@ -156,7 +155,8 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
                 "ai-docs/handoff/log-stage-1.md", "ai-docs/design/README.md", "ai-docs/findings/README.md",
                 "ai-docs/guides/README.md", "archive/README.md", "archive/LOG.md", "human-docs/README.md",
                 "sources/README.md", "inkwell/AGENTS.md", "inkwell/CLAUDE.md", "inkwell/docs/README.md",
-                "inkwell/docs/glossary.md", "inkwell/graph.yml", "inkwell/plan/README.md"):
+                "inkwell/docs/glossary.md", "inkwell/graph.yml", "inkwell/plan/README.md", "inkwell/.ignore",
+                "inkwell/archive/README.md", "inkwell/archive/LOG.md"):
         assert (folder / rel).is_file(), rel
     assert (folder / "CLAUDE.md").read_text() == "@AGENTS.md\n"
     for path in folder.rglob("*"):
@@ -172,9 +172,11 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
     lint = subprocess.run([sys.executable, "-m", "specgraph", "lint", "--graph", "inkwell/graph.yml"],
                           cwd=folder, capture_output=True, text=True)
     assert lint.returncode == 0 and "0 error(s)" in lint.stdout, lint.stdout + lint.stderr
-    archive = subprocess.run([sys.executable, str(sc.KIT / "archive" / "tools" / "check_archive.py")],
-                             cwd=folder, capture_output=True, text=True)
-    assert archive.returncode == 0 and "0 error(s)" in archive.stdout, archive.stdout + archive.stderr
+    # Each repository's archive passes its checker, the public one named from the workspace root.
+    for args in ([], ["--archive", "inkwell/archive"]):
+        archive = subprocess.run([sys.executable, str(sc.KIT / "archive" / "tools" / "check_archive.py"), *args],
+                                 cwd=folder, capture_output=True, text=True)
+        assert archive.returncode == 0 and "0 error(s)" in archive.stdout, (args, archive.stdout + archive.stderr)
     assert dead_links(folder) == []
     # No path is written with a doubled slash; a URL's own is the only one.
     for path in folder.rglob("*"):
@@ -182,19 +184,22 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
             text = re.sub(r"[a-z][a-z0-9+.-]*://", "", path.read_text(encoding="utf-8"))
             assert "//" not in text, path
     text = agents(folder)
-    assert "`archive/LOG.md`" in flat(text) and "`archive/`:" in text
+    assert "its archive's `LOG.md`" in flat(text) and "`archive/` and `inkwell/archive/`, each repository's own" in text
     for row in ("`inkwell/docs/design.md`", "`inkwell/graph.yml`", "`ai-docs/status.md`",
                 "`ai-docs/handoff/current.md`", "`inkwell/docs/glossary.md`", "`ai-docs/design/`",
-                "`ai-docs/findings/`", "`ai-docs/guides/`", "`archive/`", "`human-docs/`", "`sources/README.md`",
+                "`ai-docs/findings/`", "`ai-docs/guides/`", "`human-docs/`", "`sources/README.md`",
                 "`APP`, `DOC`", "`specgraph lint --graph inkwell/graph.yml`",
                 "`check-status ai-docs/status.md ai-docs/closed.md --graph inkwell/graph.yml`", "`check-archive`",
+                "`check-archive --archive inkwell/archive`", "Never edited: `archive/`, `inkwell/archive/`",
                 "`check-archive read <file>` before reading one", "`check-links --public inkwell --cut plan`",
                 "`check-frontmatter`, in the repository being committed", "`pytest`"):
         assert row in text, row
     assert "[to fill" not in text
     assert "check-status ai-docs/status.md ai-docs/closed.md" in (folder / "ai-docs/status.md").read_text()
-    # The contributors' file names the two document checks, run inside the public repository alone.
-    assert "`check-links`; `check-frontmatter`; `pytest`" in (folder / "inkwell" / "AGENTS.md").read_text()
+    # The contributors' file names its own archive's check and the two document checks, run inside the public
+    # repository alone.
+    contributors = (folder / "inkwell" / "AGENTS.md").read_text()
+    assert "`check-archive`; `check-links`; `check-frontmatter`; `pytest`" in contributors
     # What the setup wrote passes the kit's own document checks, the ladder included.
     for name, (code, output) in document_checks(folder, "plan", "inkwell").items():
         assert code == 0 and "0 error(s)" in output, (name, output)
@@ -244,8 +249,19 @@ def test_the_cut_puts_each_rung_on_its_side(tmp_path, capsys, cut):
         if form == "two":
             # A private rung is named in the allowlist; a public one is inside the gitlink and never named.
             assert (f"!/{rung}/" in (folder / ".gitignore").read_text().splitlines()) == (not nested), rung
-    for rel in ("AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md", ".ignore"):
+    for rel in ("AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md"):
         assert (folder / rel).is_file() and not (folder / "inkwell" / rel).exists(), rel
+    # The archive is not a rung: each repository has its own at its top, with its log and its .ignore, whatever the
+    # cut; the workspace's own is always private and named in the allowlist.
+    tops = [folder, folder / "inkwell"] if form == "two" else [folder]
+    for top in tops:
+        for rel in (".ignore", "archive/README.md", "archive/LOG.md"):
+            assert (top / rel).is_file(), (top, rel)
+        assert "This repository's archive" in (top / "archive" / "README.md").read_text()
+    if form == "two":
+        assert "!/archive/" in (folder / ".gitignore").read_text().splitlines()
+    else:
+        assert not (folder / "inkwell").exists()
     a = dict(sc.DEFAULTS, **MINIMAL)
     a.update(cut=cut, graph="lite")
     sc.validate(a)
@@ -255,12 +271,11 @@ def test_the_cut_puts_each_rung_on_its_side(tmp_path, capsys, cut):
     expected = {"all": "everything is public", "none": "everything is private"}.get(
         cut, f"the public side ends at {sc.RUNG_NAMES.get(cut)}")
     assert expected in words and "(`doc-discipline` §1)" in words
-    archived = form == "two" and last_public >= sc.RUNGS.index("archive") + 1
-    command = "check-archive --archive inkwell/archive" if archived else "check-archive"
-    assert f"`{command} read <file>` before reading one" in words and f"`{command}`" in words
-    readme = (folder / "inkwell" if archived else folder) / "archive" / "README.md"
-    assert f"`{command} read <file>`" in flat(readme.read_text())
-    assert (readme.parent / "LOG.md").is_file()
+    assert "`check-archive read <file>` before reading one" in words and "`check-archive`" in words
+    assert ("`check-archive --archive inkwell/archive`" in words) == (form == "two")
+    assert ("each repository's `archive/` is on its repository's side" in words) == (form == "two")
+    for top in tops:
+        assert "`check-archive read <file>`" in flat((top / "archive" / "README.md").read_text())
     # The links' check holds the sides to this cut; the tree the setup wrote passes it and the frontmatter's.
     links = f"check-links --public inkwell --cut {cut}" if form == "two" else f"check-links --cut {cut}"
     assert f"`{links}`" in words and "`check-frontmatter`" in words
@@ -328,6 +343,16 @@ def test_the_archive_is_kept_out_of_search_by_dot_ignore(tmp_path, capsys):
     assert (other / ".ignore").read_text().splitlines() == ["target/", "archive/"]
 
 
+@needs_git
+def test_each_repository_gets_its_own_ignore_file_beside_its_archive(tmp_path, capsys):
+    """A contributor who clones the public repository alone has no workspace above it: its own .ignore keeps its
+    archive out of their searches too."""
+    folder = workspace(tmp_path)
+    assert install(folder, dict(MINIMAL, cut="plan"), capsys=capsys)[0] == 0
+    assert (folder / ".ignore").read_text() == "archive/\n"
+    assert (folder / "inkwell" / ".ignore").read_text() == "archive/\n"
+
+
 def test_the_ai_docs_tree_has_its_five_places_and_their_readmes(tmp_path, capsys):
     folder = project(tmp_path)
     assert install(folder, dict(MINIMAL, status=True, families=FAMILIES, handoff=True), capsys=capsys)[0] == 0
@@ -378,16 +403,14 @@ def test_agent_layer_both_writes_a_contributors_file_citing_only_public_rungs(tm
     assert not (private / "inkwell" / "AGENTS.md").exists()
     assert (both / "inkwell" / "CLAUDE.md").read_text() == "@AGENTS.md\n"
     text = (both / "inkwell" / "AGENTS.md").read_text()
-    for absent in ("ai-docs", "archive", "human-docs", "sources", "RATIONALE", "local-machine", "inkwell/", "owner"):
+    for absent in ("ai-docs", "archive/", "human-docs", "sources", "RATIONALE", "local-machine", "inkwell/", "owner"):
         assert absent not in text, absent
-    for present in ("`docs/`", "`docs/glossary.md`", "`plan/`", "`pytest`", "handed to the person you work for"):
+    # The public repository's own archive is checked from its root, so the contributors' checks name the command bare.
+    for present in ("`docs/`", "`docs/glossary.md`", "`plan/`", "`check-archive`;", "`pytest`",
+                    "handed to the person you work for"):
         assert present in flat(text), present
     assert "the contributors' `inkwell/AGENTS.md` cites only the public rungs" in flat(agents(both))
     assert dead_links(both / "inkwell") == []
-    # With the archive public, the contributors' checks include the archive's, named from the public folder.
-    public = workspace(tmp_path, "public-archive")
-    assert install(public, dict(answers, cut="archive", agent_layer="both"), capsys=capsys)[0] == 0
-    assert "`check-archive`" in (public / "inkwell" / "AGENTS.md").read_text()
 
 
 @needs_git
@@ -654,6 +677,7 @@ def test_a_flag_overrides_the_answers_file(tmp_path, capsys):
     {"name": 7},
     {"handoff": "no"},
     {"cut": "half"},
+    {"cut": "archive"},
     {"layout": "single"},
     {"docs_dir": "docs"},
     {"human_docs": "public"},

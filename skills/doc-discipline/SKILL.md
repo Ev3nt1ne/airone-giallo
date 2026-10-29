@@ -34,16 +34,21 @@ below reduce to "the document, the graph and the code agree".
 **The ladder: where a document sits, and what it may cite.** The kit's places form a ladder, read from the bottom:
 1 the system documents (`docs/`: the specification, the glossary, the studies, the change notes); 2 the graph
 (`graph.yml`); 3 the plan (`plan/`); 4 the AI documents (`ai-docs/`: the status file, the handoff, design, findings,
-guides); 5 the archive (`archive/`); 6 the agent layer (`AGENTS.md`, `CLAUDE.md`, `RATIONALE.md`, the skills). A
-document cites only rungs at or below its own; the archive is the exception, exempt from the link check and cited by
-nothing live beyond a category. Its log (`archive/LOG.md`) records every change made to an archived file and every
-change of a word's meaning left uncorrected there; `check-archive read` says which apply to a file. The project's
-instruction file names **the cut**: every rung at or below it is public, every rung above it private, so a public
-text never points into a private one; in a one-repository project the cut sits at the top or the bottom and the rule
-still orders the citations. *A public text that cites a private one is a dead link to its readers or a leak, and a
-rung that cited upward could never be made public on its own.* Outside the ladder, each on the side the owner gives
-it: the owner's notes (`human-docs/`), downloaded sources (`sources/`, cited by URL through their manifest, never by
-path), and the code.
+guides); 5 the agent layer (`AGENTS.md`, `CLAUDE.md`, `RATIONALE.md`, the skills). A document cites only rungs at or
+below its own. The project's instruction file names **the cut**: every rung at or below it is public, every rung
+above it private, so a public text never points into a private one; in a one-repository project the cut sits at the
+top or the bottom and the rule still orders the citations. *A public text that cites a private one is a dead link to
+its readers or a leak, and a rung that cited upward could never be made public on its own.* Outside the ladder, each
+on the side the owner gives it: the owner's notes (`human-docs/`), downloaded sources (`sources/`, cited by URL
+through their manifest, never by path), and the code.
+
+**The archive is beside the ladder, not on it.** Each repository has its own, `archive/` at its top, on that
+repository's side: a document that stops being true moves into the archive of the repository it was in, so archiving
+never moves it across the cut. Nothing live is on a rung with it, so it has no rung: it is frozen, exempt from the
+link check, out of every search unless named, and cited by nothing live beyond a category. Its log (`archive/LOG.md`)
+records every change made to an archived file and every change of a word's meaning left uncorrected there;
+`check-archive read <file>` says which apply to a file. *A frozen folder on a rung would be the one rung whose rule
+is an exception, and one archive for two sides would have to choose one of them.*
 
 ## 2. Editing the specification
 

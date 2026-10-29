@@ -7,12 +7,13 @@ the table of vocabulary conflicts; and, for a session, which conflicts apply to 
     check-archive [--archive DIR] rename WORD   every line of the archive holding WORD, with each file's stamp
     python3 check_archive.py ...                from the kit, without installing
 
-DIR is the archive folder, `archive` by default; its log is DIR/LOG.md. The check exits 1 on any failure; `read`
-exits 1 when the file's freeze time or a conflict's time cannot be read; `rename` changes nothing and exits 0 whether
-or not it finds the word. Every verb exits 2 on bad arguments or a file that cannot be read. Where git is missing,
-or the archive is not in a repository, the checks that need it are reported as not run, and the exit code is 1: a
-check that did not run is not a check that passed. Standard library only, so it
-runs wherever Python 3.10 does.
+DIR is the archive folder, `archive` by default; its log is DIR/LOG.md. Without DIR, `read` takes as the archive the
+nearest folder above FILE that holds a LOG.md, so a file in any repository's archive is read by its path alone, from
+the workspace root as well as from inside the repository. The check exits 1 on any failure; `read` exits 1 when the
+file's freeze time or a conflict's time cannot be read; `rename` changes nothing and exits 0 whether or not it finds
+the word. Every verb exits 2 on bad arguments or a file that cannot be read. Where git is missing, or the archive is
+not in a repository, the checks that need it are reported as not run, and the exit code is 1: a check that did not
+run is not a check that passed. Standard library only, so it runs wherever Python 3.10 does.
 """
 
 import argparse
@@ -411,6 +412,16 @@ def check(archive, now=None):
     return errors, notes, not_run, summary
 
 
+def archive_holding(file, default="archive"):
+    """The archive FILE sits in, when none is named: the nearest folder above it that holds the log; else the
+    default, so the error names the folder the reader expected."""
+    folder = Path(file).resolve().parent
+    for candidate in (folder, *folder.parents):
+        if (candidate / LOG).is_file():
+            return candidate
+    return Path(default)
+
+
 def inside(archive, file):
     try:
         return Path(file).resolve().relative_to(archive.resolve()).as_posix()
@@ -502,7 +513,8 @@ def parser():
 
 def main(argv=None):
     args = parser().parse_args(argv)
-    archive = Path(getattr(args, "archive", "archive"))
+    named = getattr(args, "archive", None)
+    archive = Path(named) if named else archive_holding(args.file) if args.verb == "read" else Path("archive")
     try:
         if not archive.is_dir():
             raise Usage(f"no archive folder at {archive}; name it with --archive")

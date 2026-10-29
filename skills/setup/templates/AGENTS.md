@@ -38,7 +38,7 @@ later session.*
 | The studies and arguments on the way to a decision; they stay here once it is recorded | `{{design_dir}}` |
 | What was measured or found, and how to rerun it | {{findings}} |
 | How a thing is done here: how-tos, reusable prompts, reference lists | `{{guides_dir}}` |
-| What stopped being true, kept readable | `{{archive_dir}}/`: frozen, outside every search unless named (`.ignore`; plain `grep -r` does not read it), cited at most as a category; `{{archive_check}} read <file>` before reading one |
+| What stopped being true, kept readable | {{archive_dirs}}, each repository's own, on its side: frozen, outside every search unless named (`.ignore`; plain `grep -r` does not read it), cited at most as a category; `check-archive read <file>` before reading one |
 | The owner's own notes | `{{human_docs_dir}}`, as written: never cited by path, never checked |
 | Downloaded third-party material | `{{sources_manifest}}`, the manifest; the files are git-ignored and a document cites the URL |
 {{#families}}
@@ -113,7 +113,7 @@ later session.*
 - Each document sits on its rung of the kit's ladder and cites only rungs at or below it; {{sides}}
   (`doc-discipline` §1). *A public text that cites a private one is a dead link to its readers or a leak.*
 - Never edited: {{#frozen}}{{frozen}}, and {{/frozen}}generated or synced copies{{#copies}} ({{copies}}){{/copies}},
-  whose source is edited instead; an archived file only with a row in `{{archive_dir}}/LOG.md`, the owner having
+  whose source is edited instead; an archived file only with a row in its archive's `LOG.md`, the owner having
   ruled. *A frozen document's value is that it is what it was, and a copy's edit is lost unseen.*
 - Ask before every edit, however small, of a file that steers later sessions: this one, `CLAUDE.md`, the skills, the
   memory, the hooks; a change in a proposal the owner confirmed counts as asked. A rule enters from a named failure,

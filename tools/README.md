@@ -73,10 +73,11 @@ Resolves every relative link and image in the tracked Markdown files, nested rep
 anchor (`#section`) against the target's headings as a forge makes them, or an HTML id. A link from `/` is read from
 the top of the repository holding the file. Links inside code and HTML comments are examples, not links.
 
-- **The archive** (`archive/` at each repository's top): a dead link or anchor inside it is printed as `archived:`
-  and counted, never an error. A live document citing a file inside it is a warning: the archive is cited as a
-  category at most, its folder, its README or its log.
-- **The ladder**, with `--cut RUNG` (`none`, `docs`, `graph`, `plan`, `ai-docs`, `archive`, `all`) in one repository,
+- **The archive** (`archive/` at each repository's top, or `--archive DIR`, repeatable): a dead link or anchor inside
+  it is printed as `archived:` and counted, never an error. A live document citing a file inside it is a warning: the
+  archive is cited as a category at most, its folder, its README or its log. The archive is not a rung, so it has no
+  side of its own: in the two-repository form it is on its repository's side like any file there.
+- **The ladder**, with `--cut RUNG` (`none`, `docs`, `graph`, `plan`, `ai-docs`, `all`) in one repository,
   or `--public DIR` in the two-repository form, where everything in DIR is public and the rungs up to the cut (`plan`
   by default) sit inside it: a link, or a path written in backticks, from a public file to a private one is an error.
   A citation from a rung to a higher one is a warning. `--rung NAME=PATH[,PATH]` places a rung elsewhere, from the

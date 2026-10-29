@@ -8,21 +8,22 @@ The `setup` skill asks the questions and writes the answers; this script does th
 JSON file, from flags, or both; a flag overrides the file. `--help` lists every answer; DEFAULTS below holds the
 defaults.
 
-The documents form a ladder (`doc-discipline` §1): 1 `docs/`, 2 `graph.yml`, 3 `plan/`, 4 `ai-docs/`, 5 `archive/`,
-6 the agent layer. The answer `cut` names the last public rung, and the form follows from it: `all` is one public
-repository, `none` one private repository, anything else two, the private workspace (the target) holding the public
-repository as a submodule folder. In the two-repository form the public rungs are written inside that folder, which
-the owner adds with `git submodule add` before the run; the script checks that it is a git work tree of its own and
-never runs `git submodule` itself.
+The documents form a ladder (`doc-discipline` §1): 1 `docs/`, 2 `graph.yml`, 3 `plan/`, 4 `ai-docs/`, 5 the agent
+layer. The answer `cut` names the last public rung, and the form follows from it: `all` is one public repository,
+`none` one private repository, anything else two, the private workspace (the target) holding the public repository
+as a submodule folder. In the two-repository form the public rungs are written inside that folder, which the owner
+adds with `git submodule add` before the run; the script checks that it is a git work tree of its own and never runs
+`git submodule` itself. The archive is not a rung: each repository has its own, `archive/` at its top, on that
+repository's side, so a document archived stays where it was public or private.
 
 What it writes: at the workspace root the agent layer (AGENTS.md, CLAUDE.md, RATIONALE.md, local-machine.md, which is
-git-ignored), `.ignore` with the line `archive/`, and the `.gitignore` (an allowlist in the two-repository form, a few
-appended lines otherwise); on each rung's side `archive/README.md` and the archive's log `archive/LOG.md`, `ai-docs/`
-with its five places (the status file and the handoff when chosen), a README in `plan/` and in `docs/` only when the
-folder is new, `docs/glossary.md` when absent, and `graph.yml` through `python -m specgraph init`; outside the ladder
-`human-docs/README.md` and the `sources/README.md` manifest, each on its chosen side; with `agent_layer: both`, a
-contributors' AGENTS.md and CLAUDE.md in the public folder. It copies no script into the project: the checks are the
-kit's installed commands.
+git-ignored) and the `.gitignore` (an allowlist in the two-repository form, a few appended lines otherwise); at the
+top of each repository `.ignore` with the line `archive/`, `archive/README.md` and the archive's log `archive/LOG.md`;
+on each rung's side `ai-docs/` with its five places (the status file and the handoff when chosen), a README in `plan/`
+and in `docs/` only when the folder is new, `docs/glossary.md` when absent, and `graph.yml` through `python -m
+specgraph init`; outside the ladder `human-docs/README.md` and the `sources/README.md` manifest, each on its chosen
+side; with `agent_layer: both`, a contributors' AGENTS.md and CLAUDE.md in the public folder. It copies no script into
+the project: the checks are the kit's installed commands.
 
 The rule it exists to obey: never report success for a step it did not perform. Every step is reported as done,
 kept, skipped or failed, and the exit code follows the report: 0 when every step was done or kept, 1 when any was
@@ -56,10 +57,11 @@ HANDOFF_TEMPLATE = KIT / "skills" / "handoff" / "references" / "handoff-template
 
 MODES = ("conductor", "four-hands")
 # The ladder, bottom up: rung n is RUNGS[n - 1]. A cut names the last public rung; CUTS[i] makes rungs 1..i public.
-RUNGS = ("docs", "graph", "plan", "ai-docs", "archive", "agent")
-CUTS = ("none", "docs", "graph", "plan", "ai-docs", "archive", "all")
-RUNG_NAMES = {"docs": "the system documents", "graph": "the graph", "plan": "the plan", "ai-docs": "the AI documents",
-              "archive": "the archive"}
+# The archive is not a rung: each repository has its own at its top, on that repository's side.
+RUNGS = ("docs", "graph", "plan", "ai-docs", "agent")
+CUTS = ("none", "docs", "graph", "plan", "ai-docs", "all")
+RUNG_NAMES = {"docs": "the system documents", "graph": "the graph", "plan": "the plan", "ai-docs": "the AI documents"}
+ARCHIVE = "archive"
 SIDES = ("private", "public")
 LAYERS = ("private", "public", "both")
 # Names the workspace root uses for itself, so the public folder cannot take one of them.
@@ -215,6 +217,9 @@ def validate(a):
     for key in REQUIRED:
         if not isinstance(a.get(key), str) or not a[key].strip():
             raise AnswerError(f"'{key}' is required, as text")
+    if a["cut"] == ARCHIVE:
+        raise AnswerError("cut 'archive' is gone: the archive is not a rung, each repository has its own archive/ on "
+                          "its side; the last public rung is 'ai-docs', or 'all' for one public repository")
     for key, allowed in (("mode", MODES), ("cut", CUTS), ("human_docs", SIDES), ("sources", SIDES),
                          ("agent_layer", ("",) + LAYERS), ("graph", GRAPHS), ("outward", OUTWARD)):
         if a[key] not in allowed:
@@ -310,6 +315,11 @@ class Layout:
     def outside(self, side, rel):
         return self._in(side == "public", rel)
 
+    @property
+    def archives(self):
+        """Each repository's archive, from the workspace root: the workspace's own first, then the public one."""
+        return [ARCHIVE] + ([f"{self.public_dir}/{ARCHIVE}"] if self.form == "two" else [])
+
     def local_only(self, side):
         """A private element in the one public repository stays on this device, git-ignored."""
         return self.form == "one-public" and side == "private"
@@ -328,7 +338,7 @@ def sides_in_words(a, lay):
         local = ["`local-machine.md`"] + [f"`{rel}/`" for key, rel in outside if lay.local_only(a[key])]
         return ("everything is public, and the ladder still orders the citations; "
                 f"{join(local)} {'stays' if len(local) == 1 else 'stay'} on this device, git-ignored")
-    names = {"docs": "docs/", "graph": "graph.yml", "plan": "plan/", "ai-docs": "ai-docs/", "archive": "archive/"}
+    names = {"docs": "docs/", "graph": "graph.yml", "plan": "plan/", "ai-docs": "ai-docs/"}
     rungs = [r for r in names if r != "graph" or a["graph"] != "none"]
     public = [f"`{lay.at(r, names[r])}`" for r in rungs if lay.public(r)]
     private = [f"`{names[r]}`" for r in rungs if not lay.public(r)] + ["the agent layer"]
@@ -336,7 +346,7 @@ def sides_in_words(a, lay):
     words = (f"the public side ends at {RUNG_NAMES[lay.cut]}: {join(public)} {'is' if len(public) == 1 else 'are'} "
              f"public, in the public repository `{lay.public_dir}/`; {join(private)} "
              f"{'is' if len(private) == 1 else 'are'} private, at the workspace "
-             f"root; outside the ladder, {elements}")
+             f"root; outside the ladder, {elements}, and each repository's `{ARCHIVE}/` is on its repository's side")
     if lay.agent_layer == "both":
         words += f"; the contributors' `{lay.public_dir}/AGENTS.md` cites only the public rungs"
     return words
@@ -365,9 +375,9 @@ def context(a, lay, target):
         codes = ", ".join(code(c) for c in a["families"])
         families.append(f"{codes} for work items, allocated by `{status_file}` (its checker prints the next free ID)")
 
-    archive = lay.at("archive", "archive")
-    # The archive's checker reads `archive` from where it runs, the workspace root; anywhere else it is named.
-    archive_check = "check-archive" if archive == "archive" else f"check-archive --archive {archive}"
+    # Each repository's archive is checked from the workspace root: the checker reads `archive` from where it runs,
+    # so the workspace's own needs no flag and the public repository's is named.
+    archive_checks = ["check-archive"] + [f"check-archive --archive {d}" for d in lay.archives[1:]]
     lint = ""
     if graph_file:
         lint = "`specgraph lint`" if graph_file == "graph.yml" else f"`specgraph lint --graph {graph_file}`"
@@ -375,7 +385,7 @@ def context(a, lay, target):
     if a["status"]:
         graph_flag = f" --graph {graph_file}" if graph_file else ""
         checks.append(f"`check-status {status_file} {closed_file}{graph_flag}`")
-    checks.append(f"`{archive_check}`")
+    checks += [code(c) for c in archive_checks]
     # The documents' checks: the links walk the public folder from the workspace root and hold both sides to the cut;
     # the frontmatter is read in the repository whose commit is being made.
     if lay.form == "two":
@@ -404,11 +414,9 @@ def context(a, lay, target):
     if a["status"] and lay.public("ai-docs"):
         graph_flag = f" --graph {local(graph_file)}" if graph_file else ""
         c_checks.append(f"`check-status {local(status_file)} {local(closed_file)}{graph_flag}`")
-    if lay.public("archive"):
-        c_archive = local(archive)
-        c_checks.append("`check-archive`" if c_archive == "archive" else f"`check-archive --archive {c_archive}`")
-    # In the public repository alone everything is public, so a link out of it is dead and no cut is needed.
-    c_checks += ["`check-links`", "`check-frontmatter`"]
+    # The public repository has an archive of its own, read from its root; and alone, everything in it is public, so
+    # a link out of it is dead and no cut is needed.
+    c_checks += ["`check-archive`", "`check-links`", "`check-frontmatter`"]
     c_checks.append(own_checks)
 
     human_docs = lay.outside(a["human_docs"], "human-docs") + "/"
@@ -431,14 +439,15 @@ def context(a, lay, target):
         "spec": a["spec"] or code(f"{docs}/"), "plan": a["plan"] or code(f"{plan_dir}/"),
         "glossary": a["glossary"] or code(glossary_file),
         "findings": a["findings"] or code(f"{ai}/findings/"),
-        "design_dir": f"{ai}/design/", "guides_dir": f"{ai}/guides/", "archive_dir": archive,
-        "archive_check": archive_check,
+        "design_dir": f"{ai}/design/", "guides_dir": f"{ai}/guides/",
+        "archive_dirs": join([code(f"{d}/") for d in lay.archives]),
         "human_docs_dir": human_docs,
         "sources_manifest": lay.outside(a["sources"], "sources") + "/README.md",
         "families": "; ".join(families), "open": opening, "checks": "; ".join(checks),
         "reserved": a["reserved"], "owner_notes": a["owner_notes"] or code(human_docs),
         "gated": a["outward"] == "gated", "free": a["outward"] == "free", "attribution": a["attribution"],
-        "frozen": [code(f"{archive}/")] + [code(f) for f in a["frozen"]], "copies": [code(c) for c in a["copies"]],
+        "frozen": [code(f"{d}/") for d in lay.archives] + [code(f) for f in a["frozen"]],
+        "copies": [code(c) for c in a["copies"]],
         "prune_after": a["prune_after"] or SLOT.format("a period"),
         "machine_resources": m.get("resources") or SLOT.format("cores, memory, disk, accelerators"),
         "machine_load": m.get("load") or SLOT.format("other sessions, agents, services, scheduled jobs"),
@@ -540,8 +549,9 @@ def template(rel, ctx, now):
 def allowlist(a, lay):
     """The private workspace's .gitignore: everything ignored unless named, so nothing private is committed without
     being named first; the public folder is one entry, so only its gitlink is tracked."""
-    names = {"docs": "docs/", "graph": "graph.yml", "plan": "plan/", "ai-docs": "ai-docs/", "archive": "archive/"}
+    names = {"docs": "docs/", "graph": "graph.yml", "plan": "plan/", "ai-docs": "ai-docs/"}
     private = [n for r, n in names.items() if not lay.public(r) and (r != "graph" or a["graph"] != "none")]
+    private.append(f"{ARCHIVE}/")  # the workspace's own archive, always private
     lines = ["# Airone Giallo: the private workspace's allowlist. Everything is ignored unless re-included below,",
              "# so nothing private is committed without being named first; local-machine.md stays ignored.",
              "/*", "!/.gitignore", "!/.gitmodules", "!/.ignore", "!/AGENTS.md", "!/CLAUDE.md", "!/RATIONALE.md",
@@ -576,8 +586,10 @@ def plan(a, lay, ctx, now, target):
         Step("RATIONALE.md", "where each rule came from", lambda: rationale, record=True),
         Step("local-machine.md", "this device's resources and limits (git-ignored)",
              lambda: template("local-machine.md", ctx, now)),
-        Step(".ignore", "the archive out of every search unless named", lines=(("archive/",),)),
     ]
+    # The .ignore of each repository sits at its top, beside its archive.
+    steps += [Step(f"{d[:-len(ARCHIVE)]}.ignore", "the archive out of every search unless named",
+                   lines=((f"{ARCHIVE}/",),)) for d in lay.archives]
     if lay.form == "two":
         text = allowlist(a, lay)
         steps.append(Step(".gitignore", f"the allowlist; {lay.public_dir}/ tracked as its gitlink only",
@@ -599,7 +611,7 @@ def plan(a, lay, ctx, now, target):
                   Step(f"{lay.public_dir}/CLAUDE.md", "one line, importing the contributors' AGENTS.md",
                        lambda: claude)]
 
-    archive, ai = lay.at("archive", "archive"), lay.at("ai-docs", "ai-docs")
+    ai = lay.at("ai-docs", "ai-docs")
     steps.append(Step(f"{ai}/README.md", "the five places of the AI documents (rung 4)", tree("ai-docs/README.md"),
                       record=True))
     if a["status"]:
@@ -614,9 +626,11 @@ def plan(a, lay, ctx, now, target):
                         ("guides", "how a thing is done here")):
         steps.append(Step(f"{ai}/{place}/README.md", what, tree(f"ai-docs/{place}/README.md"), record=True))
     log = archive_log(now)
-    steps += [Step(f"{archive}/README.md", "what the archive is (rung 5)", tree("archive/README.md"), record=True),
-              Step(f"{archive}/LOG.md", "the archive's log: changes to archived files, vocabulary conflicts",
-                   lambda: log, record=True)]
+    for d in lay.archives:
+        steps += [Step(f"{d}/README.md", "this repository's archive: what it is", tree("archive/README.md"),
+                       record=True),
+                  Step(f"{d}/LOG.md", "the archive's log: changes to archived files, vocabulary conflicts",
+                       lambda: log, record=True)]
 
     for rung in ("docs", "graph", "plan"):
         if rung == "graph":

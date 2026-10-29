@@ -13,16 +13,17 @@ tracked file, or a folder holding one: a file present here but not tracked is a 
 link starting with `/` is read from the top of the repository holding the file. An anchor is checked when the target
 is a Markdown file: it must be a heading's anchor, as forges make them, or an HTML id.
 
-The ladder (the `doc-discipline` skill): 1 docs/, 2 graph.yml, 3 plan/, 4 ai-docs/, 5 archive/, 6 the agent layer
-(AGENTS.md, CLAUDE.md, RATIONALE.md, .claude/). With --cut, the rungs up to RUNG are public and the rest private;
-with --public DIR, everything in DIR is public, everything outside it private, and the rungs up to the cut (plan by
-default) sit inside DIR. A link, or a path written in backticks, from a public file to a private one is an error.
-A citation of a higher rung from a lower one is a warning: the ladder lets a rung cite only those at or below it.
---rung NAME=PATH[,PATH...] places a rung elsewhere, each path from the workspace root.
+The ladder (the `doc-discipline` skill): 1 docs/, 2 graph.yml, 3 plan/, 4 ai-docs/, 5 the agent layer (AGENTS.md,
+CLAUDE.md, RATIONALE.md, .claude/). With --cut, the rungs up to RUNG are public and the rest private; with --public
+DIR, everything in DIR is public, everything outside it private, and the rungs up to the cut (plan by default) sit
+inside DIR. A link, or a path written in backticks, from a public file to a private one is an error. A citation of a
+higher rung from a lower one is a warning: the ladder lets a rung cite only those at or below it. --rung
+NAME=PATH[,PATH...] places a rung elsewhere, each path from the workspace root.
 
-The archive (archive/ at each repository's top, or where --rung archive= puts it) is frozen: a dead link or anchor
-inside it is information, counted and never an error. A live document citing a file inside it is a warning: the
-archive is cited as a category at most, the folder or its README or LOG.
+The archive is not on the ladder: each repository has its own, archive/ at its top (or where --archive puts it), on
+that repository's side, and it is frozen: a dead link or anchor inside it is information, counted and never an
+error. A live document citing a file inside it is a warning: the archive is cited as a category at most, the folder
+or its README or LOG.
 
 Exit 1 on any error, 2 on a bad argument or a tree that cannot be read. Standard library only.
 """
@@ -36,10 +37,10 @@ from dataclasses import dataclass, field
 
 import airone_tree as at
 
-RUNGS = ("docs", "graph", "plan", "ai-docs", "archive", "agent")
+RUNGS = ("docs", "graph", "plan", "ai-docs", "agent")
 CUTS = ("none",) + RUNGS[:-1] + ("all",)
 DEFAULT_PATHS = {"docs": ["docs/"], "graph": ["graph.yml"], "plan": ["plan/"], "ai-docs": ["ai-docs/"],
-                 "archive": ["archive/"], "agent": ["AGENTS.md", "CLAUDE.md", "RATIONALE.md", ".claude/"]}
+                 "agent": ["AGENTS.md", "CLAUDE.md", "RATIONALE.md", ".claude/"]}
 # The archive's own files, which a live document may cite: the folder is the category.
 ARCHIVE_OWN = ("", "README.md", "LOG.md")
 # A path written in backticks: no spaces, at least one slash or a file extension, nothing that reads as code.
@@ -199,9 +200,9 @@ def judge(tree, report, src, n, shown, target, how):
         report.errors.append(f"{where}: the ladder: a public file {how} {shown}, on the private side: "
                              f"{place(tree, target)}")
         return
-    # The agent layer is the top rung, so nothing is above it; the archive is cited by its own rule, above.
+    # The agent layer is the top rung, so nothing is above it; the archive is off the ladder, judged above.
     a, b = ladder.rung_of(src), ladder.rung_of(target)
-    if a and b and b != "archive" and ladder.number(b) > ladder.number(a):
+    if a and b and ladder.number(b) > ladder.number(a):
         report.warnings.append(f"{where}: the ladder: rung {ladder.number(a)} ({a}) {how} rung {ladder.number(b)} "
                                f"({b}), above it: {shown}")
 
@@ -275,6 +276,8 @@ def parser():
     p.add_argument("--public", metavar="DIR", help="the public repository's folder, in the two-repository form")
     p.add_argument("--rung", metavar="NAME=PATH", action="append",
                    help="place a rung elsewhere: paths from the workspace root, comma-separated; repeatable")
+    p.add_argument("--archive", metavar="DIR", action="append",
+                   help="the archive folder, from the root; repeatable (default: archive/ at each repository's top)")
     p.add_argument("--root", metavar="DIR", help="the repository to check (default: the one holding the current "
                                                  "folder)")
     p.add_argument("--exempt", metavar="PATH", action="append", default=[],
@@ -292,8 +295,7 @@ def main(argv=None):
         root = at.top(args.root or ".")
         if ladder and ladder.public_dir and not (root / ladder.public_dir).is_dir():
             raise at.Usage(f"--public {ladder.public_dir}: no such folder in {root}")
-        archive_dirs = ladder.paths["archive"] if ladder else None
-        report, tree = check(root, ladder, archive_dirs, args.exempt)
+        report, tree = check(root, ladder, args.archive, args.exempt)
     except at.Usage as e:
         print(e, file=sys.stderr)
         return 2

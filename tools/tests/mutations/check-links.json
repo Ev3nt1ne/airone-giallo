@@ -49,13 +49,13 @@
       ],
       [
         "L10 an upward citation is not warned",
-        "    if a and b and b != \"archive\" and ladder.number(b) > ladder.number(a):",
+        "    if a and b and ladder.number(b) > ladder.number(a):",
         "    if False:"
       ],
       [
-        "L11 an archived target gets the ladder's warning as well",
-        "    if a and b and b != \"archive\" and ladder.number(b) > ladder.number(a):",
-        "    if a and b and ladder.number(b) > ladder.number(a):"
+        "L11 the archive named by --archive is ignored",
+        "        report, tree = check(root, ladder, args.archive, args.exempt)",
+        "        report, tree = check(root, ladder, None, args.exempt)"
       ],
       [
         "L12 written paths are not read",

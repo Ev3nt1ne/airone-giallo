@@ -13,8 +13,9 @@ dates rather than listed per file. A checker confirms the stamps against git, re
 without its row, and tells a session which conflicts apply to the file it is about to read.
 
 It is a piece of Airone Giallo, the kit described in the [repository](https://github.com/Ev3nt1ne/airone-giallo), and
-it is useful without the rest. In a project laid out by the kit the archive is rung 5 of the ladder
-(`skills/doc-discipline` §1): frozen, outside every search unless named, cited by nothing live beyond a category.
+it is useful without the rest. In a project laid out by the kit each repository has its own archive, `archive/` at
+its top, beside the ladder rather than on it (`skills/doc-discipline` §1): frozen, on its repository's side, outside
+every search unless named, cited by nothing live beyond a category.
 
 ## Why
 

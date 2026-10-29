@@ -4,7 +4,7 @@
     claims                          the staged changes
     claims --range A..B             the lines a range of commits added
     claims --message FILE           a commit message, or any text, read as prose
-    python3 list_claims.py ...      from the kit, without installing
+    python3 list_claims.py ...      from the clone, without installing
 
 The hard part of checking a change claim by claim is listing the claims: re-reading one's own text finds coherence,
 not truth. This reads the added lines and sorts what it finds:

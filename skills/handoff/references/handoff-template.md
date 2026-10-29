@@ -2,7 +2,7 @@
 
 Two files to copy into the project's `ai-docs/handoff/` folder. Fill each `[to fill: …]` slot; delete the guidance in italics. The
 frontmatter follows the `markdown-docs` skill; drop it if the project does not use frontmatter. The handoff sits on
-rung 4 of the kit's ladder (`doc-discipline` §1): it may cite anything at or below that rung, and nothing cites it as a
+rung 4 of the ladder (`doc-discipline` §1): it may cite anything at or below that rung, and nothing cites it as a
 source.
 
 ## `current.md`, the state

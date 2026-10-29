@@ -5,7 +5,7 @@
     move-paths --table FILE                     the same for a table of moves
     move-paths ... --apply                      move and rewrite
     move-paths ... --frozen-ok FILE --apply     and re-point the links of this archived file too
-    python3 move_paths.py ...                   from the kit, without installing
+    python3 move_paths.py ...                   from the clone, without installing
 
 OLD is a tracked file, or a folder whose tracked files all move with it. The table holds one move a line, OLD and NEW
 separated by a tab (or by spaces, when neither path has one), and an optional third column `no` for a file whose own

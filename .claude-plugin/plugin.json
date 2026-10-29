@@ -1,7 +1,7 @@
 {
   "name": "airone-giallo",
   "version": "0.1.0",
-  "description": "A kit for running a long project with Claude Code agents: the skills for a session, the handoff, the documents and their discipline, and the setup that installs the kit's structure into a project.",
+  "description": "Runs a long project with Claude Code agents: the skills for a session, the handoff, the documents and their discipline, and the setup that lays out the project's documents. The commands are installed separately as Python packages.",
   "author": { "name": "Ev3nt1ne", "url": "https://github.com/Ev3nt1ne" },
   "homepage": "https://github.com/Ev3nt1ne/airone-giallo",
   "license": "MIT",

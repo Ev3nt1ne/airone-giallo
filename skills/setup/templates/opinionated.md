@@ -1,5 +1,5 @@
 
-**The kit author's rules, opted in at setup.**
+**The rules of Airone Giallo's author, opted in at setup.**
 
 {{#four_hands}}
 - Comments state invariants and reasons; history, item IDs and citations of what does not ship go in the commit. *A

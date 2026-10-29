@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the pieces of Airone Giallo a project chose, in the kit's tree, into that project's workspace.
+"""Install the pieces of Airone Giallo a project chose, in Airone Giallo's tree, into that project's workspace.
 
     python3 scaffold.py --answers ANSWERS.json [--target DIR] [--dry-run] [--force]
     python3 scaffold.py --name N --purpose P --mode conductor [more flags] [--target DIR] ...
@@ -23,7 +23,7 @@ on each rung's side `ai-docs/` with its five places (the status file and the han
 and in `docs/` only when the folder is new, `docs/glossary.md` when absent, and `graph.yml` through `python -m
 specgraph init`; outside the ladder `human-docs/README.md` and the `sources/README.md` manifest, each on its chosen
 side; with `agent_layer: both`, a contributors' AGENTS.md and CLAUDE.md in the public folder. It copies no script into
-the project: the checks are the kit's installed commands.
+the project: the checks are Airone Giallo's installed commands.
 
 The rule it exists to obey: never report success for a step it did not perform. Every step is reported as done,
 kept, skipped or failed, and the exit code follows the report: 0 when every step was done or kept, 1 when any was
@@ -50,11 +50,11 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates"
-KIT = HERE.parent.parent
+REPO = HERE.parent.parent
 # The status file, the closed file and the archive's log are written as they are, their dates stamped, not rendered.
 STATUS_TEMPLATES = TEMPLATES / "tree" / "ai-docs"
 ARCHIVE_TEMPLATES = TEMPLATES / "tree" / "archive"
-HANDOFF_TEMPLATE = KIT / "skills" / "handoff" / "references" / "handoff-template.md"
+HANDOFF_TEMPLATE = REPO / "skills" / "handoff" / "references" / "handoff-template.md"
 
 MODES = ("conductor", "four-hands")
 # The ladder, bottom up: rung n is RUNGS[n - 1]. A cut names the last public rung; CUTS[i] makes rungs 1..i public.
@@ -99,7 +99,7 @@ VALUE_RE = re.compile(r"\{\{(\w+)\}\}")
 
 
 def render(text, ctx):
-    """Render the kit's template subset: {{name}} is a value, {{#name}}…{{/name}} keeps its body when the value is
+    """Render the template subset: {{name}} is a value, {{#name}}…{{/name}} keeps its body when the value is
     true (a non-empty string or list, or True), {{^name}}…{{/name}} when it is false. A tag alone on its line takes
     the line with it. Sections of the same name do not nest. A name the context lacks is an error, never an empty
     string, so a template and its answers cannot drift apart unnoticed."""
@@ -131,7 +131,7 @@ def render(text, ctx):
     return text
 
 
-WIDTH = 120  # the kit's own line length for Markdown
+WIDTH = 120  # Airone Giallo's own line length for Markdown
 
 
 def rewrap(text, width=WIDTH):
@@ -386,7 +386,7 @@ def context(a, lay, target):
     else:
         checks.append(f"`check-links --cut {lay.cut}`")
         checks.append("`check-frontmatter`")
-    # The project's own checks beside the kit's, or a visible slot until they are known.
+    # The project's own checks beside Airone Giallo's, or a visible slot until they are known.
     own_checks = a["checks"] or SLOT.format("the project's own test and lint commands")
     checks.append(own_checks)
 
@@ -422,7 +422,7 @@ def context(a, lay, target):
         "model": a["model"] or SLOT.format("model"),
         "four_hands": a["mode"] == "four-hands", "conductor": a["mode"] == "conductor",
         "sides": sides_in_words(a, lay), "layer_public": lay.agent_layer == "public",
-        "kit_commands": join([code(c) for c, on in (("specgraph", graph_file), ("check-status", a["status"]),
+        "commands": join([code(c) for c, on in (("specgraph", graph_file), ("check-status", a["status"]),
                                                     ("check-archive", True), ("check-links", True),
                                                     ("check-frontmatter", True)) if on]),
         "two_repos": lay.form == "two", "public_dir": lay.public_dir, "contributors": lay.agent_layer == "both",
@@ -519,8 +519,8 @@ def specgraph_available():
 def graph_action(profile, folder):
     def run(target):
         if not specgraph_available():
-            return ("SKIPPED", f"specgraph is not importable from {sys.executable}; install the kit's graph "
-                    f"(pip install <kit>/graph), then run in {folder}: specgraph init --profile {profile}")
+            return ("SKIPPED", f"specgraph is not importable from {sys.executable}; install the graph "
+                    f"(pip install <airone-giallo>/graph), then run in {folder}: specgraph init --profile {profile}")
         where = target / folder
         proc = subprocess.run([sys.executable, "-m", "specgraph", "init", "--profile", profile,
                                "--graph", "graph.yml"], cwd=where, capture_output=True, text=True)

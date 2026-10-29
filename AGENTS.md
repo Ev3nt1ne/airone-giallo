@@ -1,14 +1,16 @@
 # Contributing to this repository with an agent
 
-This file is for an agent working **on the kit itself**: fixing a tool, changing a skill, adding a piece. It is not
-the instruction file a project gets when it adopts the kit; that one is written by the setup skill into the
+This file is for an agent working **on Airone Giallo itself**: fixing a tool, changing a skill, adding a part. It is not
+the instruction file a project gets when it adopts Airone Giallo; that one is written by the setup skill into the
 adopting project, from the template in `skills/setup/`.
 
 - **Read the folder's README before touching it.** Each folder (`graph/`, `skills/`, `tools/`) says what it is, why
   it exists and how it is used. A change that contradicts the README changes the README too.
-- **The kit is one thing; the graph stands alone.** The skills, the setup and the tools may assume each other's
-  vocabulary and files, and a tool may import another. Nothing in `graph/` imports or needs the rest of the kit: the
-  kit reaches the graph from outside, by its command and its file, so a project can take the graph without the kit.
+- **Airone Giallo may require any of its parts; a part that stands alone requires nothing outside its folder.** The
+  skills, the setup and the tools assume each other's vocabulary and files, and a tool may import another. The graph
+  stands alone: nothing in `graph/` imports or needs the rest, and Airone Giallo reaches it by its command and its
+  file. A part joins this repository when it serves the long project; what does not, gets a repository of its own. A
+  part is called standalone only when its folder passes the graph's test.
 - **Configuration is data.** A tool reads a project's values from that project's own files (the graph file's
   `meta`, the status file's `status-meta` block) or from arguments, never from constants in its code. A tool with a
   particular project's vocabulary in it is not done.

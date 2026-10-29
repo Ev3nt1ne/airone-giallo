@@ -1,11 +1,11 @@
 # {{name}}: instructions for agents
 
-{{name}} is {{purpose}}. Its invariants, each with what breaks if it fails: {{invariants}}. The methods are the kit's
-skills (`session`, `handoff`, `doc-discipline`, `markdown-docs`), not repeated here; they and the commands of the
-checks ({{kit_commands}}) come from Airone Giallo, its plugin (`/airone-giallo:<skill>`)
-and its Python packages, at https://github.com/Ev3nt1ne/airone-giallo, and a session that lacks them asks the owner
-to install them. The origin of each rule the project adds is in [RATIONALE.md](RATIONALE.md). Written against Claude
-Code {{claude_code_version}} and model {{model}}; re-read this file when either changes.
+{{name}} is {{purpose}}. Its invariants, each with what breaks if it fails: {{invariants}}. The methods are Airone
+Giallo's skills (`session`, `handoff`, `doc-discipline`, `markdown-docs`), not repeated here; they and the commands of
+the checks ({{commands}}) come from Airone Giallo, its plugin (`/airone-giallo:<skill>`) and its Python packages, at
+https://github.com/Ev3nt1ne/airone-giallo, and a session that lacks them asks the owner to install them. The origin of
+each rule the project adds is in [RATIONALE.md](RATIONALE.md). Written against Claude Code {{claude_code_version}} and
+model {{model}}; re-read this file when either changes.
 {{#two_repos}}
 
 **Sessions open here, at the workspace root, never inside `{{public_dir}}/`**{{^contributors}}, where no instruction
@@ -110,7 +110,7 @@ later session.*
 - Outward acts (pushes, tags, releases, issues, pull requests, comments, posts) are done{{#attribution}} with the
   trailer `{{attribution}}`{{/attribution}} and reported. *An act outside the repository cannot be taken back.*
 {{/free}}
-- Each document sits on its rung of the kit's ladder and cites only rungs at or below it; {{sides}}
+- Each document sits on its rung of the ladder and cites only rungs at or below it; {{sides}}
   (`doc-discipline` §1). *A public text that cites a private one is a dead link to its readers or a leak.*
 - Never edited: {{#frozen}}{{frozen}}, and {{/frozen}}generated or synced copies{{#copies}} ({{copies}}){{/copies}},
   whose source is edited instead; an archived file only with a row in its archive's `LOG.md`, the owner having

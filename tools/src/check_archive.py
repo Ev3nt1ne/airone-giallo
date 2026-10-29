@@ -5,7 +5,7 @@ the table of vocabulary conflicts; and, for a session, which conflicts apply to 
     check-archive [--archive DIR]               the check, run by the hook and in CI
     check-archive [--archive DIR] read FILE     FILE's freeze stamp and the conflicts dated after it, oldest first
     check-archive [--archive DIR] rename WORD   every line of the archive holding WORD, with each file's stamp
-    python3 check_archive.py ...                from the kit, without installing
+    python3 check_archive.py ...                from the clone, without installing
 
 DIR is the archive folder, `archive` by default; its log is DIR/LOG.md. Without DIR, `read` takes as the archive the
 nearest folder above FILE that holds a LOG.md, so a file in any repository's archive is read by its path alone, from
@@ -31,7 +31,7 @@ CONFLICTS = ("date", "kind", "old", "now", "where the current meaning is defined
 KINDS = ("renamed", "reused")
 # A change to an archived file, as `git diff --name-status` letters it; an added file is an archiving, not a change.
 CHANGE_LETTERS = {"M": "modified", "D": "deleted", "R": "renamed", "T": "changed type"}
-# The kit's timestamp, the form of the frontmatter's `updated:`: one offset, so the text sorts as the time does.
+# Airone Giallo's timestamp, the form of the frontmatter's `updated:`: one offset, so the text sorts as the time does.
 TIME_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\+00:00$")
 TIME_FORM = "YYYY-MM-DDTHH:MM:SS+00:00"
 DATE_RE = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
@@ -52,7 +52,7 @@ class Usage(Exception):
 # ---------------------------------------------------------------- reading the files
 
 def parse_time(text):
-    """The datetime of a stamp in the kit's form, or None."""
+    """The datetime of a stamp in Airone Giallo's form, or None."""
     text = text.strip()
     if not TIME_RE.match(text):
         return None
@@ -351,7 +351,7 @@ def check(archive, now=None):
         errors += check_log(log, root)
     else:
         log = Log(str(log_path))
-        errors.append(f"{log_path}: the archive has no log; start it from the kit's skills/setup/templates/tree/archive/LOG.md")
+        errors.append(f"{log_path}: the archive has no log; start it from Airone Giallo's skills/setup/templates/tree/archive/LOG.md")
 
     files = archived_files(archive)
     stamps = {}

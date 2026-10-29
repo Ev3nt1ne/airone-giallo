@@ -112,8 +112,8 @@ def dead_links(folder):
 
 
 def document_checks(folder, cut, public=None):
-    """Stage what the setup wrote, as the skill's §4 says, then run the kit's two document checks from the workspace
-    root as a script from the kit: (exit code, output) of each."""
+    """Stage what the setup wrote, as the skill's §4 says, then run Airone Giallo's two document checks from the
+    workspace root as a script from the clone: (exit code, output) of each."""
     if not (folder / ".git").exists():
         git("init", "-q", cwd=folder)
     if public:
@@ -121,7 +121,7 @@ def document_checks(folder, cut, public=None):
         assert git("add", "-A", "--", ".", f":!{public}", cwd=folder).returncode == 0
     else:
         assert git("add", "-A", cwd=folder).returncode == 0
-    tools = sc.KIT / "tools" / "src"
+    tools = sc.REPO / "tools" / "src"
     out = {}
     for name, args in (("check_links", ["--cut", cut] + (["--public", public] if public else [])),
                        ("check_frontmatter", ["--all"])):
@@ -162,9 +162,9 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
     for path in folder.rglob("*"):
         if path.is_file() and ".git" not in path.parts and path.suffix in (".md", ".yml", ""):
             assert "{{" not in path.read_text(encoding="utf-8"), path
-    # No kit code is copied into the project: the checks are the kit's commands.
+    # No code of Airone Giallo is copied into the project: the checks are its commands.
     assert not [p for p in folder.rglob("*.py")]
-    checker = subprocess.run([sys.executable, str(sc.KIT / "tools" / "src" / "check_status.py"),
+    checker = subprocess.run([sys.executable, str(sc.REPO / "tools" / "src" / "check_status.py"),
                               "ai-docs/status.md", "ai-docs/closed.md", "--graph", "inkwell/graph.yml"],
                              cwd=folder, capture_output=True, text=True)
     assert checker.returncode == 0, checker.stdout + checker.stderr
@@ -174,7 +174,7 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
     assert lint.returncode == 0 and "0 error(s)" in lint.stdout, lint.stdout + lint.stderr
     # Each repository's archive passes its checker, the public one named from the workspace root.
     for args in ([], ["--archive", "inkwell/archive"]):
-        archive = subprocess.run([sys.executable, str(sc.KIT / "tools" / "src" / "check_archive.py"), *args],
+        archive = subprocess.run([sys.executable, str(sc.REPO / "tools" / "src" / "check_archive.py"), *args],
                                  cwd=folder, capture_output=True, text=True)
         assert archive.returncode == 0 and "0 error(s)" in archive.stdout, (args, archive.stdout + archive.stderr)
     assert dead_links(folder) == []
@@ -200,7 +200,7 @@ def test_full_install_writes_every_piece_and_passes_its_own_checks(tmp_path, cap
     # repository alone.
     contributors = (folder / "inkwell" / "AGENTS.md").read_text()
     assert "`check-archive`; `check-links`; `check-frontmatter`; `pytest`" in contributors
-    # What the setup wrote passes the kit's own document checks, the ladder included.
+    # What the setup wrote passes Airone Giallo's own document checks, the ladder included.
     for name, (code, output) in document_checks(folder, "plan", "inkwell").items():
         assert code == 0 and "0 error(s)" in output, (name, output)
 
@@ -438,7 +438,7 @@ def test_the_one_repository_forms_nest_nothing_and_append_their_ignore_lines(tmp
 
 
 @needs_git
-def test_the_workspace_agents_file_says_sessions_open_at_the_root_and_where_the_kit_comes_from(tmp_path, capsys):
+def test_the_workspace_agents_file_says_sessions_open_at_the_root_and_where_airone_giallo_comes_from(tmp_path, capsys):
     two, both, one = workspace(tmp_path, "two"), workspace(tmp_path, "both"), project(tmp_path, "one")
     answers = dict(MINIMAL, cut="plan", status=True, families=FAMILIES, invariants=FULL["invariants"])
     assert install(two, answers, capsys=capsys)[0] == 0
@@ -498,8 +498,8 @@ def test_the_opinionated_layer_is_off_unless_asked(tmp_path, capsys):
     install(plain, MINIMAL, capsys=capsys)
     install(off_mode, dict(MINIMAL, opinionated=True), capsys=capsys)
     install(on_mode, dict(MINIMAL, opinionated=True, mode="four-hands"), capsys=capsys)
-    assert "kit author's rules" not in agents(plain)
-    assert "kit author's rules" in agents(off_mode) and "Comments state invariants" not in agents(off_mode)
+    assert "Airone Giallo's author" not in agents(plain)
+    assert "Airone Giallo's author" in agents(off_mode) and "Comments state invariants" not in agents(off_mode)
     assert "Comments state invariants" in agents(on_mode)
 
 
@@ -522,7 +522,7 @@ def test_the_first_rule_is_challenge_correct_confirm(tmp_path, capsys):
 
 
 @needs_git
-def test_no_prose_line_is_longer_than_the_kit_width(tmp_path, capsys):
+def test_no_prose_line_is_longer_than_the_width(tmp_path, capsys):
     folder = workspace(tmp_path)
     assert install(folder, dict(FULL, graph="none"), capsys=capsys)[0] == 0
     for name in ("AGENTS.md", "RATIONALE.md", "inkwell/AGENTS.md"):

@@ -3,7 +3,7 @@
 
     mutate SPEC --test CMD [--expect-rebuild PATTERN] [--timeout S]   the round
     mutate anchors SPEC... [--rev REV]                                every anchor of the specs, read only
-    python3 mutate_round.py ...                                       from the kit, without installing
+    python3 mutate_round.py ...                                       from the clone, without installing
 
 A test counts once it has failed for the right reason (the `session` skill's verify method, §6). The round plants
 each mutation in its file, runs the test command, records which tests failed, and restores the file, then ends with

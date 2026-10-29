@@ -8,14 +8,14 @@ and nothing says it is no longer what it was; a term is renamed and a frozen fil
 now means something else; a test passes, and nobody has seen it fail when the thing it guards breaks; a commit
 message claims a hash, an identifier and "every case" that nobody resolved.
 
-This folder is the kit's commands, seven of them, each one file of standard-library Python: four checks that run in a
-hook and in CI (the status file, the archive, the links with the ladder, the frontmatter), a mover that keeps the
-references true, a mutation round, and a lister of the claims a change makes. They read a project's own values from
-its files or their arguments, never from constants: the ladder's cut, the graph file's `meta`, the status file's
+This folder is Airone Giallo's commands, seven of them, each one file of standard-library Python: four checks that run
+in a hook and in CI (the status file, the archive, the links with the ladder, the frontmatter), a mover that keeps the
+references true, a mutation round, and a lister of the claims a change makes. They read a project's own values from its
+files or their arguments, never from constants: the ladder's cut, the graph file's `meta`, the status file's
 `status-meta` block, the archive's place.
 
-It is part of Airone Giallo, the kit described in the [repository](https://github.com/Ev3nt1ne/airone-giallo); the
-graph, the kit's other code, is a package of its own in `graph/`. The status file and the archive's log are written
+It is part of Airone Giallo, described in the [repository](https://github.com/Ev3nt1ne/airone-giallo); the graph,
+the other code, is a package of its own in `graph/`. The status file and the archive's log are written
 into a project by the `setup` skill from its templates, their rules in their own headers; the ladder and the archive's
 rules are the `doc-discipline` skill's §1; the frontmatter is the `markdown-docs` skill's §1; the mutation round is
 the method of the `session` skill's verify reference, §6.
@@ -54,9 +54,9 @@ the method of the `session` skill's verify reference, §6.
 ## Start
 
 Python 3.10 or newer, standard library only, and git; the package is `airone-tools`, MIT, with no dependencies.
-`pip install ./tools` from the kit gives the seven commands below. Each file in [src/](src/) also runs as a script
-from the kit without installing (`python3 <kit>/tools/src/check_links.py`); none is ever copied into the project.
-*A copied script is a second copy that the kit's next version does not reach.*
+`pip install ./tools` from the clone gives the seven commands below. Each file in [src/](src/) also runs as a script
+from the clone without installing (`python3 <airone-giallo>/tools/src/check_links.py`); none is ever copied into the
+project. *A copied script is a second copy that the next version of Airone Giallo does not reach.*
 
 The setup skill installs no hook. A project that wants the checks at every commit copies these lines into its own
 `.git/hooks/pre-commit` (or the hook manager it uses), each command exiting non-zero on a finding; `<cut>` is the
@@ -71,10 +71,10 @@ check-links --cut <cut> || exit 1       # the two-repository form: check-links -
 check-frontmatter || exit 1             # the documents being committed, against HEAD
 ```
 
-In the two-repository form the workspace's hook runs `check-links --public <dir>` from the workspace root, which
-walks the public folder too, and `check-archive --archive <dir>/archive` for the public repository's own archive;
-each repository's hook runs `check-frontmatter` on its own staged documents, since a commit is made in one repository
-at a time. In CI, after `pip install <kit>/tools`, the same commands run on the whole tree and on the range the
+In the two-repository form the workspace's hook runs `check-links --public <dir>` from the workspace root, which walks
+the public folder too, and `check-archive --archive <dir>/archive` for the public repository's own archive; each
+repository's hook runs `check-frontmatter` on its own staged documents, since a commit is made in one repository at a
+time. In CI, after `pip install <airone-giallo>/tools`, the same commands run on the whole tree and on the range the
 change brings:
 
 ```sh
@@ -183,8 +183,8 @@ the top of the repository holding the file. Links inside code and HTML comments 
   A citation from a rung to a higher one is a warning. `--rung NAME=PATH[,PATH]` places a rung elsewhere, from the
   workspace root (`--rung docs=documentation/`). A file outside every rung has no side in one repository and is not
   held to the cut.
-- `--exempt PATH` (repeatable) keeps a folder or a glob out of the scan as a source: a template whose links resolve
-  only once it is written into a project. The kit checks itself with `check-links --exempt skills/setup/templates/`.
+- `--exempt PATH` (repeatable) keeps a folder or a glob out of the scan as a source: a template whose links resolve only
+  once it is written into a project. Airone Giallo checks itself with `check-links --exempt skills/setup/templates/`.
 
 ```text
 $ check-links --public inkwell

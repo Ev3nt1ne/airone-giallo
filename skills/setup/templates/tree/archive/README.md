@@ -9,7 +9,7 @@ tags: [archive]
 
 # The archive
 
-This repository's archive, beside the kit's ladder rather than on it (`doc-discipline` §1): where a document of this
+This repository's archive, beside the ladder rather than on it (`doc-discipline` §1): where a document of this
 repository goes when it stops being true or needed and must stay readable. It stays on this repository's side, so
 archiving never moves a document between public and private.
 

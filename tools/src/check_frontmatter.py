@@ -5,7 +5,7 @@ committed to its two dates: `created` never moves, `updated` moves with every ch
     check-frontmatter                    the staged documents, against HEAD (the pre-commit hook's call)
     check-frontmatter --range A..B       the documents changed between two revisions, B's text against A's
     check-frontmatter --all              every tracked document, its block only
-    python3 check_frontmatter.py ...     from the kit, without installing
+    python3 check_frontmatter.py ...     from the clone, without installing
 
 Every document carries a block opening the file with `title`, `description`, `type`, `created` (YYYY-MM-DD) and
 `updated` (YYYY-MM-DDTHH:MM:SS+00:00, not before `created`); a `status`, when present, is one of the lifecycle values

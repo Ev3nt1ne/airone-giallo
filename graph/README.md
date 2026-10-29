@@ -11,8 +11,8 @@ decision, an assumption, a threat, …); each dependency is a typed **edge** (`r
 yet**, or **fails**, and why. A lint keeps the file honest. A cascade shows what a change would break before it is
 made.
 
-It is the graph of Airone Giallo, the kit described in the [repository](https://github.com/Ev3nt1ne/airone-giallo), and
-the one part of it that stands alone: nothing here needs the rest of the kit.
+It is the graph of Airone Giallo, described in the [repository](https://github.com/Ev3nt1ne/airone-giallo), and the
+one part of it that stands alone: nothing here needs the rest.
 
 ## Why
 

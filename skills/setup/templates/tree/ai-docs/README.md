@@ -9,7 +9,7 @@ tags: [index]
 
 # The AI documents
 
-Rung 4 of the kit's ladder (`doc-discipline` §1): documents about the work, not about the system. They may cite
+Rung 4 of the ladder (`doc-discipline` §1): documents about the work, not about the system. They may cite
 anything at or below this rung. Each place answers one question, so a document has one place and a session knows
 where to look without a map; a new folder is added only for a document that fits none of them.
 

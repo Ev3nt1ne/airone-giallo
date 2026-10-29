@@ -31,7 +31,7 @@ below reduce to "the document, the graph and the code agree".
 - Working notes (research, measurements, drafts) are evidence, not a level: the levels cite them, they never stand
   in for them. A finding in a note has changed nothing until it is folded into the specification.
 
-**The ladder: where a document sits, and what it may cite.** The kit's places form a ladder, read from the bottom:
+**The ladder: where a document sits, and what it may cite.** Airone Giallo's places form a ladder, read from the bottom:
 1 the system documents (`docs/`: the specification, the glossary, the studies, the change notes); 2 the graph
 (`graph.yml`); 3 the plan (`plan/`); 4 the AI documents (`ai-docs/`: the status file, the handoff, design, findings,
 guides); 5 the agent layer (`AGENTS.md`, `CLAUDE.md`, `RATIONALE.md`, the skills). A document cites only rungs at or
@@ -80,13 +80,13 @@ Where the reasoning of a superseded claim goes depends on the material:
 
 ## 3. Minting an identifier
 
-One allocator per family; **an identifier in neither allocator does not exist.** The graph allocates
-statement IDs (requirements, decisions, assumptions, threats): with the specification graph (`graph/` in this kit)
-it is `graph.yml`, otherwise a table of identifier, one-sentence statement and the place that defines it. The
-status file (`status/` in this kit) allocates work-item IDs: what is left to do. Both are append-only: never
-renumber, never reuse. *Two allocators for one family eventually give one number to two things, and every citation
-of it becomes ambiguous.* An item may cite a node; a node never cites an item. *A node states what holds and
-outlives the work; a citation of work inside it goes stale when the work closes.*
+One allocator per family; **an identifier in neither allocator does not exist.** The graph allocates statement IDs
+(requirements, decisions, assumptions, threats): with the specification graph (`graph/` in Airone Giallo) it is
+`graph.yml`, otherwise a table of identifier, one-sentence statement and the place that defines it. The status file
+(`ai-docs/status.md` in a project laid out by Airone Giallo) allocates work-item IDs: what is left to do. Both are
+append-only: never renumber, never reuse. *Two allocators for one family eventually give one number to two things, and
+every citation of it becomes ambiguous.* An item may cite a node; a node never cites an item. *A node states what holds
+and outlives the work; a citation of work inside it goes stale when the work closes.*
 
 The steps below mint a statement; a work item takes the next free ID the status file's checker prints.
 

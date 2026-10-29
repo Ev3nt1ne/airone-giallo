@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Resolve every relative link in the tracked Markdown files, check each anchor against the target's headings, and
-hold the documents to the kit's ladder and its archive.
+hold the documents to the ladder and its archive.
 
     check-links                              dead links and anchors, the archive's rules
     check-links --cut RUNG                   and the ladder, in one repository
     check-links --public DIR [--cut RUNG]    and the ladder, DIR being the public repository's folder
-    python3 check_links.py ...               from the kit, without installing
+    python3 check_links.py ...               from the clone, without installing
 
 The tracked tree is what `git ls-files` lists at the repository's top, with the files of every nested repository (a
 submodule, as the two-repository form nests the public one) under its folder. A link resolves when its target is a

@@ -1,9 +1,9 @@
 ---
 name: setup
-description: Install Airone Giallo into an existing project, once, from its root - ask the few questions a template cannot answer, then run the scaffold script. Load only when asked to set the kit up.
+description: Install Airone Giallo into an existing project, once, from its root - ask the few questions a template cannot answer, then run the scaffold script. Load only when asked to set Airone Giallo up.
 ---
 
-# Setting the kit up in a project
+# Setting Airone Giallo up in a project
 
 Run once, in the project's own session, from its workspace root. The skill carries the judgement (what to ask, what to
 recommend, what to check); `scaffold.py` beside it carries the mechanics and writes the files. Nothing of this skill
@@ -53,7 +53,7 @@ has a name in the answers file (§3).
 | 5 | Outward acts (pushes, tags, releases, issues, pull requests, comments, posts): **gated**, prepared as a branch or a draft for the owner to send, or **free**, done and reported, with an attribution trailer if they want one (`outward`, `attribution`) | `gated` | the outward rule |
 | 6 | Decisions the owner reserves beyond the project decisions of `session` §2 (`reserved`) | none to start; add as they surface | one sentence in the first rule on deciding |
 | 7 | This machine: its resources, what else runs on it, the run limits, whether timings measured here count as results (`machine`) | fill what the session can see (`nproc`, `free -h`, `df -h .`) and have the owner confirm | `local-machine.md`, git-ignored, one per device |
-| 8 | The kit author's opinionated layer: comments state invariants (Four-Hands only), every fix has a test, irreversible acts offered as such (`opinionated`) | off; offer it, never assume it | the rules appended under their own heading: three for Four-Hands, two for Conductor |
+| 8 | The opinionated layer of Airone Giallo's author: comments state invariants (Four-Hands only), every fix has a test, irreversible acts offered as such (`opinionated`) | off; offer it, never assume it | the rules appended under their own heading: three for Four-Hands, two for Conductor |
 
 The ladder is `doc-discipline` §1: 1 `docs/`, 2 `graph.yml`, 3 `plan/`, 4 `ai-docs/`, 5 the agent layer; each rung
 cites only rungs at or below it, so every rung at or below the cut is public and every rung above it private. *One
@@ -89,8 +89,8 @@ Write the answers as one JSON object to a file in the session's scratch folder, 
 Then, from the workspace root (the private repository in the two-repository form), preview and run:
 
 ```sh
-python3 <kit>/skills/setup/scaffold.py --answers ANSWERS.json --dry-run
-python3 <kit>/skills/setup/scaffold.py --answers ANSWERS.json
+python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json --dry-run
+python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json
 ```
 
 What it writes, the dry run lists file by file: at the workspace root the agent layer (`AGENTS.md`, `CLAUDE.md`,
@@ -124,10 +124,10 @@ and the answer it reads, with a test.
 
 ## 4. After the script
 
-The checks are the kit's installed commands, never copies in the project: `pip install ./graph ./tools` from the
-kit, or from the plugin's copy of it, gives `specgraph`, `check-status`, `check-archive`, `check-links` and
+The checks are Airone Giallo's installed commands, never copies in the project: `pip install ./graph ./tools` from
+the clone, or from the plugin's copy of it, gives `specgraph`, `check-status`, `check-archive`, `check-links` and
 `check-frontmatter`, with the tools' other commands. Ask the owner to install them. *A copied script
-is a second copy that the kit's next version does not reach.* The two document checks read the tracked tree, so first
+is a second copy that the next version does not reach.* The two document checks read the tracked tree, so first
 stage what the script wrote, `git add` in each repository it wrote into; staging is undone by `git reset`. Run each
 check and read its output; the script's report is a claim, these measure the files.
 
@@ -151,8 +151,8 @@ commit that exists.* Anything outward follows the answer to question 5.
 
 ## 5. What the script does not do
 
-It runs no `git submodule` and no other git command that changes anything, commits nothing, deletes nothing and
-copies no script into the project; it writes no hook and no CI workflow (the lines a project copies into its own are
-in the kit's `tools/README.md`), and it moves no existing document into the tree: that is a session's work with the
-owner, file by file. Not done yet: injecting the agent layer into the public checkout, several public folders under
-one workspace, and `.git/info/exclude` in place of a visible ignore block.
+It runs no `git submodule` and no other git command that changes anything, commits nothing, deletes nothing and copies
+no script into the project; it writes no hook and no CI workflow (the lines a project copies into its own are in Airone
+Giallo's `tools/README.md`), and it moves no existing document into the tree: that is a session's work with the owner,
+file by file. Not done yet: injecting the agent layer into the public checkout, several public folders under one
+workspace, and `.git/info/exclude` in place of a visible ignore block.

@@ -6,8 +6,9 @@ description: How to write, find, move and correct a project's Markdown documents
 # Markdown documents that stay useful
 
 For the `.md` files inside a project: design notes, decision records, plans, logs, runbooks, READMEs. The aim is
-documents that can be found again, trusted and corrected. Each rule carries its reason in italics. `DOCS` (in a project laid out by the kit, `docs/` or `ai-docs/`) stands
-for the documentation folder the project names in its instruction file.
+documents that can be found again, trusted and corrected. Each rule carries its reason in italics. `DOCS` (in a project
+laid out by Airone Giallo, `docs/` or `ai-docs/`) stands for the documentation folder the project names in its
+instruction file.
 
 ## 1. Frontmatter
 
@@ -84,10 +85,10 @@ Below about fifteen documents, list and read them; above a few hundred, add a ra
   updated in one, and the reader cannot tell which.*
 - Never write a count: "the suite has 212 tests", "nine items are open", "the three services". *It is wrong by the
   next commit and nobody edits a design document to fix an integer.* Cite the command that counts, not its answer.
-- A document that reasons does not report progress: "done", "landed", "not yet implemented", "the code currently
-  does". *Such words are true for one commit and the prose around them for months, so they go stale on a different
-  schedule.* Progress lives in the status file (`status/` in this kit); a plan or log
-  may record what it delivered, dated and in the past tense.
+- A document that reasons does not report progress: "done", "landed", "not yet implemented", "the code currently does".
+  *Such words are true for one commit and the prose around them for months, so they go stale on a different schedule.*
+  Progress lives in the status file (`ai-docs/status.md` in a project laid out by Airone Giallo); a plan or log may
+  record what it delivered, dated and in the past tense.
 - Operational documents (runbooks, setup, recovery) change in the same session as the change they describe. *An
   out-of-date one is trusted.*
 - Do not restructure a document you were asked to add one line to. *A rewrite hides the change in a diff nobody
@@ -97,9 +98,9 @@ Below about fifteen documents, list and read them; above a few hundred, add a ra
 
 One meaning each, placed where a reader scans. *A marker on every line is a marker on none.*
 
-The kit's default, for state: ✅ done and verified · ⬜ not started · 🟡 partial, or done but unverified · 🔴 a problem
-or risk; for corrections (§4): ✏️ CORRECTION of an earlier claim · 🔻 CHANGE OF PLAN · ❌ considered and rejected. The
-project fixes its own markers, one meaning each, in its instruction file.
+Airone Giallo's default, for state: ✅ done and verified · ⬜ not started · 🟡 partial, or done but unverified · 🔴 a
+problem or risk; for corrections (§4): ✏️ CORRECTION of an earlier claim · 🔻 CHANGE OF PLAN · ❌ considered and rejected.
+The project fixes its own markers, one meaning each, in its instruction file.
 
 ## 6. Paths, links, moving
 
@@ -110,7 +111,7 @@ project fixes its own markers, one meaning each, in its instruction file.
   leaves every inbound link dead, and nothing warns.*
 - Run anything that rewrites files on a clean tree, so `git checkout -- .` undoes it.
 - A frozen folder (an archive kept unchanged) gets its dead links reported, not repaired.
-- Finish every move by proving no local link is dead. The kit's `check-links` (its tools piece) does it, anchors and
+- Finish every move by proving no local link is dead. Airone Giallo's `check-links` (in `tools/`) does it, anchors and
   the ladder's sides included; without it, this loop, no output being the bar:
 
 ```sh

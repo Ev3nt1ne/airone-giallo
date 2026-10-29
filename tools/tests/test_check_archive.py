@@ -39,7 +39,7 @@ def conflict(when, kind="renamed", old="the register", now="the status file", wh
 
 
 def log(changes=(), conflicts=()):
-    """The kit's template, with rows inserted under each table's header, newest first as given."""
+    """The setup's template, with rows inserted under each table's header, newest first as given."""
     lines = (TEMPLATES / "LOG.md").read_text(encoding="utf-8").split("\n")
     out = []
     for i, line in enumerate(lines):
@@ -136,7 +136,7 @@ def test_a_missing_stamp_is_an_error(tmp_path):
 
 
 @needs_git
-def test_a_stamp_not_in_the_kit_form_is_an_error(tmp_path):
+def test_a_stamp_not_in_the_frontmatter_form_is_an_error(tmp_path):
     repo = Repo(tmp_path)
     repo.write("archive/old.md", doc(stamp="2026-03-01"))
     repo.commit("archive old.md", DAY1)

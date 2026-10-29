@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Check a project's status file and its closed file, and print the next free ID in each family.
 
-    check-status STATUS [CLOSED] [--graph GRAPH]              installed, by pip install <kit>/tools
-    python3 check_status.py STATUS [CLOSED] [--graph GRAPH]   from the kit, without installing
+    check-status STATUS [CLOSED] [--graph GRAPH]              installed, by pip install <airone-giallo>/tools
+    python3 check_status.py STATUS [CLOSED] [--graph GRAPH]   from the clone, without installing
 
 STATUS holds the open items and the `status-meta` block that declares the families; CLOSED holds the closed
 items. With --graph, every citation of a graph node is checked against the specification graph's file, and

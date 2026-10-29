@@ -69,7 +69,7 @@ def repo(tmp_path):
 
 
 def run_tool(module, *args, cwd):
-    """The tool as a script from the kit, the way a hook calls it: (exit code, stdout, stderr)."""
+    """The tool as a script from the clone, the way a hook calls it: (exit code, stdout, stderr)."""
     p = subprocess.run([sys.executable, str(SRC / f"{module}.py"), *args], cwd=cwd, capture_output=True, text=True,
                        env=ENV)
     return p.returncode, p.stdout, p.stderr

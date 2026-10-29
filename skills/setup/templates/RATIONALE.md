@@ -1,8 +1,8 @@
 # Why the rules in AGENTS.md exist
 
-AGENTS.md states the rules and governs; this file says where each came from. A rule the kit wrote needs no entry
-here: its reason is in AGENTS.md and in the kit's skill it points to. A rule the project adds gets one entry, in the
-form below, under the rule's name as AGENTS.md words it. This file is on the top rung of the kit's ladder
+AGENTS.md states the rules and governs; this file says where each came from. A rule Airone Giallo wrote needs no entry
+here: its reason is in AGENTS.md and in the Airone Giallo skill it points to. A rule the project adds gets one entry, in
+the form below, under the rule's name as AGENTS.md words it. This file is on the top rung of the ladder
 (`doc-discipline` §1): it is private unless the agent layer is public, and then it carries each reason without the
 story.
 
@@ -22,7 +22,7 @@ story.
 - ✏️ Corrections: dated, appended, never rewritten.
 ````
 
-## The kit's own choices
+## Airone Giallo's own choices
 
 Two choices the setup made for the project, recorded so that a session tempted to undo them finds the reason.
 

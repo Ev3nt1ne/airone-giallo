@@ -7,15 +7,14 @@
 
 # Airone Giallo
 
-A kit for running a long project with Claude Code agents: weeks or months of sessions on one codebase, where the
+Airone Giallo runs a long project with Claude Code agents: weeks or months of sessions on one codebase, where the
 problems are continuity (a session that forgets what was decided), drift (a rule nobody enforces) and trust (a
-number nobody measured). The kit is one thing, adopted whole: a setup that lays out a project's documents, skills
-that run the sessions on that layout, and commands that check it. What a project leaves out, it leaves out at setup:
-the graph, the status file, the handoff. The graph alone also stands on its own, a package a project can use without
-the rest.
+number nobody measured). It installs whole: a setup that lays out the project's documents, skills that run the
+sessions on that layout, and commands that check it. Which parts the project uses, it says at setup. Some parts also
+stand on their own: the specification graph is a package of its own, used by Airone Giallo and usable without it.
 
-The kit gives a project a structure and a direction; it does not collect fixes. A rule is here because many projects
-meet the case and an agent does not find the answer on its own. What one project learned from its own incidents
+Airone Giallo gives a project a structure and a direction; it does not collect fixes. A rule is here because many
+projects meet the case and an agent does not find the answer on its own. What one project learned from its own incidents
 belongs in that project's memory, not here.
 
 | What | Where |
@@ -47,8 +46,8 @@ pip install ./graph ./tools
 
 The skills are then `/airone-giallo:session`, `/airone-giallo:handoff`, `/airone-giallo:markdown-docs`,
 `/airone-giallo:doc-discipline` and `/airone-giallo:setup`; the commands are `specgraph`, `check-status`,
-`check-archive`, `check-links`, `check-frontmatter`, `move-paths`, `mutate` and `claims`. To install the kit's
-structure into a project, open a session at the project's root and run `/airone-giallo:setup`. Each folder's README
+`check-archive`, `check-links`, `check-frontmatter`, `move-paths`, `mutate` and `claims`. To lay Airone
+Giallo out in a project, open a session at the project's root and run `/airone-giallo:setup`. Each folder's README
 says what it holds, why, and how it is used, in that order.
 
 ## Licence

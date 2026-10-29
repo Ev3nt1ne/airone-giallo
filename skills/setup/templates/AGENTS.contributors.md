@@ -24,7 +24,7 @@ its plugin (`/airone-giallo:<skill>`) and its Python packages, at https://github
 
 - This repository is the public side of the project: a text in it cites only what is in it. *A citation of what the
   reader cannot open is a dead link to them, or a leak.*
-- Each document sits on its rung of the kit's ladder and cites only rungs at or below it (`doc-discipline` §1). *A
+- Each document sits on its rung of the ladder and cites only rungs at or below it (`doc-discipline` §1). *A
   rung that cited upward could never stand on its own.*
 - Run the checks before every commit, and report one not run as not run. *A skipped check read as passed is a false
   result.*

@@ -5,6 +5,7 @@
   "author": { "name": "Ev3nt1ne", "url": "https://github.com/Ev3nt1ne" },
   "homepage": "https://github.com/Ev3nt1ne/airone-giallo",
   "license": "MIT",
+  "icon": "./brand/icon-512.png",
   "skills": ["./graph/skills/"],
   "keywords": ["claude-code", "skills", "long-project", "handoff", "specification-graph", "documentation"]
 }

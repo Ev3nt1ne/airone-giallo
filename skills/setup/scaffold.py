@@ -83,9 +83,6 @@ DEFAULTS = {
     "claude_code_version": "", "model": "", "spec": "", "plan": "", "glossary": "", "findings": "",
     "owner_notes": "", "frozen": [], "copies": [], "checks": "", "prune_after": "", "machine": {},
 }
-# Answers an older answers file may carry, with what replaced them.
-RETIRED = {"layout": "'layout' was replaced by 'cut', the last public rung of the ladder",
-           "docs_dir": "'docs_dir' is gone: the status file is in ai-docs/ and the system documents in docs/"}
 REQUIRED = ("name", "purpose", "mode")
 MACHINE_KEYS = ("resources", "load", "limits", "timings")
 
@@ -185,9 +182,6 @@ def load_answers(args):
             raise AnswerError(f"cannot read the answers file {args.answers}: {ex}") from ex
         if not isinstance(given, dict):
             raise AnswerError("the answers file must hold one JSON object")
-        for key in RETIRED:
-            if key in given:
-                raise AnswerError(RETIRED[key])
         unknown = set(given) - set(DEFAULTS) - set(REQUIRED)
         if unknown:
             raise AnswerError("unknown answer(s): " + ", ".join(sorted(unknown)))

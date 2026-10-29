@@ -105,7 +105,8 @@ project fixes its own markers, one meaning each, in its instruction file.
 
 - A path in prose is written from the project root (`DOCS/design.md`). A link's target follows the renderer, on
   most forges relative to the linking file.
-- Move with `git mv`, then fix the links that point in: `grep -rn 'old-name.md' --include='*.md' .`. *A bare move
+- Move with `git mv`, then fix the links that point in: `rg -n 'old-name.md' -g '*.md'`, ripgrep because it honours
+  the `.ignore` that keeps the archive out, where a plain `grep -r` would list frozen links to repair. *A bare move
   leaves every inbound link dead, and nothing warns.*
 - Run anything that rewrites files on a clean tree, so `git checkout -- .` undoes it.
 - A frozen folder (an archive kept unchanged) gets its dead links reported, not repaired.

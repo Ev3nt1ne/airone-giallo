@@ -9,7 +9,8 @@ How the map is used, cheapest first, stopping at the step that answers:
 
 1. **Address by identifier, not by file name.** Grep the identifier in its allocator (with the specification graph,
    `specgraph show REQ-04`); a one-sentence graph statement often answers the question alone.
-2. Every site that cites it: `grep -rn 'REQ-04' DOCS`.
+2. Every site that cites it: `rg -n 'REQ-04' DOCS` (ripgrep honours the `.ignore` that keeps the archive out; a plain
+   `grep -r` would list archived citations as current).
 3. One file's section map, `grep -n '^#' DOCS/design.md`, then one section.
 4. The whole document, last.
 

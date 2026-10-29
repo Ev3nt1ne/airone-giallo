@@ -19,9 +19,11 @@ archiving never moves a document between public and private.
 - **Read with its conflicts.** Before reading an archived file, run `check-archive read <file>`: it prints the
   words whose meaning changed after the file was frozen, from the log. *A word renamed or reused since reads as
   current, with the wrong meaning.*
-- **Out of every search unless named.** The workspace's `.ignore` holds `archive/`, which ripgrep, fd and Claude
-  Code's search honour; plain `grep -r` does not, so a search over the archive names it on purpose. *An archived claim
-  found by a search for current ones is read as current.*
+- **Out of every search unless named.** Search with ripgrep, fd or Claude Code's own search: they honour the
+  `.ignore` at this repository's top, which lists `archive/`. A plain `grep -r`, `find` or `sed` does not read
+  `.ignore`, so one that must stay out of the archive excludes it by name (`--exclude-dir=archive`), and one that
+  reaches into the archive names it on purpose. *An archived claim found by a search for current ones is read as
+  current.*
 - **Cited at most as a category**, once, by a live document; what a reader needs from an archived document is
   written fresh for them. Links inside the archive are exempt from the link check. *A live text that leans on a frozen
   one inherits everything that has since stopped being true.*

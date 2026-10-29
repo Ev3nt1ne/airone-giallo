@@ -4,10 +4,11 @@ This file is for an agent working **on the kit itself**: fixing a tool, changing
 the instruction file a project gets when it adopts the kit; that one is written by the setup skill into the
 adopting project, from the template in `skills/setup/`.
 
-- **Read the piece's README before touching it.** Each folder (`graph/`, `skills/`, `tools/`) says what it is, why
+- **Read the folder's README before touching it.** Each folder (`graph/`, `skills/`, `tools/`) says what it is, why
   it exists and how it is used. A change that contradicts the README changes the README too.
-- **Each piece stands alone.** A change must not make one piece require another; the plugin bundles them, it does
-  not couple them.
+- **The kit is one thing; the graph stands alone.** The skills, the setup and the tools may assume each other's
+  vocabulary and files, and a tool may import another. Nothing in `graph/` imports or needs the rest of the kit: the
+  kit reaches the graph from outside, by its command and its file, so a project can take the graph without the kit.
 - **Configuration is data.** A tool reads a project's values from that project's own files (the graph file's
   `meta`, the status file's `status-meta` block) or from arguments, never from constants in its code. A tool with a
   particular project's vocabulary in it is not done.

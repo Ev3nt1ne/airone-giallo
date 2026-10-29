@@ -1,11 +1,17 @@
 {
   "name": "airone-giallo",
+  "description": "Airone Giallo, for running a long project with Claude Code agents, and its specification graph alone.",
   "owner": { "name": "Ev3nt1ne", "url": "https://github.com/Ev3nt1ne" },
   "plugins": [
     {
       "name": "airone-giallo",
       "source": "./",
-      "description": "Airone Giallo: five skills (session, handoff, markdown-docs, doc-discipline, setup) for a long project run with agents; the commands are installed separately as Python packages."
+      "description": "Airone Giallo: six skills (session, handoff, markdown-docs, doc-discipline, setup, graph) for a long project run with agents; the commands are installed separately as Python packages."
+    },
+    {
+      "name": "specgraph",
+      "source": "./graph",
+      "description": "The specification graph alone: the graph skill, for a project that takes the graph without the rest of Airone Giallo; the specgraph command is installed separately as a Python package."
     }
   ]
 }

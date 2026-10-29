@@ -21,7 +21,7 @@ belongs in that project's memory, not here.
 |---|---|
 | The skills: how a session opens and closes, how a claim is verified, how documents are written, corrected and kept true together, and the setup, which asks a project a few questions and lays out its documents: the system documents, the plan, the AI documents with the status file and the handoff, an archive with its log in each repository, the agent layer | `skills/`, the setup in `skills/setup/` with the templates of every file it writes |
 | The commands: four checks for a hook and CI (the status file with its IDs, the archive and its log, the links with the ladder's cut, the frontmatter with its dates), a mover that re-points every reference to a moved file, a mutation round, and a lister of the claims a change makes | `tools/` |
-| The specification graph: a project's decisions, requirements, assumptions and threats as a graph whose truth is computed, with a lint, a cascade and a batch tool; a package of its own | `graph/` |
+| The specification graph: a project's decisions, requirements, assumptions and threats as a graph whose truth is computed, with a lint, a cascade and a batch tool; a package of its own, with its own skill and plugin entry (`specgraph`) for a project that takes the graph alone | `graph/` |
 | The plugin, which carries the skills into Claude Code | `.claude-plugin/` |
 | The brand: the mark, its lockups and the rules for using them | `brand/` |
 
@@ -45,10 +45,22 @@ pip install ./graph ./tools
 ```
 
 The skills are then `/airone-giallo:session`, `/airone-giallo:handoff`, `/airone-giallo:markdown-docs`,
-`/airone-giallo:doc-discipline` and `/airone-giallo:setup`; the commands are `specgraph`, `check-status`,
-`check-archive`, `check-links`, `check-frontmatter`, `move-paths`, `mutate` and `claims`. To lay Airone
+`/airone-giallo:doc-discipline`, `/airone-giallo:setup` and `/airone-giallo:graph`; the commands are `specgraph`,
+`check-status`, `check-archive`, `check-links`, `check-frontmatter`, `move-paths`, `mutate` and `claims`. To lay Airone
 Giallo out in a project, open a session at the project's root and run `/airone-giallo:setup`. Each folder's README
 says what it holds, why, and how it is used, in that order.
+
+### The graph alone
+
+The graph is also a plugin of its own in the same marketplace, for a project that wants the graph and nothing else:
+
+```
+/plugin marketplace add Ev3nt1ne/airone-giallo
+/plugin install specgraph@airone-giallo
+pip install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph'
+```
+
+The skill is then `/specgraph:graph`, and the command `specgraph`; `uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph' specgraph` runs it with nothing installed. See [graph/README.md](graph/README.md).
 
 ## Licence
 

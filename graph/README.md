@@ -37,7 +37,13 @@ pip install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=grap
 ```
 
 or, from a clone of the repository, `pip install -e graph`. This installs the package `specgraph` and a command of
-the same name, which is the same as `python -m specgraph`. The examples below use the command.
+the same name, which is the same as `python -m specgraph`. The examples below use the command. With `uv`, the command
+runs with nothing installed: `uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph'
+specgraph …`.
+
+In Claude Code, the skill that teaches an agent the graph ([skills/graph/SKILL.md](skills/graph/SKILL.md)) comes as
+the plugin `specgraph`, from the repository's marketplace: `/plugin marketplace add Ev3nt1ne/airone-giallo`, then
+`/plugin install specgraph@airone-giallo`. The plugin carries the skill only; the command is installed as above.
 
 ## Start
 

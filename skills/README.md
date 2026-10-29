@@ -11,6 +11,10 @@ to decide when to load it, then the rules, each with its reason.
 | [doc-discipline](doc-discipline/SKILL.md) | Keeping several design documents, the graph file and the status file true together: levels in sync, the ladder of places and the cut between public and private, a term renamed across the live documents and the archive, one allocator per identifier family, the cascade read before an edit, a milestone passed by the owner's ruling, when a review is due, and what a commit of the change holds |
 | [setup](setup/SKILL.md) | Installing Airone Giallo into an existing project, once: the questions a template cannot answer, then a script that writes its tree on the sides the cut of the ladder sets (the short instruction file, its rationale file, the machine file, `ai-docs/`, `archive/` and the pieces chosen: the status file, the handoff, the graph file), refusing to overwrite and reporting every step it did not perform |
 
+One more skill lives with its part: [graph](../graph/skills/graph/SKILL.md), reading, extending and checking the
+specification graph, in `graph/skills/`, so that the graph's folder stays complete on its own; the plugin loads it
+with these.
+
 Airone Giallo deliberately ships no generic commit, test or review skill: the large public collections already have
 them, and a project usually has its own. A second skill with the same name and the same trigger competes with the
 project's, and the agent picks one of the two; the rules specific to Airone Giallo live instead in the skill that

@@ -1,0 +1,9 @@
+{
+  "name": "specgraph",
+  "version": "0.1.0",
+  "description": "The specification graph alone: a skill for reading, extending and checking a project's graph.yml with the specgraph command. The command is a Python package, installed separately.",
+  "author": { "name": "Ev3nt1ne", "url": "https://github.com/Ev3nt1ne" },
+  "homepage": "https://github.com/Ev3nt1ne/airone-giallo/tree/main/graph",
+  "license": "MIT",
+  "keywords": ["claude-code", "specification-graph", "requirements", "decisions", "assumptions", "threats"]
+}

@@ -50,20 +50,32 @@ every file the script makes.* Each answer has a name in the answers file (§3).
 |---|---|---|---|
 | 1 | The project's name, what it is and for whom in one line, and its invariants. An invariant is a rule the project must never break; each is one line, what must stay true and then what goes wrong if it is not, for example "a recipe lists every allergen of its ingredients, else someone goes to hospital". One or more, or a slot to fill in later (`name`, `purpose`, `invariants`) | the invariants now, even one; they may be left as a slot | the opening paragraph of AGENTS.md |
 | 2 | How the owner works: **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
-| 3 | The cut: the last rung of the ladder that is public (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `all`); then, each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`), and in the two-repository form whether contributors get a short public instruction file (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
+| 3 | The cut, asked only after the ladder's table below is shown and the cut explained: the highest rung of the ladder that is public (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `all`); then, each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`), and in the two-repository form whether contributors get a short public instruction file (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
 | 4 | Which pieces: the specification graph (`graph`: `none`, `lite`, `full`), the status file (`status`, with its `families`), the handoff (`handoff`, with the first log's `stage`) | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
 | 5 | Outward acts (pushes, tags, releases, issues, pull requests, comments, posts): **gated**, prepared as a branch or a draft for the owner to send, or **free**, done and reported, with an attribution trailer if they want one (`outward`, `attribution`) | `gated` | the outward rule |
 | 6 | Decisions the owner reserves beyond the project decisions of `session` §2 (`reserved`) | none to start; add as they surface | one sentence in the first rule on deciding |
 | 7 | This machine: its resources, what else runs on it, the run limits, whether timings measured here count as results (`machine`) | fill what the session can see (`nproc`, `free -h`, `df -h .`) and have the owner confirm | `local-machine.md`, git-ignored, one per device |
 | 8 | The opinionated layer of Airone Giallo's author: comments state invariants (Four-Hands only), every fix has a test, irreversible acts offered as such (`opinionated`) | off; offer it, never assume it | the rules appended under their own heading: three for Four-Hands, two for Conductor |
 
-The ladder is `doc-discipline` §1: 1 `docs/`, 2 `graph.yml`, 3 `plan/`, 4 `ai-docs/`, 5 the agent layer; each rung
-cites only rungs at or below it, so every rung at or below the cut is public and every rung above it private. *One
-cut instead of a side per document keeps every public text free of links into the private side.* A doubtful rung
-starts private: *a file moved from public to private keeps its public history.* The archive is not a rung and has no
-side to answer: each repository gets its own, `archive/` at its top, so an archived document stays on the side it
-was on. With `cut: all` the
-agent layer is public and RATIONALE.md drops the owner's words from its form; `agent_layer: both` keeps the full
+Before asking question 3, show the owner the ladder of `doc-discipline` §1 as this table, copied rather than
+paraphrased. *The cut is a choice among these rungs, and the owner can only choose among what is in front of them.*
+
+| Rung | Folder | What it holds |
+|---|---|---|
+| 1 | `docs/` | the specification, the glossary, studies, change notes: what the system is |
+| 2 | `graph.yml` | the specification graph: requirements, decisions, assumptions, threats and their relations, checked by `specgraph` |
+| 3 | `plan/` | phases, milestones, their order and status: what gets done when |
+| 4 | `ai-docs/` | what agents write: the status file, the handoff, design notes, findings, guides |
+| 5 | the workspace root | the agent layer, `AGENTS.md`, `CLAUDE.md`, `RATIONALE.md` and the project's skills: how sessions are run |
+
+Then explain the cut in two sentences: the cut names the highest rung that is public, so it and every rung below it
+are public and every rung above it is private. `none` keeps everything private, `plan` makes the specification, the
+graph and the plan public and keeps the agents' documents and the instruction files private, and `all` makes
+everything public. A rung cites only rungs at or below it, so one cut is enough. *One cut instead of a side per
+document keeps every public text free of links into the private side.* A doubtful rung starts private: *a file moved
+from public to private keeps its public history.* The archive is beside the ladder and has no side to answer: each
+repository gets its own, `archive/` at its top, so an archived document stays on the side it was on. With `cut: all`
+the agent layer is public and RATIONALE.md drops the owner's words from its form; `agent_layer: both` keeps the full
 layer private and adds a contributors' `AGENTS.md` that cites only public rungs.
 
 A family of the status file is a code of 2 to 5 capitals or digits starting with a capital, or two joined by a hyphen,

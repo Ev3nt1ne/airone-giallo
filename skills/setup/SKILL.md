@@ -176,6 +176,10 @@ Then propose a local commit of what was installed, by the project's own commit r
 in the public repository first, then one in the private workspace with the updated gitlink, *so the gitlink names a
 commit that exists.* Anything outward follows the answer to question 5.
 
+In the two-repository form, close by telling the owner that the original folder was not touched and is now the stale
+copy, which they may keep, remove, or pull the public commit into. *The work continues in the submodule, and an owner
+who looks in the original folder finds none of the setup there.*
+
 ## 5. What the script does not do
 
 It runs no `git submodule` and no other git command that changes anything, commits nothing, deletes nothing and copies

@@ -41,12 +41,14 @@ is copied into the project: what stays there is what the script writes. Each rul
 
 ## 2. The questions, in order
 
-Ask in rounds of one to four, never as one long questionnaire, and explain each choice before asking it. Each answer
-has a name in the answers file (§3).
+Ask in rounds of one to four, never as one long questionnaire. Explain every question in plain words before asking
+it, in two or three sentences and with an example where one helps; the owner should never have to ask what a question
+means. *A question the owner has to decode is answered a turn late or answered wrongly, and the answer is written into
+every file the script makes.* Each answer has a name in the answers file (§3).
 
 | # | Question | Recommend | What the answer changes |
 |---|---|---|---|
-| 1 | The project's name, what it is and for whom in one line, and its invariants: what breaks silently if each is violated, each written as one clause, the invariant then what breaks (`X, else Y`), since the list is read as one sentence (`name`, `purpose`, `invariants`) | the invariants now, even one; they may be left as a slot | the opening paragraph of AGENTS.md |
+| 1 | The project's name, what it is and for whom in one line, and its invariants. An invariant is a rule the project must never break; each is one line, what must stay true and then what goes wrong if it is not, for example "a recipe lists every allergen of its ingredients, else someone goes to hospital". One or more, or a slot to fill in later (`name`, `purpose`, `invariants`) | the invariants now, even one; they may be left as a slot | the opening paragraph of AGENTS.md |
 | 2 | How the owner works: **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
 | 3 | The cut: the last rung of the ladder that is public (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `all`); then, each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`), and in the two-repository form whether contributors get a short public instruction file (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
 | 4 | Which pieces: the specification graph (`graph`: `none`, `lite`, `full`), the status file (`status`, with its `families`), the handoff (`handoff`, with the first log's `stage`) | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
@@ -79,8 +81,8 @@ lower case. Anything not answered is written as a visible `[to fill: …]` slot,
 Write the answers as one JSON object to a file in the session's scratch folder, not in the project:
 
 ```json
-{"name": "Inkwell", "purpose": "a note editor whose saved notes survive a crash, for people who write offline",
- "invariants": ["a saved note survives a crash, else notes are lost silently"], "mode": "conductor",
+{"name": "Larder", "purpose": "a recipe book for people who cook for others, with what each dish contains",
+ "invariants": ["a recipe lists every allergen of its ingredients, else someone goes to hospital"], "mode": "conductor",
  "cut": "plan", "graph": "lite", "families": {"APP": "the application", "DOC": "the documentation"},
  "outward": "gated", "claude_code_version": "<from claude --version>", "model": "<the session's model>",
  "machine": {"resources": "8 cores, 16 GB", "load": "nothing else", "limits": "one run at a time", "timings": "yes"}}

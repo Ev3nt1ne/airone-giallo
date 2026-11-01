@@ -667,14 +667,18 @@ def path_of(monkeypatch, folder, keep=False):
     return folder
 
 
+def fake_specgraph(bin_dir):
+    """A specgraph command that writes a graph file carrying a marker the real one never writes."""
+    fake = bin_dir / "specgraph"
+    fake.write_text("#!/bin/sh\nprintf 'meta:\\n  made-by: fake specgraph %s\\n' \"$*\" > graph.yml\n")
+    fake.chmod(0o755)
+
+
 @pytest.mark.skipif(os.name != "posix", reason="the fake command is a shell script")
 def test_the_graph_step_runs_the_command_on_path_when_the_module_is_not_importable(tmp_path, capsys, monkeypatch):
     # A tool installer (uv tool, pipx) puts the command on PATH and keeps the module out of every other Python.
     without_the_module(monkeypatch)
-    bin_dir = path_of(monkeypatch, tmp_path / "bin", keep=True)
-    fake = bin_dir / "specgraph"
-    fake.write_text("#!/bin/sh\nprintf 'meta:\\n  made-by: fake specgraph %s\\n' \"$*\" > graph.yml\n")
-    fake.chmod(0o755)
+    fake_specgraph(path_of(monkeypatch, tmp_path / "bin", keep=True))
     folder = project(tmp_path)
     rc, out = install(folder, dict(MINIMAL, graph="lite"), capsys=capsys)
     assert rc == 0, out
@@ -704,6 +708,17 @@ def test_the_graph_step_falls_back_to_the_module_when_no_command_is_on_path(tmp_
     assert re.search(r"DONE +graph.yml", out), out
     graph = (folder / "graph.yml").read_text()
     assert "meta:" in graph and "fake" not in graph
+
+
+@pytest.mark.skipif(os.name != "posix", reason="the fake command is a shell script")
+def test_the_graph_step_prefers_the_command_on_path_to_the_importable_module(tmp_path, capsys, monkeypatch):
+    # The command is what the owner's shell runs; the module may be an older copy in this interpreter.
+    pytest.importorskip("specgraph")
+    fake_specgraph(path_of(monkeypatch, tmp_path / "bin", keep=True))
+    folder = project(tmp_path)
+    rc, out = install(folder, dict(MINIMAL, graph="lite"), capsys=capsys)
+    assert rc == 0, out
+    assert "made-by: fake specgraph init --profile lite --graph graph.yml" in (folder / "graph.yml").read_text()
 
 
 def test_the_gitignore_line_is_appended_once(tmp_path, capsys):

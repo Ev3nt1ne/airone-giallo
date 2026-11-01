@@ -20,8 +20,8 @@ What it writes: at the workspace root the agent layer (AGENTS.md, CLAUDE.md, RAT
 git-ignored) and the `.gitignore` (an allowlist in the two-repository form, a few appended lines otherwise); at the
 top of each repository `.ignore` with the line `archive/`, `archive/README.md` and the archive's log `archive/LOG.md`;
 on each rung's side `ai-docs/` with its five places (the status file and the handoff when chosen), a README in `plan/`
-and in `docs/` only when the folder is new, `docs/glossary.md` when absent, and `graph.yml` through `python -m
-specgraph init`; outside the ladder `human-docs/README.md` and the `sources/README.md` manifest, each on its chosen
+and in `docs/` only when the folder is new, `docs/glossary.md` when absent, and `graph.yml` through `specgraph
+init`; outside the ladder `human-docs/README.md` and the `sources/README.md` manifest, each on its chosen
 side; with `agent_layer: both`, a contributors' AGENTS.md and CLAUDE.md in the public folder. It copies no script into
 the project: the checks are Airone Giallo's installed commands.
 
@@ -33,7 +33,7 @@ never leaves half an install. With --force the instruction files are replaced, b
 closed file, the handoff, the archive's log, RATIONALE.md, the graph file, the folders' READMEs) is kept as it is,
 since replacing it with an empty one would delete the project's history.
 
-Standard library only; the graph step runs specgraph in a child process when it is importable.
+Standard library only; the graph step runs specgraph in a child process, its command on PATH or else its module.
 """
 
 import argparse
@@ -41,6 +41,7 @@ import datetime
 import importlib.util
 import json
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -512,18 +513,28 @@ def archive_log(now):
     return stamp_frontmatter(ARCHIVE_TEMPLATES.joinpath("LOG.md").read_text(encoding="utf-8"), now)
 
 
-def specgraph_available():
-    return importlib.util.find_spec("specgraph") is not None
+def specgraph_command():
+    """How to run specgraph: its command on PATH first, else this interpreter's module, else None. A tool installer
+    (uv tool, pipx) puts the command on PATH and keeps the module out of every other Python."""
+    found = shutil.which("specgraph")
+    if found:
+        return [found]
+    if importlib.util.find_spec("specgraph") is not None:
+        return [sys.executable, "-m", "specgraph"]
+    return None
 
 
 def graph_action(profile, folder):
     def run(target):
-        if not specgraph_available():
-            return ("SKIPPED", f"specgraph is not importable from {sys.executable}; install the graph "
-                    f"(pip install <airone-giallo>/graph), then run in {folder}: specgraph init --profile {profile}")
+        command = specgraph_command()
+        if not command:
+            install = shlex.quote(str(REPO / "graph"))
+            return ("SKIPPED", f"specgraph is neither a command on PATH nor importable from {sys.executable}; "
+                    f"install the command with uv tool install {install} (pipx install takes the same argument), "
+                    f"then run in {folder}: specgraph init --profile {profile}")
         where = target / folder
-        proc = subprocess.run([sys.executable, "-m", "specgraph", "init", "--profile", profile,
-                               "--graph", "graph.yml"], cwd=where, capture_output=True, text=True)
+        proc = subprocess.run([*command, "init", "--profile", profile, "--graph", "graph.yml"],
+                              cwd=where, capture_output=True, text=True)
         out = (proc.stdout + proc.stderr).strip()
         # Measure the artifact, not the command: the file must exist and carry its meta.
         graph = where / "graph.yml"

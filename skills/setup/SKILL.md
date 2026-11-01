@@ -103,9 +103,11 @@ each rung's side `ai-docs/` with the status file, the handoff and a README for e
 `--help` lists every answer as a flag; a flag overrides the file. Show the owner the dry run before the real
 one. *The preview is where a wrong answer costs nothing.*
 
-- **Run the graph step with the Python that has `specgraph`.** The script calls `python -m specgraph init` with its
-  own interpreter, and only when `specgraph` is importable there; otherwise it reports the step SKIPPED with the
-  install command, and exits 1. Ask the owner to install it; do not work around it.
+- **The graph step needs the `specgraph` command.** The script runs `specgraph init` from the PATH, and only when no
+  command is there `python -m specgraph init` with its own interpreter, if the module is importable there; with
+  neither it reports the step SKIPPED with the install command, and exits 1. Ask the owner to install it; do not work
+  around it. *A tool installer puts the command on the PATH and keeps the module out of every other Python, so the
+  command is the one looked for first.*
 - **The exit code is the report.** 0: every step done or kept. 1: a step was refused, skipped or failed, each named
   in the report. 2: the answers are invalid. *A setup that says "done" over a step it skipped is the failure this
   script exists to prevent.*

@@ -7,6 +7,7 @@ of the graph step's refusal still runs.
 
 import importlib.util
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -458,7 +459,7 @@ def test_the_workspace_agents_file_says_sessions_open_at_the_root_and_where_airo
 
 
 def test_the_map_gives_each_home_of_a_decision_its_part(tmp_path, capsys, monkeypatch):
-    monkeypatch.setattr(sc, "specgraph_available", lambda: False)
+    monkeypatch.setattr(sc, "specgraph_command", lambda: None)
     folder = project(tmp_path)
     install(folder, dict(MINIMAL, graph="lite"), capsys=capsys)
     rows = {ln.split(" | ")[-1].strip(" |"): ln for ln in agents(folder).splitlines() if ln.startswith("| ")}
@@ -570,7 +571,7 @@ def test_an_existing_file_stops_the_whole_run(tmp_path, capsys):
 
 
 def test_force_replaces_the_instructions_and_keeps_every_record(tmp_path, capsys, monkeypatch):
-    monkeypatch.setattr(sc, "specgraph_available", lambda: False)  # an existing graph file is kept before the step
+    monkeypatch.setattr(sc, "specgraph_command", lambda: None)  # an existing graph file is kept before the step
     folder = project(tmp_path)
     (folder / "AGENTS.md").write_text("old rules\n")
     for rel in RECORDS:
@@ -644,12 +645,65 @@ def test_the_projects_own_checks_show_a_slot_until_answered(tmp_path, capsys):
 
 
 def test_the_graph_step_is_reported_skipped_when_specgraph_is_missing(tmp_path, capsys, monkeypatch):
-    monkeypatch.setattr(sc, "specgraph_available", lambda: False)
+    monkeypatch.setattr(sc, "specgraph_command", lambda: None)
     folder = project(tmp_path)
     rc, out = install(folder, dict(MINIMAL, graph="lite"), capsys=capsys)
     assert rc == 1
     assert re.search(r"SKIPPED +graph.yml", out) and "SETUP INCOMPLETE" in out
     assert not (folder / "graph.yml").exists()
+
+
+def without_the_module(monkeypatch):
+    """specgraph made un-importable from this interpreter, whatever it has installed."""
+    real = importlib.util.find_spec
+    monkeypatch.setattr(importlib.util, "find_spec",
+                        lambda name, *a, **k: None if name.split(".")[0] == "specgraph" else real(name, *a, **k))
+
+
+def path_of(monkeypatch, folder, keep=False):
+    """PATH made to start at folder, or to be folder alone, so a specgraph elsewhere on it is not found."""
+    folder.mkdir()
+    monkeypatch.setenv("PATH", os.pathsep.join([str(folder), os.environ["PATH"]]) if keep else str(folder))
+    return folder
+
+
+@pytest.mark.skipif(os.name != "posix", reason="the fake command is a shell script")
+def test_the_graph_step_runs_the_command_on_path_when_the_module_is_not_importable(tmp_path, capsys, monkeypatch):
+    # A tool installer (uv tool, pipx) puts the command on PATH and keeps the module out of every other Python.
+    without_the_module(monkeypatch)
+    bin_dir = path_of(monkeypatch, tmp_path / "bin", keep=True)
+    fake = bin_dir / "specgraph"
+    fake.write_text("#!/bin/sh\nprintf 'meta:\\n  made-by: fake specgraph %s\\n' \"$*\" > graph.yml\n")
+    fake.chmod(0o755)
+    folder = project(tmp_path)
+    rc, out = install(folder, dict(MINIMAL, graph="lite"), capsys=capsys)
+    assert rc == 0, out
+    assert re.search(r"DONE +graph.yml", out), out
+    assert "made-by: fake specgraph init --profile lite --graph graph.yml" in (folder / "graph.yml").read_text()
+
+
+def test_the_graph_step_is_skipped_naming_the_install_when_neither_command_nor_module_exists(tmp_path, capsys,
+                                                                                         monkeypatch):
+    without_the_module(monkeypatch)
+    path_of(monkeypatch, tmp_path / "empty-bin")
+    folder = project(tmp_path)
+    rc, out = install(folder, dict(MINIMAL, graph="lite"), capsys=capsys)
+    assert rc == 1
+    line = [ln for ln in out.splitlines() if re.match(r"SKIPPED +graph.yml", ln)][0]
+    assert f"uv tool install {sc.REPO / 'graph'}" in line and "pipx install" in line, line
+    assert "pip install <airone-giallo>" not in line
+    assert not (folder / "graph.yml").exists()
+
+
+def test_the_graph_step_falls_back_to_the_module_when_no_command_is_on_path(tmp_path, capsys, monkeypatch):
+    pytest.importorskip("specgraph")
+    path_of(monkeypatch, tmp_path / "empty-bin")
+    folder = project(tmp_path)
+    rc, out = install(folder, dict(MINIMAL, graph="lite"), capsys=capsys)
+    assert rc == 0, out
+    assert re.search(r"DONE +graph.yml", out), out
+    graph = (folder / "graph.yml").read_text()
+    assert "meta:" in graph and "fake" not in graph
 
 
 def test_the_gitignore_line_is_appended_once(tmp_path, capsys):

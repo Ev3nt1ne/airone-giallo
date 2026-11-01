@@ -33,13 +33,15 @@ The rules, each with its reason, are in [docs/spec-graph.md](docs/spec-graph.md)
 Python 3.10 or newer; the only dependency is PyYAML.
 
 ```sh
-pip install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph'
+uv tool install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph'
 ```
 
-or, from a clone of the repository, `pip install -e graph`. This installs the package `specgraph` and a command of
-the same name, which is the same as `python -m specgraph`. The examples below use the command. With `uv`, the command
-runs with nothing installed: `uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph'
-specgraph …`.
+or, from a clone of the repository, `uv tool install ./graph`; `pipx install` takes the same arguments, and
+`pip install` works inside a project's own venv. This puts the command `specgraph` on the PATH; installed with `pip`,
+the package is importable too, and `python -m specgraph` is the same command. For developing the graph,
+`pip install -e graph` from the clone, in a venv, installs it editable, as under Tests. The examples below use the
+command. With `uv`, the command runs with nothing installed:
+`uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph' specgraph …`.
 
 In Claude Code, the skill that teaches an agent the graph ([skills/graph/SKILL.md](skills/graph/SKILL.md)) comes as
 the plugin `specgraph`, from the repository's marketplace: `/plugin marketplace add Ev3nt1ne/airone-giallo`, then

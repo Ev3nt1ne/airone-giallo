@@ -54,7 +54,8 @@ the method of the `session` skill's verify reference, §6.
 ## Start
 
 Python 3.10 or newer, standard library only, and git; the package is `airone-tools`, MIT, with no dependencies.
-`pip install ./tools` from the clone gives the seven commands below. Each file in [src/](src/) also runs as a script
+`uv tool install ./tools` from the clone gives the seven commands below (`pipx install` takes the same argument, and
+`pip install` works inside a project's own venv). Each file in [src/](src/) also runs as a script
 from the clone without installing (`python3 <airone-giallo>/tools/src/check_links.py`); none is ever copied into the
 project. *A copied script is a second copy that the next version of Airone Giallo does not reach.*
 

@@ -126,9 +126,10 @@ and the answer it reads, with a test.
 
 ## 4. After the script
 
-The checks are Airone Giallo's installed commands, never copies in the project: `pip install ./graph ./tools` from
-the clone, or from the plugin's copy of it, gives `specgraph`, `check-status`, `check-archive`, `check-links` and
-`check-frontmatter`, with the tools' other commands. Ask the owner to install them. *A copied script
+The checks are Airone Giallo's installed commands, never copies in the project: `uv tool install ./graph` and
+`uv tool install ./tools`, from the clone or from the plugin's copy of it, give `specgraph`, `check-status`,
+`check-archive`, `check-links` and `check-frontmatter`, with the tools' other commands; `pipx install` takes the same
+arguments, and `pip install` works inside a project's own venv. Ask the owner to install them. *A copied script
 is a second copy that the next version does not reach.* The two document checks read the tracked tree, so first
 stage what the script wrote, `git add` in each repository it wrote into; staging is undone by `git reset`. Run each
 check and read its output; the script's report is a claim, these measure the files.

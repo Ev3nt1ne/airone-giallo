@@ -38,11 +38,17 @@ command on the PATH. In Claude Code:
 /plugin install airone-giallo@airone-giallo
 ```
 
-Then, from a clone of this repository, the checkers the project will use:
+Then the commands the project will use, one line per package:
 
 ```
-pip install ./graph ./tools
+uv tool install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph'
+uv tool install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=tools'
 ```
+
+From a clone of this repository, `uv tool install ./graph` and `uv tool install ./tools`; `pipx install` takes the
+same arguments, and `pip install` works inside a project's own venv. The tool installer comes first because the
+system Python on most machines refuses `pip install` outside a venv, and a tool installer keeps the commands'
+environment apart from the project's.
 
 The skills are then `/airone-giallo:session`, `/airone-giallo:handoff`, `/airone-giallo:markdown-docs`,
 `/airone-giallo:doc-discipline`, `/airone-giallo:setup` and `/airone-giallo:graph`; the commands are `specgraph`,
@@ -57,10 +63,12 @@ The graph is also a plugin of its own in the same marketplace, for a project tha
 ```
 /plugin marketplace add Ev3nt1ne/airone-giallo
 /plugin install specgraph@airone-giallo
-pip install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph'
+uv tool install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph'
 ```
 
-The skill is then `/specgraph:graph`, and the command `specgraph`; `uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph' specgraph` runs it with nothing installed. See [graph/README.md](graph/README.md).
+The skill is then `/specgraph:graph`, and the command `specgraph`; `pipx install` takes the same argument as
+`uv tool install`, and `uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph' specgraph`
+runs it with nothing installed. See [graph/README.md](graph/README.md).
 
 ## Licence
 

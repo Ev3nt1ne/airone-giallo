@@ -100,12 +100,23 @@ Write the answers as one JSON object to a file in the session's scratch folder, 
  "machine": {"resources": "8 cores, 16 GB", "load": "nothing else", "limits": "one run at a time", "timings": "yes"}}
 ```
 
-Then, from the workspace root (the private repository in the two-repository form), preview and run:
+Then run it from the workspace root (the private repository in the two-repository form), in three steps:
 
-```sh
-python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json --dry-run
-python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json
-```
+1. The dry run, which writes nothing and lists every file the real run would write:
+
+   ```sh
+   python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json --dry-run
+   ```
+
+2. Show the owner the dry run's file list as it printed, and end the turn there: the real run waits for the owner's
+   word and never runs in the same turn as the dry run. *The preview is where a wrong answer costs nothing, and only
+   if the owner reads it before anything is written.* An answer the owner changes goes into ANSWERS.json, and the
+   dry run is shown again.
+3. With the owner's word, the real run, which prints the same list with what it did to each file:
+
+   ```sh
+   python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json
+   ```
 
 What it writes, the dry run lists file by file: at the workspace root the agent layer (`AGENTS.md`, `CLAUDE.md`,
 `RATIONALE.md`, the git-ignored `local-machine.md`) and the `.gitignore`, an allowlist in the two-repository form; at
@@ -114,8 +125,7 @@ each rung's side `ai-docs/` with the status file, the handoff and a README for e
 `docs/` and in `plan/` when the folder is new, `docs/glossary.md` when absent and no other glossary is answered, and `graph.yml`;
 `human-docs/README.md` and the `sources/README.md` manifest on their chosen sides.
 
-`--help` lists every answer as a flag; a flag overrides the file. Show the owner the dry run before the real
-one. *The preview is where a wrong answer costs nothing.*
+`--help` lists every answer as a flag; a flag overrides the file.
 
 - **The graph step needs the `specgraph` command.** The script runs `specgraph init` from the PATH, and only when no
   command is there `python -m specgraph init` with its own interpreter, if the module is importable there; with

@@ -632,6 +632,15 @@ def test_every_written_document_carries_frontmatter_except_the_owners_notes_and_
         assert "<YYYY" not in head, rel
 
 
+def test_the_handoffs_first_log_is_the_handoff_log_not_the_archives(tmp_path, capsys):
+    folder = project(tmp_path)
+    rc, out = install(folder, dict(MINIMAL, handoff=True, stage="set-up"), capsys=capsys)
+    assert rc == 0, out
+    log = (folder / "ai-docs" / "handoff" / "log-set-up.md").read_text()
+    assert "\ntitle: Handoff log, set-up\n" in log and "\n# Handoff log, set-up\n" in log
+    assert log != (folder / "archive" / "LOG.md").read_text()
+
+
 def test_the_projects_own_checks_show_a_slot_until_answered(tmp_path, capsys):
     bare, told = project(tmp_path, "bare"), project(tmp_path, "told")
     install(bare, dict(MINIMAL, status=True, families=FAMILIES), capsys=capsys)

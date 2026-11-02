@@ -622,18 +622,18 @@ def plan(a, lay, ctx, now, target):
         steps += [Step(ctx["status_file"], "the status file", lambda: status, record=True),
                   Step(ctx["closed_file"], "the closed file", lambda: closed, record=True)]
     if a["handoff"]:
-        state, log, log_name = handoff_files(a["stage"], now)
+        state, first_log, log_name = handoff_files(a["stage"], now)
         steps += [Step(f"{ai}/handoff/current.md", "the handoff's state", lambda: state, record=True),
-                  Step(f"{ai}/handoff/{log_name}", "the handoff's first log", lambda: log, record=True)]
+                  Step(f"{ai}/handoff/{log_name}", "the handoff's first log", lambda: first_log, record=True)]
     for place, what in (("design", "what was decided, and why"), ("findings", "what was observed"),
                         ("guides", "how a thing is done here")):
         steps.append(Step(f"{ai}/{place}/README.md", what, tree(f"ai-docs/{place}/README.md"), record=True))
-    log = archive_log(now)
+    archive_log_text = archive_log(now)
     for d in lay.archives:
         steps += [Step(f"{d}/README.md", "this repository's archive: what it is", tree("archive/README.md"),
                        record=True),
                   Step(f"{d}/LOG.md", "the archive's log: changes to archived files, vocabulary conflicts",
-                       lambda: log, record=True)]
+                       lambda: archive_log_text, record=True)]
 
     for rung in ("docs", "graph", "plan"):
         if rung == "graph":

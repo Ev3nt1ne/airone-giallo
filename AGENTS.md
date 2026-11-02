@@ -20,4 +20,7 @@ adopting project, from the template in `skills/setup/`.
   example where it helps. No history, no incidents, no names of the projects the rule came from.
 - **Documents are corrected, never silently rewritten.** The `markdown-docs` skill in `skills/` says how; it binds
   here too.
+- **The repository's own link check exempts the setup's templates: `check-links --exempt skills/setup/templates/`.**
+  *A template's links resolve once the setup writes it into a project, so in this repository the bare command reports
+  them dead.*
 - **An agent commits locally and never pushes, tags or publishes.** Those are the maintainer's acts.

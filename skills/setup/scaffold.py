@@ -513,7 +513,10 @@ def first_state(block, a, lay, ctx, now, log_name, slotted):
     for old, new in (("[to fill: session]", "setup"), ("[to fill: date]", date),
                      ("[to fill: the state in one sentence]", "Airone Giallo's layout is installed, and no document "
                       "of the project's own has been moved into it yet"),
-                     ("[to fill: the log file, as a link]", f"[{log_name}]({log_name})")):
+                     # The template points to the log's newest entry, right after every close; the setup's log has
+                     # none yet.
+                     ("[to fill: the log file, as a link],\n> newest entry.",
+                      f"[{log_name}]({log_name}), no entry yet:\n> the first close writes the first.")):
         block = replace_once(block, old, new, HANDOFF_TEMPLATE)
     pieces = []
     if a["status"]:

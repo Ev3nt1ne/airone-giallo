@@ -661,6 +661,8 @@ def test_the_handoffs_first_state_is_what_the_setup_knows_not_a_blank_form(tmp_p
     assert re.findall(r"^## (.+)$", state, re.M) == template_headings(0)
     text = flat(state)
     assert "Written at the close of session setup, " in text and "The log: [log-set-up.md](log-set-up.md)" in text
+    # The log starts with no entry, so the banner points to none.
+    assert "newest entry" not in text and "[log-set-up.md](log-set-up.md), no entry yet" in text
     # The checks run after the script: the state says so, and claims no result.
     assert "**Checks**: not run when the setup wrote this file" in text and "error" not in text
     assert "**The cut**: `none`, so one private repository" in text

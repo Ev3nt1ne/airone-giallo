@@ -237,7 +237,7 @@ def test_the_machine_file_is_ignored_by_git(tmp_path, capsys):
 def test_the_cut_puts_each_rung_on_its_side(tmp_path, capsys, cut):
     form = sc.form_of(cut)
     folder = workspace(tmp_path) if form == "two" else project(tmp_path)
-    rc, out = install(folder, dict(MINIMAL, cut=cut, status=True, families=FAMILIES), capsys=capsys)
+    rc, out = install(folder, dict(MINIMAL, cut=cut, status=True, families=FAMILIES, handoff=True), capsys=capsys)
     assert rc == 0, out
     last_public = sc.CUTS.index(cut)
     for n, rung in enumerate(sc.RUNGS, start=1):
@@ -282,6 +282,8 @@ def test_the_cut_puts_each_rung_on_its_side(tmp_path, capsys, cut):
     assert f"`{links}`" in words and "`check-frontmatter`" in words
     for name, (code, output) in document_checks(folder, cut, "inkwell" if form == "two" else None).items():
         assert code == 0 and "0 error(s)" in output, (cut, name, output)
+        # The handoff's state names nothing above its rung, so no cut finds a citation in it to warn about.
+        assert "handoff/" not in output, (cut, name, output)
 
 
 @needs_git
@@ -639,6 +641,60 @@ def test_the_handoffs_first_log_is_the_handoff_log_not_the_archives(tmp_path, ca
     log = (folder / "ai-docs" / "handoff" / "log-set-up.md").read_text()
     assert "\ntitle: Handoff log, set-up\n" in log and "\n# Handoff log, set-up\n" in log
     assert log != (folder / "archive" / "LOG.md").read_text()
+
+
+def template_headings(block):
+    text = sc.HANDOFF_TEMPLATE.read_text()
+    return re.findall(r"^## (.+)$", re.findall(r"^```markdown\n(.*?)^```$", text, re.M | re.S)[block], re.M)
+
+
+def test_the_handoffs_first_state_is_what_the_setup_knows_not_a_blank_form(tmp_path, capsys):
+    folder = project(tmp_path)
+    rc, out = install(folder, dict(MINIMAL, status=True, families=FAMILIES, handoff=True, stage="set-up"),
+                      capsys=capsys)
+    assert rc == 0, out
+    state = (folder / "ai-docs" / "handoff" / "current.md").read_text()
+    log = (folder / "ai-docs" / "handoff" / "log-set-up.md").read_text()
+    # The template's blank form wrote its slots into both files.
+    assert "[to fill" not in state and "[to fill" not in log
+    # The template keeps the shape: its sections, in its order.
+    assert re.findall(r"^## (.+)$", state, re.M) == template_headings(0)
+    text = flat(state)
+    assert "Written at the close of session setup, " in text and "The log: [log-set-up.md](log-set-up.md)" in text
+    # The checks run after the script: the state says so, and claims no result.
+    assert "**Checks**: not run when the setup wrote this file" in text and "error" not in text
+    assert "**The cut**: `none`, so one private repository" in text
+    assert "the status file `ai-docs/status.md`" in text and "the first for the stage `set-up`" in text
+    assert "no specification graph" in text
+    assert ("**For the owner**: the slots the setup left unanswered in the instruction file and the machine file."
+            in text)
+    for empty in ("**Unexplained**: none.", "**Deferred**: none.", "**Runs in flight**: none.",
+                  "None: this state quotes no figure."):
+        assert empty in text, empty
+    # The log keeps its head and drops the template's blank entry: the first close writes the first entry.
+    assert "\n# Handoff log, set-up\n" in log and not re.search(r"^## ", log, re.M)
+    assert template_headings(1) and "## " + template_headings(1)[0] not in log
+
+
+@needs_git
+def test_the_handoffs_first_state_with_every_answer_given_leaves_nothing_open(tmp_path, capsys):
+    folder = workspace(tmp_path)
+    assert install(folder, dict(FULL, graph="none"), capsys=capsys)[0] == 0
+    text = flat((folder / "ai-docs" / "handoff" / "current.md").read_text())
+    assert "**For the owner**: none." in text
+    assert "Agree the first piece of work with the owner, and record it in `ai-docs/status.md`." in text
+    assert "**The cut**: `plan`, so two repositories" in text
+
+
+def test_a_handoff_template_whose_sections_changed_stops_the_install(tmp_path, capsys, monkeypatch):
+    changed = tmp_path / "handoff-template.md"
+    changed.write_text(sc.HANDOFF_TEMPLATE.read_text().replace(
+        "## 6. Where the numbers come from", "## 6. Where the numbers come from\n\n## 7. A section added", 1))
+    monkeypatch.setattr(sc, "HANDOFF_TEMPLATE", changed)
+    folder = project(tmp_path)
+    rc, out = install(folder, dict(MINIMAL, handoff=True), capsys=capsys)
+    assert rc == 1 and "cannot prepare the install" in out and "7. A section added" in out
+    assert tree(folder) == {}
 
 
 def test_the_projects_own_checks_show_a_slot_until_answered(tmp_path, capsys):

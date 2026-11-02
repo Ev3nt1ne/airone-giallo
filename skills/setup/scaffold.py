@@ -76,6 +76,7 @@ FAMILY_RE = re.compile(r"^[A-Z][A-Z0-9]{1,4}(?:-[A-Z][A-Z0-9]{1,4})?$")
 # What the written file shows where the owner has not answered yet; `grep -n 'to fill'` lists what is left. Square
 # brackets, not angle ones: `<to fill: x>` is a valid HTML tag to a Markdown renderer, which would hide it.
 SLOT = "[to fill: {}]"
+SLOT_MARK = SLOT.split("{")[0]
 
 DEFAULTS = {
     "invariants": [], "cut": "plan", "human_docs": "private", "sources": "private", "agent_layer": "",
@@ -486,15 +487,84 @@ def replace_once(text, old, new, source):
     return text.replace(old, new)
 
 
-def handoff_files(stage, now):
+def items(*lines):
+    """List items, or a paragraph, each filled to the line length, a continuation indented under its text."""
+    return "\n".join("\n".join(textwrap.wrap(ln, WIDTH, subsequent_indent=" " * len(re.match(r"(- |\d+\. )?", ln)[0]),
+                                             break_long_words=False, break_on_hyphens=False)) for ln in lines)
+
+
+def fill_sections(block, bodies, source):
+    """Give each `## ` section of a template block the body written for its heading. The template keeps the shape
+    (frontmatter, banner, headings, their order); a heading with no body, or a body whose heading is gone, is a
+    template that changed under the script."""
+    parts = re.split(r"^## (.+)\n", block, flags=re.M)
+    headings = parts[1::2]
+    if headings != list(bodies):
+        raise RuntimeError(f"{source}: expected the sections {list(bodies)}, found {headings}")
+    return parts[0] + "".join(f"## {h}\n\n{bodies[h].strip()}\n\n" for h in headings).rstrip("\n") + "\n"
+
+
+def first_state(block, a, lay, ctx, now, log_name, slotted):
+    """The handoff's state as the setup leaves it: what the setup knows, and "none" where it knows there is nothing.
+    It names no file of the agent layer: that layer is the rung above the handoff, and private when the cut makes
+    the handoff public. The checks run after the script, so the state says they have not run, and the setup's agent
+    writes their results in."""
+    date = now.strftime("%Y-%m-%d")
+    for old, new in (("[to fill: session]", "setup"), ("[to fill: date]", date),
+                     ("[to fill: the state in one sentence]", "Airone Giallo's layout is installed, and no document "
+                      "of the project's own has been moved into it yet"),
+                     ("[to fill: the log file, as a link]", f"[{log_name}]({log_name})")):
+        block = replace_once(block, old, new, HANDOFF_TEMPLATE)
+    pieces = []
+    if a["status"]:
+        pieces.append(f"the status file `{ctx['status_file']}`, its families in its `status-meta` block")
+    pieces.append(f"the handoff, this state and one log per stage, the first for the stage `{a['stage']}`")
+    pieces.append(f"the specification graph `{ctx['graph_file']}`, {a['graph']} profile" if ctx["graph_file"]
+                  else "no specification graph")
+    if slotted:
+        open_for_owner = f"the slots the setup left unanswered in {join(slotted)}"
+        step = "Fill with the owner the slots the setup left unanswered, as §3 lists them."
+        prompt = f"Fill with me the slots the setup left unanswered in {join(slotted)}."
+    else:
+        open_for_owner = "none"
+        step = "Agree the first piece of work with the owner" + (
+            f", and record it in `{ctx['status_file']}`." if a["status"] else ".")
+        prompt = "Propose the first piece of work, from what the repository holds."
+    bodies = {
+        "1. What is true now": items(
+            f"- **The layout**: Airone Giallo's tree, written by its setup on {date}; no document of the project's "
+            "own has been moved into it yet, which is a session's work with the owner, file by file.",
+            "- **Checks**: not run when the setup wrote this file; the setup runs them next and writes their "
+            "results here, each with its command.",
+            "- **Progress**: none recorded yet."),
+        "2. What was decided, and why": items(
+            f"- **The cut**: `{lay.cut}`, so {describe(a, lay)}. *Why:* the owner's answer at setup.",
+            f"- **The pieces**: {'; '.join(pieces)}. *Why:* the owner's answers at setup."),
+        "3. What is open": items(
+            f"1. **For the owner**: {open_for_owner}.", "2. **Unexplained**: none.", "3. **Deferred**: none."),
+        "4. What the next session does first": f"{items(step)}\n\nPrompt to paste:\n\n    {prompt}",
+        "5. What must not be touched": items(
+            "- **Invariants**: as the instruction file states them; no test is recorded yet as guarding one.",
+            "- **Frozen**: each repository's archive, and anything else the instruction file names frozen.",
+            "- **Runs in flight**: none."),
+        "6. Where the numbers come from": "None: this state quotes no figure.",
+    }
+    return fill_sections(block, bodies, HANDOFF_TEMPLATE)
+
+
+def handoff_files(a, lay, ctx, now, slotted):
+    """The handoff's first state, and its first log without the template's blank entry: each entry is written at a
+    close, from the handoff skill's template. `slotted` names the files written with a slot left."""
     text = HANDOFF_TEMPLATE.read_text(encoding="utf-8")
     blocks = re.findall(r"^```markdown\n(.*?)^```$", text, re.M | re.S)
     if len(blocks) != 2:
         raise RuntimeError(f"{HANDOFF_TEMPLATE}: expected two ```markdown blocks, the state and the log; "
                            f"found {len(blocks)}")
-    log_name = f"log-{stage}.md"
-    state = replace_once(blocks[0], "[to fill: the log file, as a link]", f"[{log_name}]({log_name})", HANDOFF_TEMPLATE)
-    log = blocks[1].replace("[to fill: stage]", stage)
+    log_name = f"log-{a['stage']}.md"
+    state = first_state(blocks[0], a, lay, ctx, now, log_name, slotted)
+    log, entry, _ = blocks[1].replace("[to fill: stage]", a["stage"]).partition("\n## ")
+    if not entry:
+        raise RuntimeError(f"{HANDOFF_TEMPLATE}: expected the log's entry under a `## ` heading")
     return stamp_frontmatter(state, now), stamp_frontmatter(log, now), log_name
 
 
@@ -578,6 +648,7 @@ def plan(a, lay, ctx, now, target):
     agents = rewrap(agents)
     rationale = rewrap(template("RATIONALE.md", ctx, now))
     claude = TEMPLATES.joinpath("CLAUDE.md").read_text(encoding="utf-8")
+    machine = template("local-machine.md", ctx, now)
 
     def tree(rel):
         text = template(f"tree/{rel}", ctx, now)
@@ -587,8 +658,7 @@ def plan(a, lay, ctx, now, target):
         Step("AGENTS.md", "the instruction file", lambda: agents),
         Step("CLAUDE.md", "one line, importing AGENTS.md", lambda: claude),
         Step("RATIONALE.md", "where each rule came from", lambda: rationale, record=True),
-        Step("local-machine.md", "this device's resources and limits (git-ignored)",
-             lambda: template("local-machine.md", ctx, now)),
+        Step("local-machine.md", "this device's resources and limits (git-ignored)", lambda: machine),
     ]
     # The .ignore of each repository sits at its top, beside its archive.
     steps += [Step(f"{d[:-len(ARCHIVE)]}.ignore", "the archive out of every search unless named",
@@ -607,8 +677,8 @@ def plan(a, lay, ctx, now, target):
                 groups.append(("# Airone Giallo: downloaded sources; the manifest is committed, the files are not",
                                "/sources/*", "!/sources/README.md"))
         steps.append(Step(".gitignore", "the machine file and the sources ignored", lines=tuple(groups)))
-    if lay.agent_layer == "both":
-        contributors = rewrap(template("AGENTS.contributors.md", ctx, now))
+    contributors = rewrap(template("AGENTS.contributors.md", ctx, now)) if lay.agent_layer == "both" else ""
+    if contributors:
         steps += [Step(f"{lay.public_dir}/AGENTS.md", "the contributors' instruction file, public rungs only",
                        lambda: contributors),
                   Step(f"{lay.public_dir}/CLAUDE.md", "one line, importing the contributors' AGENTS.md",
@@ -622,7 +692,11 @@ def plan(a, lay, ctx, now, target):
         steps += [Step(ctx["status_file"], "the status file", lambda: status, record=True),
                   Step(ctx["closed_file"], "the closed file", lambda: closed, record=True)]
     if a["handoff"]:
-        state, first_log, log_name = handoff_files(a["stage"], now)
+        # The files written with a slot left, by what they are: the handoff names no path of the agent layer.
+        slotted = [what for what, body in (("the instruction file", agents), ("the machine file", machine),
+                                           ("the contributors' instruction file", contributors))
+                   if SLOT_MARK in body]
+        state, first_log, log_name = handoff_files(a, lay, ctx, now, slotted)
         steps += [Step(f"{ai}/handoff/current.md", "the handoff's state", lambda: state, record=True),
                   Step(f"{ai}/handoff/{log_name}", "the handoff's first log", lambda: first_log, record=True)]
     for place, what in (("design", "what was decided, and why"), ("findings", "what was observed"),

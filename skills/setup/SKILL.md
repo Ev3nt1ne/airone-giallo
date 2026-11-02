@@ -121,8 +121,9 @@ Then run it from the workspace root (the private repository in the two-repositor
 What it writes, the dry run lists file by file: at the workspace root the agent layer (`AGENTS.md`, `CLAUDE.md`,
 `RATIONALE.md`, the git-ignored `local-machine.md`) and the `.gitignore`, an allowlist in the two-repository form; at
 the top of each repository `.ignore` with `archive/`, `archive/README.md` and the archive's log `archive/LOG.md`; on
-each rung's side `ai-docs/` with the status file, the handoff and a README for each of its places, a README in
-`docs/` and in `plan/` when the folder is new, `docs/glossary.md` when absent and no other glossary is answered, and `graph.yml`;
+each rung's side `ai-docs/` with the status file, the handoff (a first state written from the answers, a first log
+with no entry yet) and a README for each of its places, a README in `docs/` and in `plan/` when the folder is new,
+`docs/glossary.md` when absent and no other glossary is answered, and `graph.yml`;
 `human-docs/README.md` and the `sources/README.md` manifest on their chosen sides.
 
 `--help` lists every answer as a flag; a flag overrides the file.
@@ -169,8 +170,14 @@ check and read its output; the script's report is a claim, these measure the fil
 5. `check-frontmatter --all` reports 0 errors; from the workspace root it reads the public folder too.
 6. `git check-ignore local-machine.md` prints the file's name; in the two-repository form `git status` at the root
    lists only the files the allowlist names and the public folder.
-7. `grep -n 'to fill' AGENTS.md local-machine.md` lists the slots left; give them to the owner as one list.
-8. Read the written AGENTS.md whole with the owner. *They will be bound by it; the first reading is theirs.*
+7. With the handoff, replace the **Checks** line of its state with what steps 1 to 6 reported, each result beside its
+   command. *The script writes the state before any check runs, so it says they have not run; only the agent that ran
+   them can record what they measured.*
+8. `grep -n 'to fill' AGENTS.md local-machine.md`, adding the handoff's state at its path in the map and, with
+   `agent_layer: both`, the contributors' `<name>/AGENTS.md`, lists the slots left; give them to the owner as one
+   list. *Name the files: an agent's shell may wrap `grep` in a search that skips what git ignores, and
+   `local-machine.md` is ignored.*
+9. Read the written AGENTS.md whole with the owner. *They will be bound by it; the first reading is theirs.*
 
 Then propose a local commit of what was installed, by the project's own commit rules: in the two-repository form one
 in the public repository first, then one in the private workspace with the updated gitlink, *so the gitlink names a

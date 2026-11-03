@@ -1183,7 +1183,24 @@ def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_
     ids = [i for i, _ in labelled]
     assert ids == ["A1", "A2", "A3", "B1", "C1", "C2", "C3", "D1"], ids
     assert not re.search(r"^#+ [A-Z]\. ", text, re.M)
-    assert "a group is a label for the reader, never a round" in flat_text
+    # The first message holds the findings and the old file's step only; each later one a single group, sized by how
+    # demanding its questions are, with no fixed number.
+    assert ("The first message holds only the opening findings** and, when the repository has an old instruction "
+            "file, that file's step (below); no question of any group") in flat_text
+    assert "Each later message holds questions of one group only, never of two**" in flat_text
+    assert "a demanding one comes alone, such as B1 with its ladder" in flat_text
+    assert "There is no fixed number per message" in flat_text and "rounds of one to four" not in text
+    # One principle for proposing: drafts where the repository gives grounds, only the confirmed written, no grounds
+    # said plainly.
+    assert ("Propose whenever the repository gives grounds, write only what the owner confirmed, and say plainly when "
+            "there are no grounds.") in flat_text
+    row = {i: re.search(rf"^\\| {i} · .*$", text, re.M).group(0) for i in ("A1", "C1")}
+    assert "drafts of both, taken from the README, the old instruction file or the repository's name" in row["A1"]
+    assert "no default: both are the owner's words" not in text
+    assert "no default: the repository cannot show how the owner works" in row["C1"]
+    assert "propose families from the areas of work found in the repository" in flat_text
+    assert "write only those the owner confirms; never take them from memory or from another project" in flat_text
+    assert "never fill them from anything but the owner's answer" not in flat_text
     # Each question in three parts, which are the table's columns; a pending one reminded in a line, never re-asked.
     assert "| Question | What it is | The options | Recommend, and why | What the answer changes |" in text
     assert "An example only when the question cannot be understood without one" in flat_text

@@ -11,10 +11,9 @@ is copied into the project: what stays there is what the script writes. Each rul
 
 ## 1. Before asking anything
 
-- **Start on a clean tree.** `git status` must be empty in the owner's repository before the dry run, and in the
-  two-repository form in the new workspace too once the submodule's addition (§3) is committed. Afterwards it shows
-  exactly what the setup added, and `git stash -u` or a checkout undoes it. *An install mixed into uncommitted work
-  cannot be reviewed or reverted on its own.*
+- **Start on a clean tree.** `git status` must be empty in the owner's repository before the dry run. Afterwards it
+  shows exactly what the setup added, and `git stash -u` or a checkout undoes it. *An install mixed into uncommitted
+  work cannot be reviewed or reverted on its own.*
 - **Read the repository first, and ask only what it cannot answer.** Look for an existing `AGENTS.md`, `CLAUDE.md`,
   `.gitignore`, a docs folder, a specification, a plan, a glossary, a findings folder, folders kept frozen,
   generated or vendored copies, the owner's own notes, and the test and lint commands. Take the Claude Code version
@@ -22,11 +21,13 @@ is copied into the project: what stays there is what the script writes. Each rul
   questions, only what they must confirm or what changes an answer, one line each; details only when asked. *A question
   the repository answers costs the owner a turn and tells them the agent did not look, and a finding that changes
   nothing is one more line to read past.*
-- **In the two-repository form the owner's folder moves, whole, into a new workspace.** The workspace, `<folder>-nido`
-  beside it, is a new private repository, and the folder becomes its public side, registered as a submodule where it is:
-  one copy, with its ignored files (dependencies, `.env` files) kept. The move is shown by the dry run and done with the
-  owner's yes before the real run (§3). *A clone carries only committed files, and leaves a second copy beside the first
-  that drifts from it unseen.*
+- **In the two-repository form the owner's folder moves, whole, into a new workspace, and the move is the setup's last
+  act.** The workspace, `<folder>-nido` beside it, is a new private repository, and the folder becomes its public side,
+  registered as a submodule where it is: one copy, with its ignored files (dependencies, `.env` files) kept. *A clone
+  carries only committed files, and leaves a second copy beside the first that drifts from it unseen.* The whole setup
+  runs in one session started in the owner's folder; the folder moves after the real run and the checks, with the
+  owner's yes, by commands with absolute paths (§4). *A Claude Code session is bound to the folder it started in: moved
+  in the middle of the setup, it has nowhere left to run.*
 - **An existing `AGENTS.md`, `CLAUDE.md` or `.claude/CLAUDE.md` is read before anything is written**, and gets its own
   step before A1 (§2). *A project's instruction file holds rulings that exist nowhere else.*
 
@@ -152,14 +153,15 @@ Write the answers as one JSON object to a file in the session's scratch folder, 
  "machine": {"resources": "8 cores, 16 GB", "load": "nothing else", "limits": "one run at a time", "timings": "yes"}}
 ```
 
-In the two-repository form add `move_from`, the owner's folder as it is now. Then run the script, in four steps, with
-`--target` the workspace root: the project in the one-repository form; in the two-repository form `<folder>-nido`, which
-the dry run may precede, reading the folder where it still is:
+In the two-repository form add `move_from`, the owner's folder. Then run the script, in four steps, with `--target` the
+workspace root: the project in the one-repository form; in the two-repository form `<folder>-nido`, beside the folder.
+Both runs find the folder where it is: the real run writes the public side into it there, and the workspace's files into
+`<folder>-nido`, as they must be once the folder has moved in:
 
-1. The dry run, which writes nothing. Its first line says so; in the two-repository form the move and the new workspace
-   follow. Then each repository has its own section, the owner's first: the files it already has, each line starting
-   with what the real run does to it (`BACKUP`, `REPLACE`, `APPEND`, `REMOVE`, `KEEP`); the new files, `CREATE`, grouped
-   by folder; and the lines of `carry`, which the session carries over after the run:
+1. The dry run, which writes nothing. Its first line says so; in the two-repository form the move, done last, and the
+   new workspace follow. Then each repository has its own section, the owner's first: the files it already has, each
+   line starting with what the real run does to it (`BACKUP`, `REPLACE`, `APPEND`, `REMOVE`, `KEEP`); the new files,
+   `CREATE`, grouped by folder; and the lines of `carry`, which the session carries over after the run:
 
    ```sh
    python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json --target <root> --dry-run
@@ -169,23 +171,8 @@ the dry run may precede, reading the folder where it still is:
    word and never runs in the same turn as the dry run. *The preview is where a wrong answer costs nothing, and only
    if the owner reads it before anything is written.* An answer the owner changes goes into ANSWERS.json, and the
    dry run is shown again.
-3. In the two-repository form, with the owner's yes, the move. Before the yes, say plainly that the folder's path
-   changes from `<folder>` to `<folder>-nido/<folder>`, that the editor, scripts and Claude Code's per-path memory do
-   not follow, and that moving the folder back undoes it:
-
-   ```sh
-   git init <folder>-nido
-   mv <folder> <folder>-nido/<folder>
-   cd <folder>-nido && git submodule add <its remote URL, or ./<folder> without one> <folder>
-   git commit -m "Add <folder> as a submodule"
-   ```
-
-   `git submodule add` on a path that already holds a repository adopts it where it is ("Adding existing repo"); never
-   `git submodule absorbgitdirs`, which moves the folder's `.git` into the workspace. *With its `.git` inside, the
-   folder is still a repository of its own, so moving it back undoes the move.* The move takes the session's own working
-   folder with it: make it the turn's last act, after giving the owner the path of ANSWERS.json and the prompt to paste
-   in a new session opened at `<folder>-nido`, which goes on from the real run. *A session whose folder moved away
-   cannot rely on its working path.*
+3. In the two-repository form, with the owner's yes, the workspace: `git init <folder>-nido`, beside the folder. *The
+   real run writes into it; the folder itself moves only at the end (§4).*
 4. With the owner's word, the real run, which lists every file by the same sections, with what happened to it first:
    `DONE`, `KEPT`, `SKIPPED` or `FAILED`. *Before the run the question is what will be done, after it whether it was.*
 
@@ -239,7 +226,9 @@ and the answer it reads, with a test.
 First, with an old instruction file, carry each part from its backup to the place its line in `carry` names, in that
 document's own form (the frontmatter of `markdown-docs`, the status file's identifiers), and leave out what was
 confirmed dropped; the parts placed in `docs/invariants.md` are already there. The setup is not done before every line
-is carried. *The backup keeps the content, but a part nobody carries is a ruling no session reads.*
+is carried; each line's part carried, delete that line from the handoff's next step, where the script wrote them all.
+*The backup keeps the content, but a part nobody carries is a ruling no session reads, and the handoff tells a session
+that opens before the end what is left.*
 
 The checks are Airone Giallo's installed commands, never copies in the project: `uv tool install ./graph` and
 `uv tool install ./tools`, from the clone or from the plugin's copy of it, give `specgraph`, `check-status`,
@@ -247,19 +236,25 @@ The checks are Airone Giallo's installed commands, never copies in the project: 
 arguments, and `pip install` works inside a project's own venv. Ask the owner to install them. *A copied script
 is a second copy that the next version does not reach.* The two document checks read the tracked tree, so first
 stage what the script wrote, `git add` in each repository it wrote into; staging is undone by `git reset`. Run each
-check and read its output; the script's report is a claim, these measure the files.
+check and read its output; the script's report is a claim, these measure the files. In the two-repository form the
+folder is still at its own path while they run: a public path written `<name>/…` below is in the folder, which is the
+session's own, and a workspace command runs from `<folder>-nido` (`cd <folder>-nido && …`, or the check's `--root`). The
+one check that needs the folder inside the workspace, the links across both repositories, runs with the move (below).
 
-1. With the graph: `specgraph lint` reports 0 errors (`--graph <name>/graph.yml` when the graph is public in the
-   two-repository form).
+1. With the graph: `specgraph lint` reports 0 errors; in the two-repository form, with the graph public, it runs in the
+   folder, where `graph.yml` is.
 2. With the status file: `check-status ai-docs/status.md ai-docs/closed.md`, adding `--graph` and the graph's path
    with the graph, reports 0 errors and prints the first free ID of each family.
-3. `check-archive` reports 0 errors, and in the two-repository form `check-archive --archive <name>/archive` too,
-   the public repository's own archive named from the workspace root.
-4. `check-links --cut <cut>` reports 0 errors; in the two-repository form `check-links --public <name> --cut <cut>`,
-   from the workspace root, so that it walks the public folder and holds both sides to the cut.
-5. `check-frontmatter --all` reports 0 errors; from the workspace root it reads the public folder too.
-6. `git check-ignore local-machine.md` prints the file's name; in the two-repository form `git status` at the root
-   lists only the files the allowlist names and the public folder.
+3. `check-archive` reports 0 errors; in the two-repository form `check-archive` in the folder for the public
+   repository's own archive, and `check-archive --archive <folder>-nido/archive` for the workspace's, which holds the
+   backup.
+4. `check-links --cut <cut>` reports 0 errors; in the two-repository form `check-links` in the folder, which holds the
+   public repository on its own, and after the move `check-links --root <folder>-nido --public <name> --cut <cut>`,
+   which walks both and holds each side to the cut.
+5. `check-frontmatter --all` reports 0 errors; in the two-repository form in each repository, `--root <folder>-nido` for
+   the workspace.
+6. `git check-ignore local-machine.md` prints the file's name (`git -C <folder>-nido` in the two-repository form, whose
+   `git status` after the move's commit is clean).
 7. With the handoff, replace the **Checks** line of its state with what steps 1 to 6 reported, each result beside its
    command. *The script writes the state before any check runs, so it says they have not run; only the agent that ran
    them can record what they measured.*
@@ -275,14 +270,32 @@ named, where a document's content was placed, a wording carried over or changed,
 with its why where it is not obvious, and each a choice until the owner confirms it. *The owner confirmed the answers,
 not what the agent made of them, and a choice nobody lists is a decision nobody took.*
 
-Then propose a local commit of what was installed, by the project's own commit rules: in the two-repository form one
-in the public repository first, then one in the private workspace with the updated gitlink, *so the gitlink names a
-commit that exists.* The public commit removes the old instruction file; its earlier versions stay in that repository's
-history, which the owner should know before anything is pushed. Anything outward follows the answer to C2.
+Then propose a local commit of what was installed, by the project's own commit rules: in the two-repository form one in
+the public repository first, in the folder, and the workspace's after the move, with the updated gitlink, *so the
+gitlink names a commit that exists.* The public commit removes the old instruction file; its earlier versions stay in
+that repository's history, which the owner should know before anything is pushed. Anything outward follows the answer to
+C2.
 
-In the two-repository form, close by giving the owner the new paths: the folder at `<folder>-nido/<folder>`, the
-workspace at `<folder>-nido`, where sessions now open. *The editor, scripts and Claude Code's per-path memory still
-point at the old path, where nothing is left.*
+**In the two-repository form the move comes last**, with the owner's yes, once the checks, the choices and the public
+commit are done. Before the yes, say plainly that the folder's path changes from `<folder>` to `<folder>-nido/<folder>`,
+that the editor, scripts and Claude Code's per-path memory do not follow, and that moving the folder back undoes it.
+Then, with absolute paths only (`<dir>` the folder's parent), since the session's own folder is the one that moves:
+
+```sh
+mv <dir>/<folder> <dir>/<folder>-nido/<folder>
+git -C <dir>/<folder>-nido submodule add <its remote URL, or ./<folder> without one> <folder>
+check-links --root <dir>/<folder>-nido --public <folder> --cut <cut>
+git -C <dir>/<folder>-nido add -A
+git -C <dir>/<folder>-nido commit -m "Install Airone Giallo; add <folder> as a submodule"
+git -C <dir>/<folder>-nido status --short
+```
+
+`git submodule add` on a path that already holds a repository adopts it where it is ("Adding existing repo"); never
+`git submodule absorbgitdirs`, which moves the folder's `.git` into the workspace. *With its `.git` inside, the folder
+is still a repository of its own, so moving it back undoes the move.* A link check that reports errors stops there,
+before the commit, and the errors go to the owner. Nothing after these commands needs the session: close by giving the
+owner the new path, `<folder>-nido/<folder>`, and telling them to open the next session at `<folder>-nido`. *The editor,
+scripts and Claude Code's per-path memory still point at the old path, where nothing is left.*
 
 ## 5. What the script does not do
 

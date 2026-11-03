@@ -822,35 +822,79 @@ def test_a_backup_is_never_written_over(tmp_path, capsys):
 
 
 @needs_git
-def test_the_dry_run_before_the_move_shows_it_and_reads_the_owners_folder(tmp_path, capsys):
-    # The owner's folder, a repository with an ignored file, before it moves into the workspace.
+def test_the_two_repository_setup_runs_where_the_folder_is_and_the_move_comes_last(tmp_path, capsys):
+    """The ruled order, as one session started in the owner's folder would run it: the dry run, the workspace, the real
+    run and the public commit while the folder is where it was; then only commands with absolute paths: the move, the
+    registration in place, the workspace's commit."""
+    who = ("-c", "user.email=agent@example.com", "-c", "user.name=Agent")
     source = project(tmp_path, "notes")
     git("init", "-q", cwd=source)
     (source / ".gitignore").write_text("node_modules/\n")
     (source / "CLAUDE.md").write_text(OLD_FILE)
-    (source / "docs").mkdir()
-    (source / "docs" / "spec.md").write_text("the specification\n")
+    (source / "app.py").write_text("x = 1\n")
+    assert git("add", "-A", cwd=source).returncode == 0
+    assert git(*who, "commit", "-qm", "the project", cwd=source).returncode == 0
     (source / "node_modules").mkdir()
     (source / "node_modules" / "x").write_text("a dependency\n")
     before = tree(source)
     nido = tmp_path / "notes-nido"
-    answers = dict(MINIMAL, cut="plan", status=True, families=FAMILIES, move_from=str(source))
+    answers = dict(MINIMAL, cut="plan", status=True, families=FAMILIES, handoff=True, move_from=str(source),
+                   carry=['"Commands" → ai-docs/guides/', '"Style" → AGENTS.md'])
     rc, out = install(nido, answers, "--dry-run", capsys=capsys)
-    assert rc == 0, out
-    assert tree(source) == before and not nido.exists()
+    assert rc == 0 and tree(source) == before and not nido.exists(), out
     lines = out.splitlines()
     assert lines[0] == "DRY RUN: nothing has been written yet."
-    assert re.match(rf"MOVE +{re.escape(str(source))} → {re.escape(str(nido / 'notes'))} +your whole folder", lines[2])
+    assert re.match(rf"MOVE +{re.escape(str(source))} → {re.escape(str(nido / 'notes'))} +your whole folder .*"
+                    r"the session moves it last, after the real run and the checks$", lines[2]), lines[2]
     assert re.match(rf"CREATE +{re.escape(str(nido))} +the new private workspace", lines[3])
-    # The public folder keeps the folder's name, and what it already holds is read from where it is now.
-    assert f"Your repository: {nido / 'notes'} (public)" in out and f"The workspace: {nido} (private, new)" in out
-    have = [r[:2] for r in rows(section(out, "Your repository:"))]
-    assert ("BACKUP", "CLAUDE.md") in have and ("REMOVE", "CLAUDE.md") in have and ("KEEP", "docs/") in have, have
-    # The real run waits for the move, and says how to make it.
-    nido.mkdir()
+    # The public side is written where the folder is now, and the header says where it goes last.
+    assert f"Your repository: {source} (public; moved last to {nido / 'notes'})" in out
+    # The session creates the workspace; the real run writes the workspace's files there and the public ones into the
+    # folder where it still is.
+    assert git("init", "-q", str(nido), cwd=tmp_path).returncode == 0
     rc, out = install(nido, answers, capsys=capsys)
-    assert rc == 1 and "REFUSED" in out and "mv <the folder> notes" in out, out
-    assert tree(source) == before
+    assert rc == 0, out
+    assert not (nido / "notes").exists() and (source / "docs" / "invariants.md").is_file()
+    assert not (source / "CLAUDE.md").exists() and (source / "node_modules" / "x").is_file()
+    assert unstamped(nido / "archive" / "CLAUDE-before-setup.md") == OLD_FILE.encode()
+    assert "!/notes" in (nido / ".gitignore").read_text().splitlines()
+    # A session that opens before the carry-over is done finds it as its first step.
+    state = flat((nido / "ai-docs" / "handoff" / "current.md").read_text())
+    assert ("Finish carrying over the old instruction file from the backup of the old CLAUDE.md in the archive, each "
+            'part to the place confirmed at setup, and delete each line here once its part is carried: "Commands" → '
+            'ai-docs/guides/; "Style" → AGENTS.md.') in state, state
+    # The public commit, in the folder; then the move and what follows it, with absolute paths only.
+    assert git("add", "-A", cwd=source).returncode == 0
+    assert git(*who, "commit", "-qm", "Install Airone Giallo", cwd=source).returncode == 0
+    head = git("rev-parse", "HEAD", cwd=source).stdout.strip()
+    shutil.move(str(source), str(nido / "notes"))
+    added = git("-C", str(nido), "submodule", "add", "./notes", "notes", cwd=tmp_path)
+    assert added.returncode == 0 and "Adding existing repo at 'notes'" in added.stdout + added.stderr, added
+    assert git("-C", str(nido), "add", "-A", cwd=tmp_path).returncode == 0
+    assert git(*who, "-C", str(nido), "commit", "-qm", "Install Airone Giallo; add notes", cwd=tmp_path).returncode == 0
+    # Both repositories clean, the gitlink at the public commit, the ignored file kept, every check clean.
+    assert git("-C", str(nido), "status", "--short", cwd=tmp_path).stdout == ""
+    assert git("-C", str(nido / "notes"), "status", "--short", cwd=tmp_path).stdout == ""
+    assert git("-C", str(nido), "ls-tree", "HEAD", "notes", cwd=tmp_path).stdout.split()[2] == head
+    assert (nido / "notes" / "node_modules" / "x").read_text() == "a dependency\n"
+    tools = sc.REPO / "tools" / "src"
+    for script, args in (("check_links.py", ["--public", "notes", "--cut", "plan"]), ("check_archive.py", []),
+                         ("check_archive.py", ["--archive", "notes/archive"]), ("check_frontmatter.py", ["--all"]),
+                         ("check_status.py", ["ai-docs/status.md", "ai-docs/closed.md"])):
+        proc = subprocess.run([sys.executable, str(tools / script), *args], cwd=nido, capture_output=True, text=True)
+        assert proc.returncode == 0 and "0 error(s)" in proc.stdout, (script, args, proc.stdout + proc.stderr)
+        assert "warning:" not in proc.stdout, (script, proc.stdout)
+
+
+def test_a_second_run_stops_naming_the_taken_backup_and_what_to_do(tmp_path, capsys):
+    folder = project(tmp_path)
+    (folder / "CLAUDE.md").write_text(OLD_FILE)
+    assert install(folder, MINIMAL, capsys=capsys)[0] == 0
+    before = tree(folder)
+    rc, out = install(folder, MINIMAL, "--force", capsys=capsys)
+    assert rc == 1 and "archive/CLAUDE-before-setup.md, the backup CLAUDE.md would get" in out, out
+    assert "A second run of the setup on the same project is not handled" in out and "git stash -u" in out
+    assert tree(folder) == before
 
 
 
@@ -1181,10 +1225,20 @@ def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_
                   "dropped: what no longer holds, with why", "elsewhere: a place the agent names, with why"):
         assert place in step, place
     assert "Never place as an invariant what the file does not state as one" in step
-    # The two-repository form moves the owner's folder whole, registered in place, and says the new path at the end.
-    assert "mv <folder> <folder>-nido/<folder>" in text and "never `git submodule absorbgitdirs`" in flat_text
+    # The two-repository form moves the owner's folder whole, registered in place, as the setup's last act: one
+    # session, started in the folder, and nothing after the move but commands with absolute paths.
+    assert "moves, whole, into a new workspace, and the move is the setup's last act" in flat_text
+    assert "A Claude Code session is bound to the folder it started in" in flat_text
+    last = text[text.index("**In the two-repository form the move comes last**"):text.index("## 5.")]
+    commands = re.search(r"```sh\n(.*?)```", last, re.S).group(1).splitlines()
+    assert commands[0] == "mv <dir>/<folder> <dir>/<folder>-nido/<folder>", commands
+    assert all(c.startswith(("mv <dir>/", "git -C <dir>/", "check-links --root <dir>/")) for c in commands), commands
+    assert "never `git submodule absorbgitdirs`" in flat_text
     assert "stale copy" not in text and "second clone" not in text
-    assert "close by giving the owner the new paths" in flat_text
+    assert "new session opened at" not in text and "ANSWERS.json and the prompt" not in text
+    assert "telling them to open the next session at `<folder>-nido`" in flat(last)
+    # The carry-over is pending work in the handoff until each part is carried.
+    assert "delete that line from the handoff's next step" in flat_text
     # The one thing the script deletes: an old instruction file whose backup read back equal to it.
     assert ("deletes nothing but an old instruction file of the owner's repository once its backup has been read back "
             "equal to it") in flat_text

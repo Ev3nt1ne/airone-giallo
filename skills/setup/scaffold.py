@@ -437,6 +437,9 @@ def context(a, lay, disk):
         "invariants_file": invariants_file,
         # A project's own invariants file is kept as it is, and then states what it states.
         "has_invariants": bool(a["invariants"]) or disk(invariants_file).is_file(),
+        # The old instruction files the owner's repository holds now, each backed up by the run.
+        "old_files": [n for n in OLD_INSTRUCTIONS
+                      if disk((f"{lay.public_dir}/" if lay.form == "two" else "") + n).is_file()],
         "claude_code_version": a["claude_code_version"] or SLOT.format("version"),
         "model": a["model"] or SLOT.format("model"),
         "four_hands": a["mode"] == "four-hands", "conductor": a["mode"] == "conductor",
@@ -552,6 +555,14 @@ def first_state(block, a, lay, ctx, now, log_name, slotted):
         step = "Agree the first piece of work with the owner" + (
             f", and record it in `{ctx['status_file']}`." if a["status"] else ".")
         prompt = "Propose the first piece of work, from what the repository holds."
+    if a["carry"]:
+        # The archive is named as a category, never by a file in it, as a live document must; and the old file by its
+        # name as text, since in backticks its name is the agent layer's own file, the rung above the handoff.
+        old = join(ctx["old_files"]) or "it"
+        step = (f"Finish carrying over the old instruction file from the backup of the old {old} in the archive, "
+                f"each part to the place confirmed at setup, and delete each line here once its part is carried: "
+                f"{'; '.join(a['carry'])}.")
+        prompt = "Finish carrying over the old instruction file, as the handoff lists it."
     bodies = {
         "1. What is true now": items(
             f"- **The layout**: Airone Giallo's tree, written by its setup on {date}; no document of the project's "
@@ -618,14 +629,14 @@ def specgraph_command():
 
 
 def graph_action(profile, folder):
-    def run(target):
+    def run(disk):
         command = specgraph_command()
         if not command:
             install = shlex.quote(str(REPO / "graph"))
             return ("SKIPPED", f"specgraph is neither a command on PATH nor importable from {sys.executable}; "
                     f"install the command with uv tool install {install} (pipx install takes the same argument), "
                     f"then run in {folder}: specgraph init --profile {profile}")
-        where = target / folder
+        where = disk(folder)
         proc = subprocess.run([*command, "init", "--profile", profile, "--graph", "graph.yml"],
                               cwd=where, capture_output=True, text=True)
         out = (proc.stdout + proc.stderr).strip()
@@ -950,7 +961,11 @@ def print_report(rows, a, lay, target, dry_run, out):
     dry run groups the new files by folder, the real run lists every file."""
     public = lay.form == "two"
     prefix = lay.public_dir + "/"
-    sections = [("public", f"Your repository: {shown(target / lay.public_dir)} (public)"),
+    moved = shown(target / lay.public_dir)
+    source = Path(a["move_from"]).expanduser().resolve() if a["move_from"] else None
+    here = f"{shown(source)} (public; moved last to {moved})" if source and not (target / lay.public_dir).exists() \
+        else f"{moved} (public)"
+    sections = [("public", f"Your repository: {here}"),
                 ("root", f"The workspace: {shown(target)} (private{', new' if not target.exists() else ''})")] \
         if public else [("root", f"Your repository: {shown(target)}")]
     for key, title in sections:
@@ -990,8 +1005,7 @@ def run(a, target, dry_run, force, out=None):
     # The real run needs the public folder in place; the dry run may come before the move, which it then shows.
     problem = None
     if lay.form == "two":
-        problem = move_problem(source) if dry_run and source is not None else public_folder_problem(target,
-                                                                                                    lay.public_dir)
+        problem = move_problem(source) if source is not None else public_folder_problem(target, lay.public_dir)
     problem = problem or invariants_problem(a, ctx, disk)
     if problem and not dry_run:
         print(f"REFUSED  {problem}. Nothing was written.", file=out)
@@ -1010,6 +1024,9 @@ def run(a, target, dry_run, force, out=None):
         print("REFUSED  a backup of that name exists, and a backup is never replaced; nothing was written:", file=out)
         for s in taken:
             print(f"  {s.backup}, the backup {s.path} would get", file=out)
+        print("A second run of the setup on the same project is not handled. To run it again, undo the first with the "
+              "owner (git stash -u or a checkout in each repository it wrote into), or change this install by hand.",
+              file=out)
         return 1
 
     # The real run reports whether each step happened (DONE, KEPT, SKIPPED, FAILED); the dry run, which does nothing,
@@ -1085,7 +1102,7 @@ def run(a, target, dry_run, force, out=None):
             add("REPLACE" if had else "CREATE", s.path, s.what, had)
             continue
         if s.action:
-            status, detail = s.action(target)
+            status, detail = s.action(disk)
         else:
             try:
                 text = s.make()
@@ -1106,7 +1123,8 @@ def run(a, target, dry_run, force, out=None):
             print("", file=out)
         if source is not None:
             print(f"{'MOVE':<8} {shown(source)} → {shown(target / lay.public_dir)}   your whole folder becomes the "
-                  "public side, ignored files included; the session moves it before the real run", file=out)
+                  "public side, ignored files included; the session moves it last, after the real run and the "
+                  "checks", file=out)
         if not target.exists():
             print(f"{'CREATE':<8} {shown(target)}   the new private workspace, a new repository; the session creates "
                   "it before the real run", file=out)

@@ -961,10 +961,10 @@ def print_report(rows, a, lay, target, dry_run, out):
     dry run groups the new files by folder, the real run lists every file."""
     public = lay.form == "two"
     prefix = lay.public_dir + "/"
-    moved = shown(target / lay.public_dir)
+    # The owner's repository is named where it is now; the move has its own line at the top.
     source = Path(a["move_from"]).expanduser().resolve() if a["move_from"] else None
-    here = f"{shown(source)} (public; moved last to {moved})" if source and not (target / lay.public_dir).exists() \
-        else f"{moved} (public)"
+    here = shown(source if source and not (target / lay.public_dir).exists() else target / lay.public_dir)
+    here = f"{here} (public)"
     sections = [("public", f"Your repository: {here}"),
                 ("root", f"The workspace: {shown(target)} (private{', new' if not target.exists() else ''})")] \
         if public else [("root", f"Your repository: {shown(target)}")]
@@ -984,10 +984,11 @@ def print_report(rows, a, lay, target, dry_run, out):
             width = max(len(path) for _, path, _, _ in part) + 1
             for st, path, detail, _ in part:
                 print(f"    {st:<8} {path:<{width}} {detail}".rstrip(), file=out)
-        if a["carry"] and key == sections[0][0]:
-            print("  Carried over after the run, as you confirmed", file=out)
-            for line in a["carry"]:
-                print(f"    {line}", file=out)
+    # What the session carries over after the run is no file of either repository: a section of its own, last.
+    if a["carry"]:
+        print("\nCarried over after the run, as you confirmed", file=out)
+        for line in a["carry"]:
+            print(f"    {line}", file=out)
 
 
 def run(a, target, dry_run, force, out=None):
@@ -1121,13 +1122,14 @@ def run(a, target, dry_run, force, out=None):
         print("DRY RUN: nothing has been written yet.", file=out)
         if source is not None or not target.exists():
             print("", file=out)
+        # Each line short, its explanation indented below it, so the paths read at a glance.
         if source is not None:
-            print(f"{'MOVE':<8} {shown(source)} → {shown(target / lay.public_dir)}   your whole folder becomes the "
-                  "public side, ignored files included; the session moves it last, after the real run and the "
-                  "checks", file=out)
+            print(f"{'MOVE':<8} {shown(source)} → {shown(target / lay.public_dir)}   (the last step)", file=out)
+            print(f"{'':<9}your whole folder becomes the public side, ignored files included; the session moves it "
+                  "after the real run and the checks", file=out)
         if not target.exists():
-            print(f"{'CREATE':<8} {shown(target)}   the new private workspace, a new repository; the session creates "
-                  "it before the real run", file=out)
+            print(f"{'CREATE':<8} {shown(target)}   (before the real run)", file=out)
+            print(f"{'':<9}the new private workspace, a new repository; the session creates it", file=out)
     else:
         print(f"{'FORM':<8} {describe(a, lay)}", file=out)
     print_report(rows, a, lay, target, dry_run, out)

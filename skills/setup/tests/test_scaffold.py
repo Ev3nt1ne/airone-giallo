@@ -754,7 +754,9 @@ def test_an_old_instruction_file_is_backed_up_then_replaced_or_removed_in_one_re
         ("BACKUP", ".claude/CLAUDE.md"), ("REMOVE", ".claude/CLAUDE.md"), ("BACKUP", "CLAUDE.md"),
         ("REPLACE", "CLAUDE.md")], have
     assert "unchanged, to archive/CLAUDE-before-setup.md" in out
-    assert "  Carried over after the run, as you confirmed\n    \"Commands\" → ai-docs/guides/" in out
+    # The carry-over is a section of its own, after the repository's.
+    assert "\nCarried over after the run, as you confirmed\n    \"Commands\" → ai-docs/guides/" in out
+    assert out.index("Your repository:") < out.index("Carried over after the run")
     # The real run needs no --force: nothing is lost, since the backup is checked before the file is touched.
     rc, out = install(folder, answers, capsys=capsys)
     assert rc == 0, out
@@ -844,11 +846,16 @@ def test_the_two_repository_setup_runs_where_the_folder_is_and_the_move_comes_la
     assert rc == 0 and tree(source) == before and not nido.exists(), out
     lines = out.splitlines()
     assert lines[0] == "DRY RUN: nothing has been written yet."
-    assert re.match(rf"MOVE +{re.escape(str(source))} → {re.escape(str(nido / 'notes'))} +your whole folder .*"
-                    r"the session moves it last, after the real run and the checks$", lines[2]), lines[2]
-    assert re.match(rf"CREATE +{re.escape(str(nido))} +the new private workspace", lines[3])
-    # The public side is written where the folder is now, and the header says where it goes last.
-    assert f"Your repository: {source} (public; moved last to {nido / 'notes'})" in out
+    # The move and the workspace each take a short line, their explanation indented below it.
+    assert lines[2] == f"MOVE     {source} → {nido / 'notes'}   (the last step)", lines[2]
+    assert lines[3] == (" " * 9 + "your whole folder becomes the public side, ignored files included; the session "
+                        "moves it after the real run and the checks"), lines[3]
+    assert lines[4] == f"CREATE   {nido}   (before the real run)", lines[4]
+    assert lines[5].startswith(" " * 9 + "the new private workspace, a new repository"), lines[5]
+    # The public side is written where the folder is now; its header names that place and repeats no move.
+    assert f"\nYour repository: {source} (public)\n" in out and "moved last" not in out
+    # The carry-over comes last, after both repositories.
+    assert out.index("The workspace:") < out.index("Carried over after the run, as you confirmed")
     # The session creates the workspace; the real run writes the workspace's files there and the public ones into the
     # folder where it still is.
     assert git("init", "-q", str(nido), cwd=tmp_path).returncode == 0

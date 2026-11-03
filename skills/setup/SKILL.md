@@ -105,16 +105,16 @@ layer private and adds a contributors' `AGENTS.md` that cites only public rungs.
 |---|---|---|---|
 | C1 | How the owner works: **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
 | C2 | What the agent sends out on your behalf (pushes, tags, releases, issues, pull requests, comments, posts): **gated**, prepared as a branch or a draft for the owner to send, or **free**, done and reported, with an attribution trailer if they want one (`outward`, `attribution`) | `gated` | the outward rule |
-| C3 | Actions the agent always stops and asks about before doing them, besides what `session` §2 already leaves to the owner (scope, priorities, cost, anything irreversible or public, a change to a recorded ruling) (`reserved`). Say that the answer becomes one sentence in AGENTS.md. Propose candidates from what the repository shows can do damage, one line each with why, and none that §2 or C2 already covers; the owner keeps some by number, adds their own, or answers none | the candidates the repository suggests; none is an answer too, and more are added as they surface | one sentence in the first rule on deciding |
+| C3 | Actions the agent always stops and asks about before doing them (`reserved`). Say that the answer becomes one sentence in AGENTS.md. Propose candidates: actions found in the repository that can do damage, one line each with why. Do not propose an action that `session` §2 already leaves to the owner in every project (scope, priorities, cost, anything irreversible or public, a change to a recorded ruling); when a candidate is already covered by B1 or C2, say which, as the text below does. The owner keeps some by number, adds their own, or answers none | the candidates the repository suggests; none is an answer too, and more are added as they surface | one sentence in the first rule on deciding |
 | C4 | The opinionated layer of Airone Giallo's author: comments state invariants (Four-Hands only), every fix has a test, irreversible acts offered as such (`opinionated`) | off; offer it, never assume it | the rules appended under their own heading: three for Four-Hands, two for Conductor |
 
-C3 said to the owner reads, for example: "Actions I always ask you about first. You already decide scope, priorities,
-cost and anything irreversible or public; here you can name more actions I must never take on my own, and your list
-becomes one line in AGENTS.md. From the repository, these look worth naming: 1. Adding a new dependency, because each
-one is code the project then maintains. 2. Writing to the live database, because it touches real data. 3. Changing how
-logins and passwords are handled, because a mistake there is easy to miss. Keep any by number, add your own, or answer
-none." *An owner who is not told what reserving does, and what is reserved already, cannot tell a new candidate from a
-default.*
+C3 is said to the owner as written here, the bracket filled at each run with the candidates found in the repository:
+"Actions I always ask you about first. You already decided which parts of the repository are public (B1), and what I may
+send out under your name (C2). Here you can name actions in this repository that I must never take on my own; your list
+becomes one line in AGENTS.md. From the repository, these look worth naming: [the candidates, one line each with why;
+when one is already covered by an earlier answer, say which]. Keep any by number, add your own, or answer none." *An
+owner who is not told what reserving does, and what earlier answers already cover, cannot tell a new candidate from one
+already decided.*
 
 ### The answers no question asks
 

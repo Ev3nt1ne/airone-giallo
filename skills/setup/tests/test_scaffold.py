@@ -958,6 +958,19 @@ def test_the_skills_questions_are_grouped_and_every_reference_names_a_question_t
                                  "requests, comments, posts)")
     assert "(`outward`, `attribution`)" in rows["C2"] and "| `gated` |" in rows["C2"]
     assert "becomes one sentence in AGENTS.md" in rows["C3"] and "keeps some by number" in rows["C3"]
+    # C3's rule for the agent: no candidate the session skill leaves to the owner everywhere; one an earlier answer
+    # covers is named with that answer.
+    assert ("Do not propose an action that `session` §2 already leaves to the owner in every project (scope, "
+            "priorities, cost, anything irreversible or public, a change to a recorded ruling)") in rows["C3"]
+    assert "already covered by B1 or C2, say which" in rows["C3"] and "none that §2 or C2" not in rows["C3"]
+    # What the owner reads for C3, as ruled; the candidates are found in each repository, so no sample is in the skill.
+    assert ('"Actions I always ask you about first. You already decided which parts of the repository are public (B1), '
+            "and what I may send out under your name (C2). Here you can name actions in this repository that I must "
+            "never take on my own; your list becomes one line in AGENTS.md. From the repository, these look worth "
+            "naming: [the candidates, one line each with why; when one is already covered by an earlier answer, say "
+            'which]. Keep any by number, add your own, or answer none."') in flat(text)
+    for sample in ("new dependency", "live database", "passwords"):
+        assert sample not in text, sample
     # The setup's close lists its own choices whatever the mode.
     assert "Then, in either mode, list for the owner the choices the setup made that they did not" in flat(text)
     # Every word the script starts a report line with is explained where the skill shows the runs.

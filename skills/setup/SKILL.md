@@ -39,9 +39,10 @@ is copied into the project: what stays there is what the script writes. Each rul
   without `--force`; with the owner, decide what of it moves into the new file or into RATIONALE.md first. *A
   project's instruction file holds rulings that exist nowhere else.* Where it states invariants (rules the code depends
   on, with why they hold or what breaks without them), carry each over as written into the answer `invariants`, one
-  paragraph per entry, and show them to the owner with the other findings; the script writes them into the Invariants
-  section of the new AGENTS.md. *An invariant already written down is the project's own finding, and the old file is
-  replaced once the run is forced.*
+  paragraph per entry, and show them to the owner with the other findings; the script writes them into
+  `docs/invariants.md`, the file AGENTS.md loads into every session, which in the two-repository form is in the public
+  folder: say so, since a paragraph written for a private file may name what is private. *An invariant already written
+  down is the project's own finding, and the old file is replaced once the run is forced.*
 
 ## 2. The questions, in order
 
@@ -95,7 +96,7 @@ written from the workspace root and in backticks, as the defaults are, `` `<name
 unneeded) and `invariants` (the paragraphs carried over from an existing instruction file); `spec`, `plan`, `glossary`
 and `findings` default to the tree's own paths, and `public_dir` to the name in lower case. Anything not answered is
 written as a visible `[to fill: …]` slot, never guessed. The invariants are never asked and leave no slot: without
-any, the Invariants section says none is recorded yet, and its rule has the agent write one when the work shows it.
+any, `docs/invariants.md` says none is recorded yet, and AGENTS.md has the agent propose one when the work shows it.
 *An invariant is found by the work that depends on it; one demanded on the first day is a guess, written into the
 file every session reads.*
 
@@ -134,7 +135,7 @@ What it writes, the dry run lists file by file: at the workspace root the agent 
 the top of each repository `.ignore` with `archive/`, `archive/README.md` and the archive's log `archive/LOG.md`; on
 each rung's side `ai-docs/` with the status file, the handoff (a first state written from the answers, a first log
 with no entry yet) and a README for each of its places, a README in `docs/` and in `plan/` when the folder is new,
-`docs/glossary.md` when absent and no other glossary is answered, and `graph.yml`;
+`docs/glossary.md` when absent and no other glossary is answered, `docs/invariants.md` when absent, and `graph.yml`;
 `human-docs/README.md` and the `sources/README.md` manifest on their chosen sides.
 
 `--help` lists every answer as a flag; a flag overrides the file.
@@ -150,9 +151,12 @@ with no entry yet) and a README for each of its places, a README in `docs/` and 
 - **An existing file stops the whole run before anything is written.** `--force` replaces the instruction files
   (AGENTS.md, CLAUDE.md, the machine file, the contributors' files, the workspace's allowlist `.gitignore`); a record
   (RATIONALE.md, the status file, the closed file, the handoff, the archive's log, the graph file, the folders'
-  READMEs) is never replaced, even then, and is reported KEPT. An existing `docs/` or `plan/` gets no index and only
-  the files it lacks (the glossary), which changes none of its own; `.ignore` and a one-repository `.gitignore` only
-  get the lines they lack. *An empty status file written over a full one deletes the project's history.*
+  READMEs, the invariants file) is never replaced, even then, and is reported KEPT. An existing `docs/` or `plan/`
+  gets no index and only the files it lacks (the glossary, the invariants file), which changes none of its own;
+  `.ignore` and a one-repository `.gitignore` only get the lines they lack. *An empty status file written over a full
+  one deletes the project's history.* A project's own `docs/invariants.md` is loaded as it is, so invariants carried
+  over from its old instruction file stop the run: add them to that file with the owner, and leave `invariants`
+  empty. *The script never writes into a file of the project's, and paragraphs it dropped would be lost unseen.*
 
 The templates in `templates/` use the syntax the script implements: `{{name}}` is a value, `{{#name}}…{{/name}}`
 keeps its body when the answer is true or non-empty, `{{^name}}…{{/name}}` when it is false or empty; a tag alone on a
@@ -188,7 +192,8 @@ check and read its output; the script's report is a claim, these measure the fil
    `agent_layer: both`, the contributors' `<name>/AGENTS.md`, lists the slots left; give them to the owner as one
    list. *Name the files: an agent's shell may wrap `grep` in a search that skips what git ignores, and
    `local-machine.md` is ignored.*
-9. Read the written AGENTS.md whole with the owner. *They will be bound by it; the first reading is theirs.*
+9. Read the written AGENTS.md and `docs/invariants.md` whole with the owner. *They will be bound by them; the first
+   reading is theirs.*
 
 Then propose a local commit of what was installed, by the project's own commit rules: in the two-repository form one
 in the public repository first, then one in the private workspace with the updated gitlink, *so the gitlink names a

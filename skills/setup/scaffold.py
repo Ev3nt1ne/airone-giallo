@@ -20,8 +20,8 @@ What it writes: at the workspace root the agent layer (AGENTS.md, CLAUDE.md, RAT
 git-ignored) and the `.gitignore` (an allowlist in the two-repository form, a few appended lines otherwise); at the
 top of each repository `.ignore` with the line `archive/`, `archive/README.md` and the archive's log `archive/LOG.md`;
 on each rung's side `ai-docs/` with its five places (the status file and the handoff when chosen), a README in `plan/`
-and in `docs/` only when the folder is new, `docs/glossary.md` when absent, and `graph.yml` through `specgraph
-init`; outside the ladder `human-docs/README.md` and the `sources/README.md` manifest, each on its chosen
+and in `docs/` only when the folder is new, `docs/glossary.md` and `docs/invariants.md` when absent, and `graph.yml`
+through `specgraph init`; outside the ladder `human-docs/README.md` and the `sources/README.md` manifest, each on its chosen
 side; with `agent_layer: both`, a contributors' AGENTS.md and CLAUDE.md in the public folder. It copies no script into
 the project: the checks are Airone Giallo's installed commands.
 
@@ -361,6 +361,7 @@ def context(a, lay, target):
     graph_file = lay.at("graph", "graph.yml") if a["graph"] != "none" else ""
     docs, plan_dir = lay.at("docs", "docs"), lay.at("plan", "plan")
     glossary_file = f"{docs}/glossary.md"
+    invariants_file = f"{docs}/invariants.md"
     # Without an answer the glossary is the tree's own, written when absent; an answered one lives elsewhere.
     has_glossary = not a["glossary"] or (target / glossary_file).is_file()
 
@@ -421,8 +422,11 @@ def context(a, lay, target):
         "name": a["name"].strip(),
         "purpose": a["purpose"].strip().rstrip("."),
         # Paragraphs carried over as written from the project's existing instruction file, never asked; without
-        # any, the section says that none is recorded yet, which is a fact and not a slot left unanswered.
+        # any, the invariants file says that none is recorded yet, which is a fact and not a slot left unanswered.
         "invariants": "\n\n".join(x.strip() for x in a["invariants"]),
+        "invariants_file": invariants_file,
+        # A project's own invariants file is kept as it is, and then states what it states.
+        "has_invariants": bool(a["invariants"]) or (target / invariants_file).is_file(),
         "claude_code_version": a["claude_code_version"] or SLOT.format("version"),
         "model": a["model"] or SLOT.format("model"),
         "four_hands": a["mode"] == "four-hands", "conductor": a["mode"] == "conductor",
@@ -550,8 +554,8 @@ def first_state(block, a, lay, ctx, now, log_name, slotted):
             f"1. **For the owner**: {open_for_owner}.", "2. **Unexplained**: none.", "3. **Deferred**: none."),
         "4. What the next session does first": f"{items(step)}\n\nPrompt to paste:\n\n    {prompt}",
         "5. What must not be touched": items(
-            "- **Invariants**: " + ("as the instruction file states them; no test is recorded yet as guarding one."
-                                    if a["invariants"] else "none recorded yet."),
+            f"- **Invariants**: as `{ctx['invariants_file']}` states them; no test is recorded yet as guarding one."
+            if ctx["has_invariants"] else f"- **Invariants**: none recorded yet in `{ctx['invariants_file']}`.",
             "- **Frozen**: each repository's archive, and anything else the instruction file names frozen.",
             "- **Runs in flight**: none."),
         "6. Where the numbers come from": "None: this state quotes no figure.",
@@ -624,6 +628,15 @@ def graph_action(profile, folder):
 def template(rel, ctx, now):
     """A template rendered, its frontmatter dates stamped."""
     return stamp_frontmatter(render(TEMPLATES.joinpath(rel).read_text(encoding="utf-8"), ctx), now)
+
+
+def body_rewrapped(text):
+    """Refill a document's body to the line length and leave its frontmatter as it is: the body may hold paragraphs
+    carried over from the project, whose line breaks were made for another width."""
+    if not text.startswith("---\n"):
+        return rewrap(text)
+    end = text.index("\n---\n", 4) + len("\n---\n")
+    return text[:end] + rewrap(text[end:])
 
 
 def allowlist(a, lay):
@@ -737,6 +750,16 @@ def plan(a, lay, ctx, now, target):
                 steps.append(Step(glossary, "", kept="the glossary exists"))
             else:
                 steps.append(Step(glossary, "the glossary", tree("docs/glossary.md"), record=True))
+        if rung == "docs":
+            invariants = ctx["invariants_file"]
+            if (target / invariants).exists():
+                steps.append(Step(invariants, "", kept="the project's own invariants file exists, loaded as it is"))
+            else:
+                # Its own name: the steps run after plan() returns, so a lambda reading a rebound `text` would
+                # write this file's text into the allowlist.
+                invariants_text = body_rewrapped(template("tree/docs/invariants.md", ctx, now))
+                steps.append(Step(invariants, "the invariants, loaded into every session through AGENTS.md",
+                                  lambda: invariants_text, record=True))
 
     for key, rel, what in (("human_docs", "human-docs", "the owner's notes, as written"),
                            ("sources", "sources", "the sources' manifest; the files are git-ignored")):
@@ -791,6 +814,16 @@ def describe(a, lay):
             f"side ends at {RUNG_NAMES[lay.cut]} (cut {lay.cut}), the agent layer {lay.agent_layer}")
 
 
+def invariants_problem(a, ctx, target):
+    """Why the carried invariants cannot be written, or None: an existing invariants file is the project's own and is
+    never replaced, so the paragraphs carried over would be lost without a word."""
+    path = ctx["invariants_file"]
+    if a["invariants"] and (target / path).exists():
+        return (f"{path} exists and is never replaced, so the invariants carried over have no file to go into; add "
+                "them to it with the owner and leave the answer 'invariants' empty")
+    return None
+
+
 def run(a, target, dry_run, force, out=None):
     out = out or sys.stdout
     now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
@@ -804,6 +837,7 @@ def run(a, target, dry_run, force, out=None):
 
     # The public folder is the owner's to add; without it the public rungs have nowhere to go.
     problem = public_folder_problem(target, lay.public_dir) if lay.form == "two" else None
+    problem = problem or invariants_problem(a, ctx, target)
     if problem and not dry_run:
         print(f"REFUSED  {problem}. Nothing was written.", file=out)
         return 1

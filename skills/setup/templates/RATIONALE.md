@@ -24,7 +24,7 @@ story.
 
 ## Airone Giallo's own choices
 
-Two choices the setup made for the project, recorded so that a session tempted to undo them finds the reason.
+Three choices the setup made for the project, recorded so that a session tempted to undo them finds the reason.
 
 ### `CLAUDE.md` is one line, `@AGENTS.md`
 
@@ -40,3 +40,13 @@ Two choices the setup made for the project, recorded so that a session tempted t
 - **Reason**: the map is needed at every opening, and the instruction file is the one file every session loads; a
   map elsewhere is one more file a cold session must know to open.
 - **Reopen if**: the map grows past what every session should load.
+
+### The invariants are in `{{invariants_file}}`, which AGENTS.md imports
+
+- **Choice**: the invariants live in a file of their own on the first rung, and AGENTS.md loads it into every session
+  with an `@` import, beside a link to it.
+- **Reason**: an invariant describes the system, so it sits with the system documents and follows their side of the
+  cut; and it protects the code only if the session about to change the code has read it, which a link alone does not
+  make sure of.
+- **Reopen if**: the agent tool stops honouring an import in AGENTS.md, or the file grows past what every session
+  should load.

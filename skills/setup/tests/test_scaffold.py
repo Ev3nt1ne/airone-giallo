@@ -217,7 +217,7 @@ def test_minimal_install_writes_only_the_core(tmp_path, capsys):
     assert written == [".gitignore", ".ignore", "AGENTS.md", "CLAUDE.md", "RATIONALE.md", "ai-docs/README.md",
                        "ai-docs/design/README.md", "ai-docs/findings/README.md", "ai-docs/guides/README.md",
                        "archive/LOG.md", "archive/README.md", "docs/README.md", "docs/glossary.md",
-                       "human-docs/README.md", "local-machine.md", "plan/README.md", "sources/README.md"]
+                       "docs/invariants.md", "human-docs/README.md", "local-machine.md", "plan/README.md", "sources/README.md"]
     text = agents(folder)
     for absent in ("status.md", "handoff/", "specgraph", "graph.yml", "Identifier", "check-status"):
         assert absent not in text, absent
@@ -460,52 +460,87 @@ def test_the_workspace_agents_file_says_sessions_open_at_the_root_and_where_airo
     assert "(`specgraph`, `check-archive`, `check-links` and `check-frontmatter`)" in one_text
 
 
-def section(text, heading):
-    """The body of a `## ` section, up to the next heading; None when the heading is not there."""
-    m = re.search(rf"^## {re.escape(heading)}\n(.*?)(?=^## |\Z)", text, re.M | re.S)
-    return m and m.group(1)
+def paragraphs_after_title(text):
+    """The paragraphs of a document's body after its `# ` title, whitespace flattened."""
+    body = text.split("\n# ", 1)[1].split("\n", 1)[1]
+    return [flat(p) for p in body.strip().split("\n\n")]
 
 
-def test_the_setup_asks_no_invariant_and_the_section_says_none_is_recorded_yet(tmp_path, capsys):
+def test_invariants_live_in_their_own_file_which_agents_md_imports(tmp_path, capsys):
     folder = project(tmp_path)
     assert install(folder, MINIMAL, capsys=capsys)[0] == 0
     text = agents(folder)
-    # The section comes right after the opening, before the map, and the opening no longer lists invariants.
-    assert re.findall(r"^## (.+)$", text, re.M)[:2] == ["Invariants", "The map"]
+    # AGENTS.md holds no invariant and no section for them; its opening no longer lists any.
+    assert re.findall(r"^## (.+)$", text, re.M) == ["The map", "The rules"]
     assert "nvariant" not in text.split("\n\n")[1]
-    body = flat(section(text, "Invariants"))
-    assert body.startswith("When the work shows that the code depends on a rule a change could break, write the rule "
-                           "here in prose: the rule, why it holds, and what breaks if a change violates it; then tell "
-                           "the owner in the same reply."), body
-    assert body.endswith("No invariant is recorded yet."), body
-    # An empty section is a fact, not a slot: the setup's grep for what is left unanswered does not list it.
-    assert "to fill" not in body and "each invariant" not in text
-    # The rule that has every edit of this file asked first names the one edit that is told instead.
-    assert "an invariant written as the Invariants section says is told rather than asked" in flat(text)
+    # The file is loaded, not merely linked: an `@` import outside a code span, the path ended by a space, which is
+    # where Claude Code ends it. The link names it for a tool that does not follow imports, and check-links checks it.
+    assert re.search(r"(?<!`)@docs/invariants\.md\s", text), text
+    assert "[`docs/invariants.md`](docs/invariants.md)" in text
+    flat_text = flat(text)
+    assert ("propose it to the owner in prose (the rule, why it holds, what breaks if a change violates it), and write "
+            "it into that file only on their yes") in flat_text
+    assert "told rather than asked" not in flat_text
+    assert "of a file that steers later sessions: this one, `CLAUDE.md`, `docs/invariants.md`, the skills" in flat_text
+    assert "| `docs/invariants.md`, loaded into every session |" in text
+    # CLAUDE.md stays one line: the import chain is CLAUDE.md, AGENTS.md, the invariants file.
+    assert (folder / "CLAUDE.md").read_text() == "@AGENTS.md\n"
+    # The file says what an entry holds and that none is recorded yet: a fact, not a slot the setup's grep would list.
+    invariants = (folder / "docs" / "invariants.md").read_text()
+    assert invariants.startswith("---\ntitle: Invariants\n") and "<YYYY" not in invariants
+    assert paragraphs_after_title(invariants)[-1] == "No invariant is recorded yet."
+    assert "to fill" not in invariants and "[to fill: each invariant" not in text
 
 
-def test_invariants_carried_over_are_written_in_the_section_as_given(tmp_path, capsys):
+def test_invariants_carried_over_are_written_into_the_file_as_given(tmp_path, capsys):
     folder = project(tmp_path)
     carried = [FULL["invariants"][0],
                "**A note's ID is never reused.** IDs come from a counter stored beside the notes and only ever "
                "incremented. A change that reuses a deleted note's ID makes an old link open the wrong note."]
     assert install(folder, dict(MINIMAL, invariants=carried), capsys=capsys)[0] == 0
-    text = agents(folder)
-    # The rule first, then each invariant as its own paragraph, in the order given and in its own words.
-    paragraphs = [flat(p) for p in section(text, "Invariants").strip().split("\n\n")]
-    assert paragraphs[0].startswith("When the work shows") and paragraphs[1:] == carried, paragraphs
-    assert "No invariant is recorded yet" not in text
-    assert "A saved note" not in text.split("\n\n")[1]
+    invariants = (folder / "docs" / "invariants.md").read_text()
+    # What the file holds first, then each invariant as its own paragraph, in the order given and in its own words.
+    assert paragraphs_after_title(invariants)[1:] == carried
+    assert "No invariant is recorded yet" not in invariants
+    assert "A saved note" not in agents(folder)
+    for line in invariants.splitlines():
+        assert len(line) <= sc.WIDTH or line.startswith("description:"), line
 
 
 @needs_git
-def test_the_contributors_file_carries_no_invariant(tmp_path, capsys):
-    # The contributors' file is public and written once from the public rungs; the section lives in the private file,
-    # where the agent keeps adding to it.
+def test_in_two_repositories_the_invariants_are_public_and_imported_from_the_workspace_root(tmp_path, capsys):
+    # The file is on rung 1, so it follows docs/ into the public folder; the import is relative to AGENTS.md, at the
+    # workspace root, where sessions open. The contributors' file names none: it has another purpose.
     folder = workspace(tmp_path)
     assert install(folder, dict(FULL, graph="none"), capsys=capsys)[0] == 0
+    assert re.search(r"(?<!`)@inkwell/docs/invariants\.md\s", agents(folder))
+    assert FULL["invariants"][0] in flat((folder / "inkwell" / "docs" / "invariants.md").read_text())
+    assert not (folder / "docs" / "invariants.md").exists()
     assert "nvariant" not in (folder / "inkwell" / "AGENTS.md").read_text()
-    assert FULL["invariants"][0] in flat(section(agents(folder), "Invariants"))
+
+
+def test_a_projects_own_invariants_file_is_kept_and_carried_ones_have_nowhere_to_go(tmp_path, capsys):
+    folder = project(tmp_path)
+    (folder / "docs").mkdir()
+    (folder / "docs" / "invariants.md").write_text("the project's own invariants\n")
+    rc, out = install(folder, dict(MINIMAL, handoff=True), capsys=capsys)
+    assert rc == 0, out
+    assert (folder / "docs" / "invariants.md").read_text() == "the project's own invariants\n"
+    assert re.search(r"KEPT +docs/invariants.md +the project's own invariants file exists", out), out
+    # The first state does not say "none" over a file it did not write.
+    state = flat((folder / "ai-docs" / "handoff" / "current.md").read_text())
+    assert "**Invariants**: as `docs/invariants.md` states them" in state
+    # Paragraphs carried over would be lost in silence: the run stops before writing, and so does the dry run's verdict.
+    again = project(tmp_path, "again")
+    (again / "docs").mkdir()
+    (again / "docs" / "invariants.md").write_text("the project's own invariants\n")
+    before = tree(again)
+    answers = dict(MINIMAL, invariants=[FULL["invariants"][0]])
+    rc, out = install(again, answers, "--dry-run", capsys=capsys)
+    assert rc == 1 and "the real run would stop here" in out and "docs/invariants.md exists" in out
+    rc, out = install(again, answers, capsys=capsys)
+    assert rc == 1 and "REFUSED" in out and "no file to go into" in out
+    assert tree(again) == before
 
 
 def test_the_map_gives_each_home_of_a_decision_its_part(tmp_path, capsys, monkeypatch):
@@ -593,7 +628,7 @@ def test_a_dry_run_writes_nothing(tmp_path, capsys):
     assert tree(folder) == before
     assert not (folder / "ai-docs").exists() and not (folder / "inkwell" / "docs").exists()
     for rel in ("AGENTS.md", ".gitignore", "ai-docs/status.md", "archive/LOG.md", "inkwell/AGENTS.md",
-                "inkwell/graph.yml"):
+                "inkwell/graph.yml", "inkwell/docs/invariants.md"):
         assert re.search(rf"WOULD +{re.escape(rel)} ", out), rel
     assert "nothing was written" in out
 
@@ -643,7 +678,7 @@ def test_an_existing_docs_or_plan_folder_gets_no_index_and_docs_gets_its_missing
     (folder / "plan").mkdir()
     rc, out = install(folder, MINIMAL, capsys=capsys)
     assert rc == 0, out
-    assert sorted(p.name for p in (folder / "docs").iterdir()) == ["glossary.md", "spec.md"]
+    assert sorted(p.name for p in (folder / "docs").iterdir()) == ["glossary.md", "invariants.md", "spec.md"]
     assert (folder / "docs" / "spec.md").read_text() == "the specification\n"
     assert list((folder / "plan").iterdir()) == []
     assert re.search(r"KEPT +docs/ +the folder exists", out) and re.search(r"KEPT +plan/ ", out)
@@ -718,7 +753,7 @@ def test_the_handoffs_first_state_is_what_the_setup_knows_not_a_blank_form(tmp_p
     assert "no specification graph" in text
     assert "**The optional tools**: the status file `ai-docs/status.md`" in text
     # No invariant was carried over, so the state says there is none rather than pointing to one.
-    assert "**Invariants**: none recorded yet." in text
+    assert "**Invariants**: none recorded yet in `docs/invariants.md`." in text
     assert ("**For the owner**: the slots the setup left unanswered in the instruction file and the machine file."
             in text)
     for empty in ("**Unexplained**: none.", "**Deferred**: none.", "**Runs in flight**: none.",
@@ -735,7 +770,8 @@ def test_the_handoffs_first_state_with_every_answer_given_leaves_nothing_open(tm
     assert install(folder, dict(FULL, graph="none"), capsys=capsys)[0] == 0
     text = flat((folder / "ai-docs" / "handoff" / "current.md").read_text())
     assert "**For the owner**: none." in text
-    assert "**Invariants**: as the instruction file states them; no test is recorded yet as guarding one." in text
+    assert ("**Invariants**: as `inkwell/docs/invariants.md` states them; no test is recorded yet as guarding one."
+            in text)
     assert "Agree the first piece of work with the owner, and record it in `ai-docs/status.md`." in text
     assert "**The cut**: `plan`, so two repositories" in text
 

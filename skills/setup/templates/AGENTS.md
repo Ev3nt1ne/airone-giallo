@@ -19,24 +19,12 @@ gets the same, never a nod. When the owner is wrong, say so with the reason, cle
 one understanding; change position only on a new argument, named. *A premise nobody challenged is built on by every
 later session.*
 
-## Invariants
-
-When the work shows that the code depends on a rule a change could break, write the rule here in prose: the rule, why
-it holds, and what breaks if a change violates it; then tell the owner in the same reply. *A rule the code depends on
-and nobody wrote down is broken by the first change that cannot see it.*
-
-{{#invariants}}
-{{invariants}}
-{{/invariants}}
-{{^invariants}}
-No invariant is recorded yet.
-{{/invariants}}
-
 ## The map
 
 | The question | The answer |
 |---|---|
 | What the system is and what breaks it; the decision record, each decision and its reason, where a new decision is written | {{spec}} |
+| What the code depends on that a change could break: each invariant, why it holds, what breaks without it | `{{invariants_file}}`, loaded into every session |
 {{#graph_on}}
 | What rests on what: requirements, evidence, and a node for each recorded decision that something technical rests on | `{{graph_file}}` |
 {{/graph_on}}
@@ -99,6 +87,12 @@ No invariant is recorded yet.
   recalled or taken from a search summary; nothing is called impossible before the mechanism that makes it so is
   named. *A guess presented as a finding is built on by every later reader, and recall fails in the details that
   matter.*
+- The code's invariants are in [`{{invariants_file}}`]({{invariants_file}}), which Claude Code loads into every
+  session through the import @{{invariants_file}} and which an agent tool that does not follow imports reads at the
+  start of every session. When the work shows that the code depends on a rule a change could break, propose it to the
+  owner in prose (the rule, why it holds, what breaks if a change violates it), and write it into that file only on
+  their yes. *An invariant protects the code only if the session about to change the code has read it, and one written
+  without the owner binds every later session to an agent's guess.*
 - In code, every number is configuration (a default, with its reason), an assumption (with its source) or derived
   (with its formula, tested at its edges). *A constant taken from the case at hand is a decision for every other case.*
 - When code and a direction, a decision or a tool collide and keeping both looks too costly, bend neither: ask which
@@ -128,7 +122,7 @@ No invariant is recorded yet.
 - Never edited: {{#frozen}}{{frozen}}, and {{/frozen}}generated or synced copies{{#copies}} ({{copies}}){{/copies}},
   whose source is edited instead; an archived file only with a row in its archive's `LOG.md`, the owner having
   ruled. *A frozen document's value is that it is what it was, and a copy's edit is lost unseen.*
-- Ask before every edit, however small, of a file that steers later sessions: this one, `CLAUDE.md`, the skills, the
-  memory, the hooks; a change in a proposal the owner confirmed counts as asked, and an invariant written as the
-  Invariants section says is told rather than asked. A rule enters from a named failure, its reason here and its story
-  in RATIONALE.md; one unneeded for {{prune_after}} is proposed for removal. *These files steer every later session.*
+- Ask before every edit, however small, of a file that steers later sessions: this one, `CLAUDE.md`,
+  `{{invariants_file}}`, the skills, the memory, the hooks; a change in a proposal the owner confirmed counts as asked.
+  A rule enters from a named failure, its reason here and its story in RATIONALE.md; one unneeded for {{prune_after}}
+  is proposed for removal. *These files steer every later session.*

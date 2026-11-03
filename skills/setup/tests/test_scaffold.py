@@ -940,6 +940,31 @@ def test_invalid_answers_exit_two_and_write_nothing(tmp_path, capsys, bad):
     assert tree(folder) == {}
 
 
+# ---------------------------------------------------------------- the skill's own text
+
+def test_the_skills_questions_are_grouped_and_every_reference_names_a_question_that_exists():
+    text = (HERE.parent / "SKILL.md").read_text(encoding="utf-8")
+    # Three groups in the order the answers rest on each other, each question named by its group and place.
+    assert re.findall(r"^### ([A-Z])\. ", text, re.M) == ["A", "B", "C"]
+    ids = re.findall(r"^\| ([A-Z]\d) \| ", text, re.M)
+    assert ids == ["A1", "A2", "A3", "B1", "C1", "C2", "C3", "C4"]
+    # No reference by the old numbers is left, and every reference outside the tables names a question that exists.
+    assert not re.search(r"\bquestions? \d", text)
+    prose = "\n".join(ln for ln in text.splitlines() if not ln.startswith("|"))
+    refs = set(re.findall(r"\b([A-Z]\d)\b", prose)) - {"A1", "C4"}  # "A1 to C4" names the range
+    assert refs and refs <= set(ids), refs
+    rows = {i: ln for i, ln in zip(ids, re.findall(r"^\| [A-Z]\d \| .*$", text, re.M))}
+    assert rows["C2"].startswith("| C2 | What the agent sends out on your behalf (pushes, tags, releases, issues, pull "
+                                 "requests, comments, posts)")
+    assert "(`outward`, `attribution`)" in rows["C2"] and "| `gated` |" in rows["C2"]
+    assert "becomes one sentence in AGENTS.md" in rows["C3"] and "keeps some by number" in rows["C3"]
+    # The setup's close lists its own choices whatever the mode.
+    assert "Then, in either mode, list for the owner the choices the setup made that they did not" in flat(text)
+    # Every word the script starts a report line with is explained where the skill shows the runs.
+    for word in ("CREATE", "REPLACE", "APPEND", "KEEP", "DONE", "KEPT", "SKIPPED", "FAILED"):
+        assert f"`{word}`" in text, word
+
+
 # ---------------------------------------------------------------- the template syntax
 
 def test_render_values_sections_and_standalone_tags():

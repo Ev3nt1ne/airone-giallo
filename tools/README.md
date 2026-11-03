@@ -1,5 +1,8 @@
 # The tools
 
+Command-line checks and helpers that keep a project's documents, links, identifiers and tests honest at every commit,
+in a hook or in CI.
+
 A project's documents and tests rot in ways nobody sees at the moment of the edit. The work left to do is written
 into a design document, which says "not yet implemented" months after it was; a work item is cited by an ID that was
 renumbered; a file is moved and every link to it dies; a public document cites a private one and the cut between the
@@ -8,17 +11,27 @@ and nothing says it is no longer what it was; a term is renamed and a frozen fil
 now means something else; a test passes, and nobody has seen it fail when the thing it guards breaks; a commit
 message claims a hash, an identifier and "every case" that nobody resolved.
 
-This folder is Airone Giallo's commands, seven of them, each one file of standard-library Python: four checks that run
-in a hook and in CI (the status file, the archive, the links with the ladder, the frontmatter), a mover that keeps the
-references true, a mutation round, and a lister of the claims a change makes. They read a project's own values from its
-files or their arguments, never from constants: the ladder's cut, the graph file's `meta`, the status file's
-`status-meta` block, the archive's place.
+This folder is Airone Giallo's commands, seven of them, each one file of standard-library Python beside the module
+they share (`airone_tree.py`): four checks that run in a hook and in CI (the status file, the archive, the links with
+the ladder, the frontmatter), a mover that keeps the references true, a mutation round, and a lister of the claims a
+change makes. They read a project's own values from its files or their arguments, never from constants: the ladder's
+cut, the graph file's `meta`, the status file's `status-meta` block, the archive's place.
 
 It is part of Airone Giallo, described in the [repository](https://github.com/Ev3nt1ne/airone-giallo); the graph,
 the other code, is a package of its own in `graph/`. The status file and the archive's log are written
 into a project by the `setup` skill from its templates, their rules in their own headers; the ladder and the archive's
 rules are the `doc-discipline` skill's §1; the frontmatter is the `markdown-docs` skill's §1; the mutation round is
 the method of the `session` skill's verify reference, §6.
+
+Some words recur below. A project's documents sit on a *ladder* of places, read from the bottom, each place a *rung*:
+1 the system documents (`docs/`), 2 the graph (`graph.yml`), 3 the plan (`plan/`), 4 the AI documents
+(`ai-docs/`), 5 the agent layer (`AGENTS.md`, `CLAUDE.md`, `RATIONALE.md`, the skills); a document cites only rungs at
+or below its own. The *cut*, named in the project's instruction file, is the highest public rung: it and every rung
+below it are public, every rung above it private. In the *two-repository form*, which any cut but `none` and `all`
+makes, the public rungs are a repository of their own, held as a submodule inside a private *workspace* repository that
+holds the rest. A *family* is the code that opens a work item's ID (`APP` in `APP-001`). The *owner* is the person who
+leads the project and rules on what is theirs to decide. The *verify pass* is the second, claim-by-claim pass over a
+change (§6 of the `session` skill itself, Two passes), which `claims` starts.
 
 ## Why
 
@@ -54,9 +67,15 @@ the method of the `session` skill's verify reference, §6.
 ## Start
 
 Python 3.10 or newer, standard library only, and git; the package is `airone-tools`, MIT, with no dependencies.
-`uv tool install ./tools` from the clone gives the seven commands below (`pipx install` takes the same argument, and
-`pip install` works inside a project's own venv). Each file in [src/](src/) also runs as a script
-from the clone without installing (`python3 <airone-giallo>/tools/src/check_links.py`); none is ever copied into the
+This gives the seven commands below:
+
+```sh
+uv tool install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=tools'
+```
+
+or, from a clone of the repository, `uv tool install ./tools`; `pipx install` takes the same arguments, and
+`pip install` works inside a project's own venv. Each file in [src/](src/) also runs as a script from the clone without
+installing (`python3 <airone-giallo>/tools/src/check_links.py`); none is ever copied into the
 project. *A copied script is a second copy that the next version of Airone Giallo does not reach.*
 
 The setup skill installs no hook. A project that wants the checks at every commit copies these lines into its own
@@ -88,9 +107,10 @@ check-frontmatter --range "$BASE..HEAD"     # BASE: the commit the change starts
 
 ## The commands
 
-Every command works on the repository holding the current folder (`--root DIR` names another, `mutate anchors`
-aside) and exits 2 on a bad argument or a repository that cannot be read. The four checks print `error:` lines and a
-count, and exit 1 on a finding, 0 when clean.
+Every command but `check-status` and `check-archive` works on the repository holding the current folder (`--root DIR`
+names another, `mutate anchors` aside); those two read the paths they are given, from the current folder. Each exits 2
+on a bad argument or on a file, folder or repository it cannot read. The four checks print `error:` lines and a count,
+and exit 1 on a finding, 0 when clean.
 
 ### `check-status`
 
@@ -299,8 +319,7 @@ pytest
 ```
 
 The mutation rounds the tests were held to are in [tests/mutations/](tests/mutations/), one spec per command that
-has had a round (`check-status` and `check-archive` have not had one yet) and one for the module they share, each
-anchor a line of `src/`. From the repository's root:
+has had a round and one for the module they share, each anchor a line of `src/`. From the repository's root:
 
 ```sh
 mutate anchors tools/tests/mutations

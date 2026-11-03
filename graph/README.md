@@ -73,8 +73,7 @@ A small example: an editor must not lose saved work. Write a short design docume
 ## 3. Risks
 ```
 
-Then replace the empty `nodes: []` and `edges: []` in `graph.yml` with five nodes and four edges,
-`nodes and edges`:
+Then replace the empty `nodes: []` and `edges: []` in `graph.yml` with five nodes and four edges:
 
 ```yaml
 nodes:

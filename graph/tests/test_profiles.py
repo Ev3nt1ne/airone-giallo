@@ -47,10 +47,10 @@ def test_the_lite_profile_is_a_subset_of_the_full_one():
 
 
 def _readme_graph_file(d, meta):
-    nodes_edges = yaml.safe_load(readme_block("nodes and edges"))
+    nodes_edges = yaml.safe_load(readme_block("graph.yml"))
     graph_path = Path(d) / "graph.yml"
     text = "meta: " + yaml.safe_dump(meta, default_flow_style=True, width=10**6)
-    text += readme_block("nodes and edges")
+    text += readme_block("graph.yml")
     graph_path.write_text(text)
     (Path(d) / "design.md").write_text(readme_block("design.md"))
     return graph_path, nodes_edges

@@ -40,8 +40,10 @@ Standard library only; the graph step runs specgraph in a child process, its com
 
 import argparse
 import datetime
+import errno
 import importlib.util
 import json
+import os
 import re
 import shlex
 import shutil
@@ -76,6 +78,9 @@ GRAPHS = ("none", "lite", "full")
 # AGENTS.md). Those the owner's repository already holds are backed up into the workspace's archive under a name no
 # tool loads, then replaced by the setup's own or removed.
 OLD_INSTRUCTIONS = ("AGENTS.md", "CLAUDE.md", ".claude/CLAUDE.md")
+# The agent tool's own files, part of the agent layer: in the two-repository form they move from the public folder to
+# the workspace's root, where sessions open and Claude Code reads them. A `.claude/CLAUDE.md` is the old-file step's.
+AGENT_FILES = (".claude", ".mcp.json")
 OUTWARD = ("gated", "free")
 # The status checker's own grammar for a family code; a code it would reject is refused here, before writing.
 FAMILY_RE = re.compile(r"^[A-Z][A-Z0-9]{1,4}(?:-[A-Z][A-Z0-9]{1,4})?$")
@@ -487,6 +492,7 @@ class Step:
     kept: str = ""           # for a step decided at planning: why it is not done
     backup: str = ""         # for an old instruction file: its backup's path, written and checked before the step
     remove: bool = False     # for an old instruction file the setup does not replace: removed once backed up
+    move_to: str = ""        # for the agent tool's files of the public folder: their place at the workspace's root
 
 
 def stamp_frontmatter(text, now):
@@ -662,7 +668,23 @@ def body_rewrapped(text):
     return text[:end] + rewrap(text[end:])
 
 
-def allowlist(a, lay):
+def agent_files(lay, disk):
+    """The agent tool's files the public folder holds, to move to the workspace's root: `.claude/` when it holds more
+    than a `CLAUDE.md` (which the old-file step backs up and removes first), and `.mcp.json`."""
+    if lay.form != "two":
+        return []
+    found = []
+    for name in AGENT_FILES:
+        path = disk(f"{lay.public_dir}/{name}")
+        if name == ".claude":
+            if path.is_dir() and any(c.name != "CLAUDE.md" for c in path.iterdir()):
+                found.append(name)
+        elif path.is_file():
+            found.append(name)
+    return found
+
+
+def allowlist(a, lay, moved=()):
     """The private workspace's .gitignore: everything ignored unless named, so nothing private is committed without
     being named first; the public folder is one entry, so only its gitlink is tracked."""
     names = {"docs": "docs/", "graph": "graph.yml", "plan": "plan/", "ai-docs": "ai-docs/"}
@@ -671,8 +693,11 @@ def allowlist(a, lay):
     lines = ["# Airone Giallo: the private workspace's allowlist. Everything is ignored unless re-included below,",
              "# so nothing private is committed without being named first; local-machine.md stays ignored.",
              "/*", "!/.gitignore", "!/.gitmodules", "!/.ignore", "!/AGENTS.md", "!/CLAUDE.md", "!/RATIONALE.md",
-             "# the project's skills, and nothing else of the agent tool's folder",
-             "!/.claude/", "/.claude/*", "!/.claude/skills/"]
+             *(("# the agent tool's folder, moved in from the public folder; settings.local.json stays personal",
+                "!/.claude/", "/.claude/settings.local.json") if ".claude" in moved else
+               ("# the project's skills, and nothing else of the agent tool's folder",
+                "!/.claude/", "/.claude/*", "!/.claude/skills/")),
+             *(("!/.mcp.json",) if ".mcp.json" in moved else ())]
     lines += [f"!/{n}" for n in private]
     if a["human_docs"] == "private":
         lines.append("!/human-docs/")
@@ -707,7 +732,7 @@ def plan(a, lay, ctx, now, disk):
     steps += [Step(f"{d[:-len(ARCHIVE)]}.ignore", "the archive out of every search unless named",
                    lines=((f"{ARCHIVE}/",),)) for d in lay.archives]
     if lay.form == "two":
-        text = allowlist(a, lay)
+        text = allowlist(a, lay, agent_files(lay, disk))
         steps.append(Step(".gitignore", f"the allowlist; {lay.public_dir}/ tracked as its gitlink only",
                           lambda: text))
     else:
@@ -806,6 +831,10 @@ def plan(a, lay, ctx, now, disk):
             else:
                 steps.append(Step(old, "once backed up; its parts are carried over after the run, as confirmed",
                                   remove=True, backup=backup))
+    # The agent tool's files follow the agent layer to the workspace's root, after the old-file step has taken
+    # `.claude/CLAUDE.md` out of the folder they leave.
+    for name in agent_files(lay, disk):
+        steps.append(Step(f"{lay.public_dir}/{name}" + ("/" if name == ".claude" else ""), "", move_to=name))
     # The workspace root first, then the public folder: the order the dry run is read in.
     return sorted(steps, key=lambda s: lay.form == "two" and s.path.startswith(lay.public_dir + "/"))
 
@@ -839,6 +868,28 @@ def back_up(source, backup, now):
     write_backup(backup, data)
     back = backup.read_bytes()
     return back == data and back[:at] + back[at + len(added):] == original
+
+
+def move_agent_file(source, dest):
+    """Move one of the agent tool's files to the workspace's root: a rename, or across file systems a copy that is
+    compared file by file before the original goes. (ok, why not)."""
+    if (source / "CLAUDE.md").exists():
+        return False, "its CLAUDE.md is still there, so the old-file step did not finish; not moved"
+    try:
+        os.rename(source, dest)
+    except OSError as ex:
+        if ex.errno != errno.EXDEV:
+            return False, str(ex)
+        if source.is_dir():
+            shutil.copytree(source, dest, symlinks=True)
+            pairs = [(f, dest / f.relative_to(source)) for f in source.rglob("*") if f.is_file()]
+        else:
+            shutil.copy2(source, dest)
+            pairs = [(source, dest)]
+        if not all(b.is_file() and a.read_bytes() == b.read_bytes() for a, b in pairs):
+            return False, "the copy did not read back as the original; the original is left where it was"
+        shutil.rmtree(source) if source.is_dir() else source.unlink()
+    return dest.exists() and not source.exists(), "not moved"
 
 
 def missing_groups(path, groups):
@@ -1012,12 +1063,21 @@ def run(a, target, dry_run, force, out=None):
         print(f"REFUSED  {problem}. Nothing was written.", file=out)
         return 1
 
-    existing = [s for s in steps if not s.lines and not s.kept and not s.backup and disk(s.path).exists()]
+    existing = [s for s in steps if not s.lines and not s.kept and not s.backup and not s.move_to
+                and disk(s.path).exists()]
     if existing and not force:
         print("REFUSED  these files exist; nothing was written. Read them, keep what the owner wants, then rerun "
               "with --force (records are kept even then):", file=out)
         for s in existing:
             print(f"  {s.path}", file=out)
+        return 1
+    # The agent tool's files are never moved over the workspace's own: the two would have to be merged by hand.
+    clash = [s for s in steps if s.move_to and (target / s.move_to).exists()]
+    if clash:
+        print("REFUSED  the workspace already has these, so the public folder's cannot be moved over them; nothing was "
+              "written. Merge each pair by hand with the owner, then run again:", file=out)
+        for s in clash:
+            print(f"  {s.path} → {target / s.move_to}", file=out)
         return 1
     # A backup is never written over another: the earlier one may be the only copy of an original.
     taken = [s for s in steps if s.backup and disk(s.backup).exists()]
@@ -1043,6 +1103,15 @@ def run(a, target, dry_run, force, out=None):
         had = dest.exists()
         if s.kept:
             add(kept, s.path, s.kept, True)
+            continue
+        if s.move_to:
+            where = f"the workspace's root, {s.move_to}{'/' if dest.is_dir() else ''}"
+            if dry_run:
+                add("MOVE", s.path, f"to {where}", True)
+                continue
+            ok, why = move_agent_file(dest, target / s.move_to)
+            add("DONE" if ok else "FAILED", s.path, f"moved to {where}" if ok else why, True)
+            problems |= not ok
             continue
         if s.backup:
             to = ("the workspace's " if lay.form == "two" else "") + s.backup

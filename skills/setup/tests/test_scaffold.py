@@ -5,6 +5,7 @@ The full install needs `specgraph` importable (pip install -e graph); without it
 of the graph step's refusal still runs.
 """
 
+import errno
 import importlib.util
 import json
 import os
@@ -801,6 +802,102 @@ def test_in_two_repositories_the_old_file_is_backed_up_in_the_workspace_and_remo
     assert unstamped(both / "archive" / "CLAUDE-before-setup.md") == OLD_FILE.encode()
 
 
+def agent_tool_files(folder):
+    """A public folder with the agent tool's files: settings, a command, an MCP file, and an old nested CLAUDE.md."""
+    (folder / ".claude" / "commands").mkdir(parents=True)
+    (folder / ".claude" / "settings.json").write_text('{"permissions": {"allow": ["Bash(make test)"]}}\n')
+    (folder / ".claude" / "commands" / "x.md").write_text("---\ndescription: run the tests\n---\nRun make test.\n")
+    (folder / ".claude" / "CLAUDE.md").write_text("old nested rules\n")
+    (folder / ".mcp.json").write_text('{"mcpServers": {}}\n')
+
+
+@needs_git
+def test_in_two_repositories_the_agent_tools_files_move_to_the_workspace_root(tmp_path, capsys):
+    folder = workspace(tmp_path)
+    agent_tool_files(folder / "inkwell")
+    answers = dict(MINIMAL, cut="plan", status=True, families=FAMILIES)
+    rc, out = install(folder, answers, "--dry-run", capsys=capsys)
+    assert rc == 0, out
+    have = [r[:2] for r in rows(section(out, "Your repository:"))]
+    # The old nested CLAUDE.md is the old-file step's, done first; then the folder and the MCP file move, as two lines.
+    assert have[:4] == [("BACKUP", ".claude/CLAUDE.md"), ("REMOVE", ".claude/CLAUDE.md"), ("MOVE", ".claude/"),
+                        ("MOVE", ".mcp.json")], have
+    rc, out = install(folder, answers, capsys=capsys)
+    assert rc == 0, out
+    assert not (folder / "inkwell" / ".claude").exists() and not (folder / "inkwell" / ".mcp.json").exists()
+    assert sorted(str(p.relative_to(folder)) for p in (folder / ".claude").rglob("*") if p.is_file()) == [
+        ".claude/commands/x.md", ".claude/settings.json"]
+    assert (folder / ".mcp.json").read_text() == '{"mcpServers": {}}\n'
+    assert (folder / "archive" / "dot-claude-CLAUDE-before-setup.md").is_file()
+    # What moved in stays tracked, now on the private side; only the personal settings file stays out.
+    lines = (folder / ".gitignore").read_text().splitlines()
+    assert "!/.claude/" in lines and "/.claude/settings.local.json" in lines and "!/.mcp.json" in lines
+    assert "/.claude/*" not in lines
+    for rel in (".claude/settings.json", ".claude/commands/x.md", ".mcp.json"):
+        assert git("check-ignore", "-q", rel, cwd=folder).returncode == 1, rel
+    # With the contributors' files the move still applies: their layer is the short file, the rest stays private.
+    both = workspace(tmp_path, "both")
+    agent_tool_files(both / "inkwell")
+    assert install(both, dict(answers, agent_layer="both"), capsys=capsys)[0] == 0
+    assert (both / ".claude" / "settings.json").is_file() and not (both / "inkwell" / ".claude").exists()
+    # A `.claude/` holding only an old CLAUDE.md has nothing else to move.
+    bare = workspace(tmp_path, "bare")
+    (bare / "inkwell" / ".claude").mkdir()
+    (bare / "inkwell" / ".claude" / "CLAUDE.md").write_text("old nested rules\n")
+    rc, out = install(bare, answers, "--dry-run", capsys=capsys)
+    assert rc == 0 and "MOVE     .claude" not in out, out
+
+
+@needs_git
+def test_the_agent_tools_files_never_move_over_the_workspaces_own(tmp_path, capsys):
+    folder = workspace(tmp_path)
+    agent_tool_files(folder / "inkwell")
+    (folder / ".mcp.json").write_text("the workspace's own\n")
+    before = tree(folder)
+    rc, out = install(folder, dict(MINIMAL, cut="plan", status=True, families=FAMILIES), capsys=capsys)
+    assert rc == 1 and "REFUSED  the workspace already has these" in out and "inkwell/.mcp.json →" in out, out
+    assert "Merge each pair by hand with the owner" in out
+    assert tree(folder) == before
+
+
+def test_in_one_repository_the_agent_tools_files_stay_where_they_are(tmp_path, capsys):
+    folder = project(tmp_path)
+    (folder / ".claude").mkdir()
+    (folder / ".claude" / "settings.json").write_text("{}\n")
+    (folder / ".mcp.json").write_text("{}\n")
+    rc, out = install(folder, MINIMAL, capsys=capsys)
+    assert rc == 0 and "MOVE" not in out, out
+    assert (folder / ".claude" / "settings.json").is_file() and (folder / ".mcp.json").is_file()
+
+
+@needs_git
+def test_across_file_systems_the_agent_tools_files_are_copied_compared_then_removed(tmp_path, capsys, monkeypatch):
+    real = os.rename
+
+    def no_rename(src, dst):
+        if Path(src).name in (".claude", ".mcp.json"):
+            raise OSError(errno.EXDEV, "Invalid cross-device link")
+        return real(src, dst)
+    monkeypatch.setattr(sc.os, "rename", no_rename)
+    folder = workspace(tmp_path)
+    agent_tool_files(folder / "inkwell")
+    rc, out = install(folder, dict(MINIMAL, cut="plan", status=True, families=FAMILIES), capsys=capsys)
+    assert rc == 0, out
+    assert (folder / ".claude" / "commands" / "x.md").is_file() and (folder / ".mcp.json").is_file()
+    assert not (folder / "inkwell" / ".claude").exists() and not (folder / "inkwell" / ".mcp.json").exists()
+
+
+@needs_git
+def test_the_agent_tools_folder_stays_when_its_old_claude_md_could_not_be_backed_up(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(sc, "write_backup", lambda path, data: (path.parent.mkdir(parents=True, exist_ok=True),
+                                                                path.write_bytes(data[:-1])))
+    folder = workspace(tmp_path)
+    agent_tool_files(folder / "inkwell")
+    rc, out = install(folder, dict(MINIMAL, cut="plan", status=True, families=FAMILIES), capsys=capsys)
+    assert rc == 1 and ("FAILED", ".claude/") in [r[:2] for r in rows(out)], out
+    assert (folder / "inkwell" / ".claude" / "CLAUDE.md").is_file() and not (folder / ".claude").exists()
+
+
 def test_an_old_file_is_left_as_it_was_when_its_backup_does_not_read_back(tmp_path, capsys, monkeypatch):
     monkeypatch.setattr(sc, "write_backup", lambda path, data: (path.parent.mkdir(parents=True, exist_ok=True),
                                                                 path.write_bytes(data[:-1])))
@@ -1263,6 +1360,17 @@ def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_
     assert "telling them to open the next session at `<folder>-nido`" in flat(last)
     # The carry-over is pending work in the handoff until each part is carried.
     assert "delete that line from the handoff's next step" in flat_text
+    # The agent tool's files: their own step in the two-repository form, never the old-file step's, kept plain.
+    agent = flat_text[flat_text.index("**In the two-repository form the agent tool's files move to the workspace's "
+                                      "root.**"):flat_text.index("**Any other existing file stops")]
+    assert "`.claude/` (settings, commands, agents, skills) or `.mcp.json`" in agent
+    assert "before the folder itself moves" in agent
+    assert "a `.claude/CLAUDE.md` in it is the old instruction file's, backed up and removed first, so it never moves" \
+        in agent
+    assert "The same holds with `agent_layer: both`" in agent
+    assert "already at the workspace's root stops the run" in agent
+    assert "In the one-repository forms they stay where they are" in agent
+    assert "moves nothing of the owner's but the agent tool's `.claude/` and `.mcp.json`" in flat_text
     # The one thing the script deletes: an old instruction file whose backup read back equal to it.
     assert ("deletes nothing but an old instruction file of the owner's repository once its backup has been read back "
             "equal to it") in flat_text
@@ -1275,7 +1383,7 @@ def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_
     assert "Then, in either mode, list for the owner the choices the setup made that they did not" in flat_text
     # Every word the script starts a report line with is explained where the skill shows the two runs.
     runs = text[text.index("1. The dry run, which writes nothing"):text.index("What it writes, the dry run lists")]
-    for word in ("CREATE", "REPLACE", "APPEND", "KEEP", "BACKUP", "REMOVE", "DONE", "KEPT", "SKIPPED",
+    for word in ("CREATE", "REPLACE", "APPEND", "KEEP", "BACKUP", "REMOVE", "MOVE", "DONE", "KEPT", "SKIPPED",
                  "FAILED"):
         assert f"`{word}`" in runs, word
 

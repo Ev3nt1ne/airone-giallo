@@ -172,8 +172,8 @@ Both runs find the folder where it is: the real run writes the public side into 
 1. The dry run, which writes nothing. Its first line says so; in the two-repository form the move, done last, and the
    new workspace follow, each a short line with its explanation below it. Then each repository has its own section, the
    owner's first: the files it already has, each line starting with what the real run does to it (`BACKUP`, `REPLACE`,
-   `APPEND`, `REMOVE`, `KEEP`), and the new files, `CREATE`, grouped by folder. Last, in a section of its own, the lines
-   of `carry`, which the session carries over after the run:
+   `APPEND`, `REMOVE`, `MOVE`, `KEEP`), and the new files, `CREATE`, grouped by folder. Last, in a section of its own,
+   the lines of `carry`, which the session carries over after the run:
 
    ```sh
    python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json --target <root> --dry-run
@@ -217,6 +217,15 @@ the owner's repository its backup in the workspace's archive, then the file repl
   with the original before the file is replaced by the setup's own or removed, and a copy that differs leaves the file
   as it was and fails the step. A backup of that name already there stops the run, even with `--force`. *Once the file
   is replaced the backup is the only copy of the original, and a copy nobody compared is the one that is lost.*
+- **In the two-repository form the agent tool's files move to the workspace's root.** When the owner's folder has
+  `.claude/` (settings, commands, agents, skills) or `.mcp.json`, the real run moves each to the workspace's root,
+  before the folder itself moves; a `.claude/CLAUDE.md` in it is the old instruction file's, backed up and removed
+  first, so it never moves. They stay tracked there: the allowlist names them, and only `.claude/settings.local.json`
+  stays personal. The same holds with `agent_layer: both`, since the contributors' layer is their short `AGENTS.md` and
+  the rest of the agent layer is private. A file of either name already at the workspace's root stops the run. In the
+  one-repository forms they stay where they are. *They belong to the agent layer, which this form keeps private, and
+  Claude Code reads the project's `.claude/settings.json` from the folder a session starts in, which is now the
+  workspace's root.*
 - **Any other existing file stops the whole run before anything is written.** `--force` replaces the other instruction
   files (the machine file, the workspace's own AGENTS.md and CLAUDE.md, the workspace's allowlist `.gitignore`); a
   record (RATIONALE.md, the status file, the closed file, the handoff, the archive's log, the graph file, the folders'
@@ -311,8 +320,9 @@ scripts and Claude Code's per-path memory still point at the old path, where not
 
 ## 5. What the script does not do
 
-It runs no `git submodule` and no other git command that changes anything, commits nothing, moves no folder (the
-two-repository move is the session's, with the owner's yes), deletes nothing but an old instruction file of the owner's
+It runs no `git submodule` and no other git command that changes anything, commits nothing, moves nothing of the owner's
+but the agent tool's `.claude/` and `.mcp.json` to the workspace's root in the two-repository form (the move of the
+folder itself is the session's, with the owner's yes), deletes nothing but an old instruction file of the owner's
 repository once its backup has been read back equal to it, and copies no script into the project; it writes no hook and
 no CI workflow (the lines a project copies into its own are in Airone Giallo's `tools/README.md`), and it carries no
 document's content into the tree: that is a session's work with the owner, file by file. Not done yet: injecting the

@@ -80,18 +80,19 @@ nodes:
   - {id: REQ-01, kind: requirement, support: satisfier, statement: "The rover never drives off a cliff.", where: "design.md §1"}
   - {id: ASM-01, kind: assumption, support: given, statement: "In daylight the camera sees every cliff edge ahead.", where: "design.md §1", reviewed: 2026-10-01, watch: 365}
   - {id: DEC-daylight, kind: decision, support: chosen, statement: "The rover drives only in daylight.", where: "design.md §2"}
-  - {id: DEC-storm, kind: decision, support: chosen, statement: "In a dust storm the rover stops, and moves again only once the storm has passed.", where: "design.md §2"}
+  - {id: DEC-blind-stop, kind: decision, support: chosen, statement: "When the camera's image degrades, the rover stops, and moves again only once the image is clear.", where: "design.md §2"}
   - {id: ATK-01, kind: threat, statement: "A dust storm blinds the camera.", where: "design.md §3"}
 edges:
   - {from: DEC-daylight, type: satisfies, to: REQ-01}
   - {from: DEC-daylight, type: requires, to: ASM-01}
   - {from: ATK-01, type: obstructs, to: REQ-01}
-  - {from: DEC-storm, type: mitigates, to: ATK-01}
+  - {from: DEC-blind-stop, type: mitigates, to: ATK-01}
 ```
 
 Read it: the requirement needs a satisfier (`support: satisfier`), and driving only in daylight is one; that decision
 rests on an assumption about the camera, taken as given and re-checked every 365 days; a dust storm obstructs the
-requirement until a defender holds, and stopping until the storm has passed is one.
+requirement until a defender holds, and stopping as soon as the image degrades is one: it reacts to what the camera
+sees, so it needs no warning that a storm has begun.
 
 Check it. The first run writes each statement's fingerprint, so a later edit to a statement is noticed:
 
@@ -113,8 +114,8 @@ Ask what happens if the assumption about the camera is wrong:
 specgraph lint --what-if ASM-01
 ```
 
-The daylight decision fails, and the requirement loses its only satisfier, so it fails too. Remove `DEC-storm` and the
-dust storm is undefended: the requirement is then *not argued yet*, which is not a failure but a hole someone has to
+The daylight decision fails, and the requirement loses its only satisfier, so it fails too. Remove `DEC-blind-stop` and
+the dust storm is undefended: the requirement is then *not argued yet*, which is not a failure but a hole someone has to
 fill.
 
 To look nodes up: `near WORD…`, `show ID…`, `why ID`, `at PLACE`, `draw ID` (Mermaid, or Graphviz with `--dot`).

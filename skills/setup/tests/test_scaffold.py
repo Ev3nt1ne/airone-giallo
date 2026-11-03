@@ -942,21 +942,31 @@ def test_invalid_answers_exit_two_and_write_nothing(tmp_path, capsys, bad):
 
 # ---------------------------------------------------------------- the skill's own text
 
-def test_the_skills_questions_are_grouped_and_every_reference_names_a_question_that_exists():
+def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_that_exists():
     text = (HERE.parent / "SKILL.md").read_text(encoding="utf-8")
-    # Three groups in the order the answers rest on each other, each question named by its group and place.
-    assert re.findall(r"^### ([A-Z])\. ", text, re.M) == ["A", "B", "C"]
-    ids = re.findall(r"^\| ([A-Z]\d) \| ", text, re.M)
-    assert ids == ["A1", "A2", "A3", "B1", "C1", "C2", "C3", "C4"]
-    # No reference by the old numbers is left, and every reference outside the tables names a question that exists.
+    flat_text = flat(text)
+    # One table: each question carries its label, and the groups are labels for the reader, not headings or rounds.
+    labelled = re.findall(r"^\| ([A-Z]\d) · ([^|]+?) \| ", text, re.M)
+    ids = [i for i, _ in labelled]
+    assert ids == ["A1", "A2", "A3", "A4", "B1", "C1", "C2", "C3", "D1"], ids
+    assert not re.search(r"^#+ [A-Z]\. ", text, re.M)
+    assert "a group is a label for the reader, never a round" in flat_text
+    # Each question in three parts, which are the table's columns; a pending one reminded in a line, never re-asked.
+    assert "| Question | What it is | The options | Recommend, and why | What the answer changes |" in text
+    assert "An example only when the question cannot be understood without one" in flat_text
+    assert ("reminded in one line at the end of the next message** (`Still open: A2 families`), never asked again "
+            "in full") in flat_text
+    # The opening findings hold only what the owner must confirm or what changes an answer.
+    assert "only what they must confirm or what changes an answer, one line each; details only when asked" in flat_text
+    # No reference by the old numbers is left, and every reference outside the table names a question that exists.
     assert not re.search(r"\bquestions? \d", text)
     prose = "\n".join(ln for ln in text.splitlines() if not ln.startswith("|"))
-    refs = set(re.findall(r"\b([A-Z]\d)\b", prose)) - {"A1", "C4"}  # "A1 to C4" names the range
+    refs = set(re.findall(r"\b([A-Z]\d)\b", prose))
     assert refs and refs <= set(ids), refs
-    rows = {i: ln for i, ln in zip(ids, re.findall(r"^\| [A-Z]\d \| .*$", text, re.M))}
-    assert rows["C2"].startswith("| C2 | What the agent sends out on your behalf (pushes, tags, releases, issues, pull "
-                                 "requests, comments, posts)")
-    assert "(`outward`, `attribution`)" in rows["C2"] and "| `gated` |" in rows["C2"]
+    rows = dict(zip(ids, re.findall(r"^\| [A-Z]\d · .*$", text, re.M)))
+    assert rows["C2"].startswith("| C2 · What the agent sends out on your behalf | Pushes, tags, releases, issues, "
+                                 "pull requests, comments, posts")
+    assert "(`outward`, `attribution`)" in rows["C2"] and "`gated`" in rows["C2"]
     assert "becomes one sentence in AGENTS.md" in rows["C3"] and "keeps some by number" in rows["C3"]
     # C3's rule for the agent: no candidate the session skill leaves to the owner everywhere; one an earlier answer
     # covers is named with that answer.
@@ -968,14 +978,24 @@ def test_the_skills_questions_are_grouped_and_every_reference_names_a_question_t
             "and what I may send out under your name (C2). Here you can name actions in this repository that I must "
             "never take on my own; your list becomes one line in AGENTS.md. From the repository, these look worth "
             "naming: [the candidates, one line each with why; when one is already covered by an earlier answer, say "
-            'which]. Keep any by number, add your own, or answer none."') in flat(text)
+            'which]. Keep any by number, add your own, or answer none."') in flat_text
     for sample in ("new dependency", "live database", "passwords"):
         assert sample not in text, sample
+    # A3 exists only when the old file states invariants, and offers nothing it does not state.
+    assert "Asked only when the project's existing `AGENTS.md` or `CLAUDE.md` states invariants" in rows["A3"]
+    assert "Never offer as an invariant what the old file does not state as one" in flat_text
+    assert "when it states none, there is no A3" in flat_text
+    # D1 is a closed box: its row and its paragraph say nothing of what the layer holds or how many rules it has.
+    for inside in ("omment", "fix", "rreversible", "three", "two", "Four-Hands", "Conductor"):
+        assert inside not in rows["D1"], inside
+    assert "**D1 is a closed box.**" in text
+    assert "without describing what the rules say or how many there are" in flat_text
     # The setup's close lists its own choices whatever the mode.
-    assert "Then, in either mode, list for the owner the choices the setup made that they did not" in flat(text)
-    # Every word the script starts a report line with is explained where the skill shows the runs.
+    assert "Then, in either mode, list for the owner the choices the setup made that they did not" in flat_text
+    # Every word the script starts a report line with is explained where the skill shows the two runs.
+    runs = text[text.index("1. The dry run, which writes nothing"):text.index("What it writes, the dry run lists")]
     for word in ("CREATE", "REPLACE", "APPEND", "KEEP", "DONE", "KEPT", "SKIPPED", "FAILED"):
-        assert f"`{word}`" in text, word
+        assert f"`{word}`" in runs, word
 
 
 # ---------------------------------------------------------------- the template syntax

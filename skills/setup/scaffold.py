@@ -423,7 +423,7 @@ def context(a, lay, target):
     return {
         "name": a["name"].strip(),
         "purpose": a["purpose"].strip().rstrip("."),
-        # Paragraphs carried over as written from the project's existing instruction file, never asked; without
+        # Paragraphs carried over as written from the project's existing instruction file on the owner's yes; without
         # any, the invariants file says that none is recorded yet, which is a fact and not a slot left unanswered.
         "invariants": "\n\n".join(x.strip() for x in a["invariants"]),
         "invariants_file": invariants_file,
@@ -935,8 +935,8 @@ def parser():
     p.add_argument("--name")
     p.add_argument("--purpose", help="one line: what the project is, for whom")
     p.add_argument("--invariants", action="append", metavar="TEXT",
-                   help="repeatable: one paragraph, an invariant carried over as written from the project's existing "
-                   "instruction file; never asked")
+                   help="repeatable: one paragraph, an invariant the project's existing instruction file states, "
+                   "carried over as written on the owner's yes")
     p.add_argument("--mode", choices=MODES)
     p.add_argument("--cut", choices=CUTS, help="the last public rung of the ladder (default: plan)")
     p.add_argument("--human-docs", choices=SIDES, help="the side of human-docs/ (default: private)")

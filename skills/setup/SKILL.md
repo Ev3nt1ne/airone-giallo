@@ -18,9 +18,10 @@ is copied into the project: what stays there is what the script writes. Each rul
 - **Read the repository first, and ask only what it cannot answer.** Look for an existing `AGENTS.md`, `CLAUDE.md`,
   `.gitignore`, a docs folder, a specification, a plan, a glossary, a findings folder, folders kept frozen,
   generated or vendored copies, the owner's own notes, and the test and lint commands. Take the Claude Code version
-  from `claude --version` and the model from the session's own environment. Put what you found to the owner as one
-  list to confirm, not as questions. *A question the repository answers costs the owner a turn and tells them the
-  agent did not look.*
+  from `claude --version` and the model from the session's own environment. Put to the owner, as one list and not as
+  questions, only what they must confirm or what changes an answer, one line each; details only when asked. *A question
+  the repository answers costs the owner a turn and tells them the agent did not look, and a finding that changes
+  nothing is one more line to read past.*
 - **In the two-repository form, build the workspace before the setup, in this order, with the owner's go.**
   1. `git init <name>-nido`, beside the project or wherever the owner keeps it, then work inside it. *The workspace is
      the private repository; the project becomes one folder in it.*
@@ -36,33 +37,39 @@ is copied into the project: what stays there is what the script writes. Each rul
   refuses otherwise. *The submodule records which public commit the private documents refer to; a plain copy would
   drift from them unseen.*
 - **An existing `AGENTS.md` or `CLAUDE.md` is read before anything is written.** The script refuses to replace one
-  without `--force`; with the owner, decide what of it moves into the new file or into RATIONALE.md first. *A
-  project's instruction file holds rulings that exist nowhere else.* Where it states invariants (rules the code depends
-  on, with why they hold or what breaks without them), carry each over as written into the answer `invariants`, one
-  paragraph per entry, and show them to the owner with the other findings; the script writes them into
-  `docs/invariants.md`, the file AGENTS.md loads into every session, which in the two-repository form is in the public
-  folder: say so, since a paragraph written for a private file may name what is private. *An invariant already written
-  down is the project's own finding, and the old file is replaced once the run is forced.*
+  without `--force`; with the owner, decide what of it moves into the new AGENTS.md or into RATIONALE.md first; the
+  invariants the file itself states are A3's (§2). *A project's instruction file holds rulings that exist nowhere
+  else.*
 
-## 2. The questions, by group
+## 2. The questions
 
-The questions come in three groups, in the order their answers rest on each other: what the project is, then what of
-it is public, then how the agent acts. A question is named by its group's letter and its place in the group, A1 to C4,
-here and wherever the skill refers to it. *The cut can only place the files the tools add, and the rules on acting
-alone read what the cut made public.*
+Each question has a label: its group's letter, its place, and its name, as in `A1 · Name and purpose`. The groups are
+A · The project, B · What is public, C · What the agent does alone, and what it asks, and D · Others, for what fits none
+of them; they follow the order the answers rest on each other, and the skill names a question by its label's code. *The
+cut can only place the files the tools add, and the rules on acting alone read what the cut made public.*
 
-Ask group by group, in rounds of one to four, never as one long questionnaire. Explain every question in plain words
-before asking it, in two or three sentences and with an example where one helps; the owner should never have to ask
-what a question means. *A question the owner has to decode is answered a turn late or answered wrongly, and the answer
-is written into every file the script makes.* Each answer has a name in the answers file (§3).
+- **Ask in rounds of one to four questions, in the labels' order; a group is a label for the reader, never a round.**
+  Each question carries its label; no heading per group. *A message that holds a whole group grows past what is read
+  closely, and its answers come back partial.*
+- **Say each question in three parts**: what it is, in one or two sentences; the options; the recommendation, with its
+  reason in one line. An example only when the question cannot be understood without one. *A question the owner has to
+  decode is answered a turn late or answered wrongly, and the answer is written into every file the script makes.*
+- **A question left unanswered is reminded in one line at the end of the next message** (`Still open: A2 families`),
+  never asked again in full. *A question restated every round buries the new ones under it.*
 
-### A. The project
+Each answer has a name in the answers file (§3).
 
-| # | Question | Recommend | What the answer changes |
-|---|---|---|---|
-| A1 | Two parts, each asked on its own line with its label, so that a one-word answer fills exactly one: the **name** (`name`); **what the project is and for whom**, in one line (`purpose`) | no default: both are the owner's words | the opening paragraph of AGENTS.md |
-| A2 | Which tools to add to the project, each optional and chosen on its own: the specification graph (`graph`: `none`, `lite`, `full`), the status file (`status`, with its `families`, asked whenever the status file is chosen, as the paragraph on families below says), the handoff (`handoff`, with the first log's `stage`) | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
-| A3 | This machine: its resources, what else runs on it, the run limits, whether timings measured here count as results (`machine`) | fill what the session can see (`nproc`, `free -h`, `df -h .`) and have the owner confirm | `local-machine.md`, git-ignored, one per device |
+| Question | What it is | The options | Recommend, and why | What the answer changes |
+|---|---|---|---|---|
+| A1 · Name and purpose | The project's name, and what it is and for whom in one line, each asked on its own line with its label, so that a one-word answer fills exactly one | the **name** (`name`); the **purpose** (`purpose`) | no default: both are the owner's words | the opening paragraph of AGENTS.md |
+| A2 · Tools to add | Which tools to add to the project, each optional and chosen on its own | the specification graph (`graph`: `none`, `lite`, `full`); the status file (`status`, with its `families`, asked whenever the status file is chosen, as the paragraph on families below says); the handoff (`handoff`, with the first log's `stage`) | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
+| A3 · Invariants already written | Asked only when the project's existing `AGENTS.md` or `CLAUDE.md` states invariants, as the paragraph on A3 below says: whether to move them, as written, into `docs/invariants.md`, which every session loads | yes or no, once, the invariants shown by their titles (`invariants`: each paragraph as written, or none) | yes: they are the project's own finding, and the old file is replaced or removed | `docs/invariants.md` |
+| A4 · This machine | This device: its resources, what else runs on it, the run limits, whether timings measured here count as results | one line each (`machine`: `resources`, `load`, `limits`, `timings`) | what the session can see (`nproc`, `free -h`, `df -h .`), for the owner to confirm: it is measured, not guessed | `local-machine.md`, git-ignored, one per device |
+| B1 · What is public | Which rungs of the ladder are public, asked after the ladder's table below is shown and the cut explained; then where the owner's notes and the downloaded sources go, and in the two-repository form whether contributors get a short public instruction file | the highest public rung (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `all`); each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`); the agent layer (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
+| C1 · How you work | How the owner works with the agent | **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
+| C2 · What the agent sends out on your behalf | Pushes, tags, releases, issues, pull requests, comments, posts: whether the owner sees each before it goes out | **gated**, prepared as a branch or a draft for the owner to send, or **free**, done and reported, with an attribution trailer if they want one (`outward`, `attribution`) | `gated`: an act outside the repository cannot be taken back | the outward rule |
+| C3 · Actions asked first | Actions the agent always stops and asks about before doing them. Say that the answer becomes one sentence in AGENTS.md | Propose candidates: actions found in the repository that can do damage, one line each with why. Do not propose an action that `session` §2 already leaves to the owner in every project (scope, priorities, cost, anything irreversible or public, a change to a recorded ruling); when a candidate is already covered by B1 or C2, say which, as the text below does. The owner keeps some by number, adds their own, or answers none (`reserved`) | the candidates the repository suggests; none is an answer too, and more are added as they surface | one sentence in the first rule on deciding |
+| D1 · Opinionated rules | Whether the project takes the more opinionated, less general rules of Airone Giallo's author, as one block, asked as the paragraph on D1 below says | yes or no (`opinionated`) | no, unless the owner wants them: never assumed | the author's rules, appended to AGENTS.md under their own heading |
 
 A family of the status file is a code of 2 to 5 capitals or digits starting with a capital, or two joined by a hyphen,
 and a line saying what it covers. Declare one per area of the work (the application, the documentation), never one per
@@ -72,14 +79,15 @@ file is chosen, even by an answer such as "all" to A2, ask for the families in t
 what a family is; never fill them from anything but the owner's answer. *A family filled from elsewhere reads as
 answered, so nobody checks it, and the script refuses a status file with none.*
 
-### B. What is public
+**A3 is asked only when the old instruction file states invariants.** Show the invariants it states by their titles and
+ask once whether to move them, as written, into `docs/invariants.md`; on a yes, each goes into `invariants` as one
+paragraph, word for word. In the two-repository form that file is in the public folder: say so, since a paragraph
+written for a private file may name what is private. Never offer as an invariant what the old file does not state as
+one, such as a convention or a rule inferred from the code; when it states none, there is no A3. *Finding new invariants
+is later work, proposed one by one under the rule AGENTS.md gives; at setup it opens a discussion nobody asked for.*
 
-| # | Question | Recommend | What the answer changes |
-|---|---|---|---|
-| B1 | The cut, asked only after the ladder's table below is shown and the cut explained: the highest rung of the ladder that is public (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `all`); then, each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`), and in the two-repository form whether contributors get a short public instruction file (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
-
-Before asking B1, show the owner the ladder of `doc-discipline` §1 as this table, copied rather than
-paraphrased. *The cut is a choice among these rungs, and the owner can only choose among what is in front of them.*
+Before asking B1, show the owner the ladder of `doc-discipline` §1 as this table, copied rather than paraphrased. *The
+cut is a choice among these rungs, and the owner can only choose among what is in front of them.*
 
 | Rung | Folder | What it holds |
 |---|---|---|
@@ -99,15 +107,6 @@ repository gets its own, `archive/` at its top, so an archived document stays on
 the agent layer is public and RATIONALE.md drops the owner's words from its form; `agent_layer: both` keeps the full
 layer private and adds a contributors' `AGENTS.md` that cites only public rungs.
 
-### C. What the agent does alone, and what it asks
-
-| # | Question | Recommend | What the answer changes |
-|---|---|---|---|
-| C1 | How the owner works: **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
-| C2 | What the agent sends out on your behalf (pushes, tags, releases, issues, pull requests, comments, posts): **gated**, prepared as a branch or a draft for the owner to send, or **free**, done and reported, with an attribution trailer if they want one (`outward`, `attribution`) | `gated` | the outward rule |
-| C3 | Actions the agent always stops and asks about before doing them (`reserved`). Say that the answer becomes one sentence in AGENTS.md. Propose candidates: actions found in the repository that can do damage, one line each with why. Do not propose an action that `session` §2 already leaves to the owner in every project (scope, priorities, cost, anything irreversible or public, a change to a recorded ruling); when a candidate is already covered by B1 or C2, say which, as the text below does. The owner keeps some by number, adds their own, or answers none | the candidates the repository suggests; none is an answer too, and more are added as they surface | one sentence in the first rule on deciding |
-| C4 | The opinionated layer of Airone Giallo's author: comments state invariants (Four-Hands only), every fix has a test, irreversible acts offered as such (`opinionated`) | off; offer it, never assume it | the rules appended under their own heading: three for Four-Hands, two for Conductor |
-
 C3 is said to the owner as written here, the bracket filled at each run with the candidates found in the repository:
 "Actions I always ask you about first. You already decided which parts of the repository are public (B1), and what I may
 send out under your name (C2). Here you can name actions in this repository that I must never take on my own; your list
@@ -116,17 +115,19 @@ when one is already covered by an earlier answer, say which]. Keep any by number
 owner who is not told what reserving does, and what earlier answers already cover, cannot tell a new candidate from one
 already decided.*
 
-### The answers no question asks
+**D1 is a closed box.** Ask it as one yes or no, in words such as "Do you want Airone Giallo's author's more
+opinionated, less general rules for this project?", without describing what the rules say or how many there are. *The
+layer is the author's and may change; a question that summarised it would drift from it, and the owner would answer the
+summary.*
 
-The facts of §1 go in as `spec`, `plan`, `glossary`, `findings` (each a path or a short phrase, written into the map as
-given; a path is written from the workspace root and in backticks, as the defaults are, `` `<name>/docs/spec.md` ``),
-`owner_notes`, `frozen`, `copies`, `checks` (the project's own test and lint commands), `prune_after` (how long a rule
-may go unneeded) and `invariants` (the paragraphs carried over from an existing instruction file); `spec`, `plan`,
-`glossary` and `findings` default to the tree's own paths, and `public_dir` to the name in lower case. Anything not
-answered is written as a visible `[to fill: …]` slot, never guessed. The invariants are never asked and leave no slot:
-without any, `docs/invariants.md` says none is recorded yet, and AGENTS.md has the agent propose one when the work shows
-it. *An invariant is found by the work that depends on it; one demanded on the first day is a guess, written into the
-file every session reads.*
+**The answers no question asks.** The facts of §1 go in as `spec`, `plan`, `glossary`, `findings` (each a path or a
+short phrase, written into the map as given; a path is written from the workspace root and in backticks, as the defaults
+are, `` `<name>/docs/spec.md` ``), `owner_notes`, `frozen`, `copies`, `checks` (the project's own test and lint
+commands) and `prune_after` (how long a rule may go unneeded); `spec`, `plan`, `glossary` and `findings` default to the
+tree's own paths, and `public_dir` to the name in lower case. Anything not answered is written as a visible
+`[to fill: …]` slot, never guessed. The invariants leave no slot: without any, `docs/invariants.md` says none is
+recorded yet, and AGENTS.md has the agent propose one when the work shows it. *An invariant is found by the work that
+depends on it; one demanded on the first day is a guess, written into the file every session reads.*
 
 ## 3. Running the script
 

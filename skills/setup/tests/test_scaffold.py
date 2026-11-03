@@ -26,7 +26,10 @@ _spec.loader.exec_module(sc)
 # contributors' file. Invented values.
 FULL = {
     "name": "Inkwell", "purpose": "a note editor whose saved notes survive a crash, for people who write offline",
-    "invariants": ["a saved note survives a crash, else notes are lost silently"], "mode": "four-hands",
+    "invariants": ["**A saved note survives a crash.** The editor writes each note to a new file and renames it over "
+                   "the old one, so a crash leaves one version whole and never half of one. A change that writes in "
+                   "place loses notes silently, and only when a crash hits mid-write."],
+    "mode": "four-hands",
     "cut": "plan", "agent_layer": "both", "graph": "lite", "status": True,
     "families": {"APP": "the application", "DOC": "the documentation"}, "handoff": True,
     "outward": "free", "attribution": "Co-Authored-By: An Agent <agent@example.com>",
@@ -455,9 +458,54 @@ def test_the_workspace_agents_file_says_sessions_open_at_the_root_and_where_airo
     assert "https://github.com/Ev3nt1ne/airone-giallo" in two_text and "`/airone-giallo:<skill>`" in two_text
     assert "(`check-status`, `check-archive`, `check-links` and `check-frontmatter`)" in two_text
     assert "(`specgraph`, `check-archive`, `check-links` and `check-frontmatter`)" in one_text
-    # One invariant reads as one sentence: one colon, no word said twice by the lead-in and the answer.
-    sentence = re.search(r"Its invariants[^.]*\.", two_text).group(0)
-    assert sentence.count(":") == 1 and sentence.count("silent") == 1, sentence
+
+
+def section(text, heading):
+    """The body of a `## ` section, up to the next heading; None when the heading is not there."""
+    m = re.search(rf"^## {re.escape(heading)}\n(.*?)(?=^## |\Z)", text, re.M | re.S)
+    return m and m.group(1)
+
+
+def test_the_setup_asks_no_invariant_and_the_section_says_none_is_recorded_yet(tmp_path, capsys):
+    folder = project(tmp_path)
+    assert install(folder, MINIMAL, capsys=capsys)[0] == 0
+    text = agents(folder)
+    # The section comes right after the opening, before the map, and the opening no longer lists invariants.
+    assert re.findall(r"^## (.+)$", text, re.M)[:2] == ["Invariants", "The map"]
+    assert "nvariant" not in text.split("\n\n")[1]
+    body = flat(section(text, "Invariants"))
+    assert body.startswith("When the work shows that the code depends on a rule a change could break, write the rule "
+                           "here in prose: the rule, why it holds, and what breaks if a change violates it; then tell "
+                           "the owner in the same reply."), body
+    assert body.endswith("No invariant is recorded yet."), body
+    # An empty section is a fact, not a slot: the setup's grep for what is left unanswered does not list it.
+    assert "to fill" not in body and "each invariant" not in text
+    # The rule that has every edit of this file asked first names the one edit that is told instead.
+    assert "an invariant written as the Invariants section says is told rather than asked" in flat(text)
+
+
+def test_invariants_carried_over_are_written_in_the_section_as_given(tmp_path, capsys):
+    folder = project(tmp_path)
+    carried = [FULL["invariants"][0],
+               "**A note's ID is never reused.** IDs come from a counter stored beside the notes and only ever "
+               "incremented. A change that reuses a deleted note's ID makes an old link open the wrong note."]
+    assert install(folder, dict(MINIMAL, invariants=carried), capsys=capsys)[0] == 0
+    text = agents(folder)
+    # The rule first, then each invariant as its own paragraph, in the order given and in its own words.
+    paragraphs = [flat(p) for p in section(text, "Invariants").strip().split("\n\n")]
+    assert paragraphs[0].startswith("When the work shows") and paragraphs[1:] == carried, paragraphs
+    assert "No invariant is recorded yet" not in text
+    assert "A saved note" not in text.split("\n\n")[1]
+
+
+@needs_git
+def test_the_contributors_file_carries_no_invariant(tmp_path, capsys):
+    # The contributors' file is public and written once from the public rungs; the section lives in the private file,
+    # where the agent keeps adding to it.
+    folder = workspace(tmp_path)
+    assert install(folder, dict(FULL, graph="none"), capsys=capsys)[0] == 0
+    assert "nvariant" not in (folder / "inkwell" / "AGENTS.md").read_text()
+    assert FULL["invariants"][0] in flat(section(agents(folder), "Invariants"))
 
 
 def test_the_map_gives_each_home_of_a_decision_its_part(tmp_path, capsys, monkeypatch):
@@ -668,6 +716,8 @@ def test_the_handoffs_first_state_is_what_the_setup_knows_not_a_blank_form(tmp_p
     assert "**The cut**: `none`, so one private repository" in text
     assert "the status file `ai-docs/status.md`" in text and "the first for the stage `set-up`" in text
     assert "no specification graph" in text
+    # No invariant was carried over, so the state says there is none rather than pointing to one.
+    assert "**Invariants**: none recorded yet." in text
     assert ("**For the owner**: the slots the setup left unanswered in the instruction file and the machine file."
             in text)
     for empty in ("**Unexplained**: none.", "**Deferred**: none.", "**Runs in flight**: none.",
@@ -684,6 +734,7 @@ def test_the_handoffs_first_state_with_every_answer_given_leaves_nothing_open(tm
     assert install(folder, dict(FULL, graph="none"), capsys=capsys)[0] == 0
     text = flat((folder / "ai-docs" / "handoff" / "current.md").read_text())
     assert "**For the owner**: none." in text
+    assert "**Invariants**: as the instruction file states them; no test is recorded yet as guarding one." in text
     assert "Agree the first piece of work with the owner, and record it in `ai-docs/status.md`." in text
     assert "**The cut**: `plan`, so two repositories" in text
 
@@ -824,6 +875,7 @@ def test_a_flag_overrides_the_answers_file(tmp_path, capsys):
     {"public_dir": "inkwell"},
     {"public_dir": "ai-docs", "cut": "plan"},
     {"public_dir": "a/b", "cut": "plan"},
+    {"invariants": ["   "]},
 ])
 def test_invalid_answers_exit_two_and_write_nothing(tmp_path, capsys, bad):
     folder = project(tmp_path)

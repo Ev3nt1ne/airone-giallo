@@ -1,11 +1,11 @@
 # {{name}}: instructions for agents
 
-{{name}} is {{purpose}}. Its invariants, each with what breaks if it fails: {{invariants}}. The methods are Airone
-Giallo's skills (`session`, `handoff`, `doc-discipline`, `markdown-docs`), not repeated here; they and the commands of
-the checks ({{commands}}) come from Airone Giallo, its plugin (`/airone-giallo:<skill>`) and its Python packages, at
-https://github.com/Ev3nt1ne/airone-giallo, and a session that lacks them asks the owner to install them. The origin of
-each rule the project adds is in [RATIONALE.md](RATIONALE.md). Written against Claude Code {{claude_code_version}} and
-model {{model}}; re-read this file when either changes.
+{{name}} is {{purpose}}. The methods are Airone Giallo's skills (`session`, `handoff`, `doc-discipline`,
+`markdown-docs`), not repeated here; they and the commands of the checks ({{commands}}) come from Airone Giallo, its
+plugin (`/airone-giallo:<skill>`) and its Python packages, at https://github.com/Ev3nt1ne/airone-giallo, and a session
+that lacks them asks the owner to install them. The origin of each rule the project adds is in
+[RATIONALE.md](RATIONALE.md). Written against Claude Code {{claude_code_version}} and model {{model}}; re-read this
+file when either changes.
 {{#two_repos}}
 
 **Sessions open here, at the workspace root, never inside `{{public_dir}}/`**{{^contributors}}, where no instruction
@@ -18,6 +18,19 @@ world is confirmed, from a source or from the code, or corrected; a hedged one (
 gets the same, never a nod. When the owner is wrong, say so with the reason, clear the confusion, and converge on
 one understanding; change position only on a new argument, named. *A premise nobody challenged is built on by every
 later session.*
+
+## Invariants
+
+When the work shows that the code depends on a rule a change could break, write the rule here in prose: the rule, why
+it holds, and what breaks if a change violates it; then tell the owner in the same reply. *A rule the code depends on
+and nobody wrote down is broken by the first change that cannot see it.*
+
+{{#invariants}}
+{{invariants}}
+{{/invariants}}
+{{^invariants}}
+No invariant is recorded yet.
+{{/invariants}}
 
 ## The map
 
@@ -116,6 +129,6 @@ later session.*
   whose source is edited instead; an archived file only with a row in its archive's `LOG.md`, the owner having
   ruled. *A frozen document's value is that it is what it was, and a copy's edit is lost unseen.*
 - Ask before every edit, however small, of a file that steers later sessions: this one, `CLAUDE.md`, the skills, the
-  memory, the hooks; a change in a proposal the owner confirmed counts as asked. A rule enters from a named failure,
-  its reason here and its story in RATIONALE.md; one unneeded for {{prune_after}} is proposed for removal. *These
-  files steer every later session.*
+  memory, the hooks; a change in a proposal the owner confirmed counts as asked, and an invariant written as the
+  Invariants section says is told rather than asked. A rule enters from a named failure, its reason here and its story
+  in RATIONALE.md; one unneeded for {{prune_after}} is proposed for removal. *These files steer every later session.*

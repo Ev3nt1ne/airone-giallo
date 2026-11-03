@@ -226,6 +226,8 @@ def validate(a):
     for key in ("invariants", "reserved", "frozen", "copies"):
         if not isinstance(a[key], list) or not all(isinstance(x, str) for x in a[key]):
             raise AnswerError(f"'{key}' must be a list of strings")
+    if not all(x.strip() for x in a["invariants"]):
+        raise AnswerError("each invariant is a paragraph of text; a blank one would hide that none is recorded")
     if not isinstance(a["families"], dict):
         raise AnswerError("'families' must map a code to what it covers")
     if a["status"]:
@@ -418,8 +420,9 @@ def context(a, lay, target):
     return {
         "name": a["name"].strip(),
         "purpose": a["purpose"].strip().rstrip("."),
-        "invariants": "; ".join(a["invariants"]) if a["invariants"]
-        else SLOT.format("each invariant, and what breaks"),
+        # Paragraphs carried over as written from the project's existing instruction file, never asked; without
+        # any, the section says that none is recorded yet, which is a fact and not a slot left unanswered.
+        "invariants": "\n\n".join(x.strip() for x in a["invariants"]),
         "claude_code_version": a["claude_code_version"] or SLOT.format("version"),
         "model": a["model"] or SLOT.format("model"),
         "four_hands": a["mode"] == "four-hands", "conductor": a["mode"] == "conductor",
@@ -547,7 +550,8 @@ def first_state(block, a, lay, ctx, now, log_name, slotted):
             f"1. **For the owner**: {open_for_owner}.", "2. **Unexplained**: none.", "3. **Deferred**: none."),
         "4. What the next session does first": f"{items(step)}\n\nPrompt to paste:\n\n    {prompt}",
         "5. What must not be touched": items(
-            "- **Invariants**: as the instruction file states them; no test is recorded yet as guarding one.",
+            "- **Invariants**: " + ("as the instruction file states them; no test is recorded yet as guarding one."
+                                    if a["invariants"] else "none recorded yet."),
             "- **Frozen**: each repository's archive, and anything else the instruction file names frozen.",
             "- **Runs in flight**: none."),
         "6. Where the numbers come from": "None: this state quotes no figure.",
@@ -891,7 +895,9 @@ def parser():
     p.add_argument("--force", action="store_true", help="replace existing instruction files; records are kept")
     p.add_argument("--name")
     p.add_argument("--purpose", help="one line: what the project is, for whom")
-    p.add_argument("--invariants", action="append", metavar="TEXT", help="repeatable: an invariant and what breaks")
+    p.add_argument("--invariants", action="append", metavar="TEXT",
+                   help="repeatable: one paragraph, an invariant carried over as written from the project's existing "
+                   "instruction file; never asked")
     p.add_argument("--mode", choices=MODES)
     p.add_argument("--cut", choices=CUTS, help="the last public rung of the ladder (default: plan)")
     p.add_argument("--human-docs", choices=SIDES, help="the side of human-docs/ (default: private)")

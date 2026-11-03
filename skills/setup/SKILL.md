@@ -37,7 +37,11 @@ is copied into the project: what stays there is what the script writes. Each rul
   drift from them unseen.*
 - **An existing `AGENTS.md` or `CLAUDE.md` is read before anything is written.** The script refuses to replace one
   without `--force`; with the owner, decide what of it moves into the new file or into RATIONALE.md first. *A
-  project's instruction file holds rulings that exist nowhere else.*
+  project's instruction file holds rulings that exist nowhere else.* Where it states invariants (rules the code depends
+  on, with why they hold or what breaks without them), carry each over as written into the answer `invariants`, one
+  paragraph per entry, and show them to the owner with the other findings; the script writes them into the Invariants
+  section of the new AGENTS.md. *An invariant already written down is the project's own finding, and the old file is
+  replaced once the run is forced.*
 
 ## 2. The questions, in order
 
@@ -48,7 +52,7 @@ every file the script makes.* Each answer has a name in the answers file (§3).
 
 | # | Question | Recommend | What the answer changes |
 |---|---|---|---|
-| 1 | Three parts, each asked on its own line with its label, so that a one-word answer fills exactly one: the **name** (`name`); **what the project is and for whom**, in one line (`purpose`); its **invariants** (`invariants`). An invariant is a rule the project must never break; each is one line, what must stay true and then what goes wrong if it is not, for example "a recipe lists every allergen of its ingredients, else someone goes to hospital". One or more, or a slot to fill in later | the invariants now, even one; they may be left as a slot | the opening paragraph of AGENTS.md |
+| 1 | Two parts, each asked on its own line with its label, so that a one-word answer fills exactly one: the **name** (`name`); **what the project is and for whom**, in one line (`purpose`) | no default: both are the owner's words | the opening paragraph of AGENTS.md |
 | 2 | How the owner works: **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
 | 3 | The cut, asked only after the ladder's table below is shown and the cut explained: the highest rung of the ladder that is public (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `all`); then, each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`), and in the two-repository form whether contributors get a short public instruction file (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
 | 4 | Which pieces: the specification graph (`graph`: `none`, `lite`, `full`), the status file (`status`, with its `families`, asked whenever the status file is chosen, as the paragraph on families below says), the handoff (`handoff`, with the first log's `stage`) | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
@@ -87,9 +91,13 @@ what a family is; never fill them from anything but the owner's answer. *A famil
 answered, so nobody checks it, and the script refuses a status file with none.* The facts of §1
 go in as `spec`, `plan`, `glossary`, `findings` (each a path or a short phrase, written into the map as given; a path is
 written from the workspace root and in backticks, as the defaults are, `` `<name>/docs/spec.md` ``), `owner_notes`,
-`frozen`, `copies`, `checks` (the project's own test and lint commands) and `prune_after` (how long a rule may go
-unneeded); `spec`, `plan`, `glossary` and `findings` default to the tree's own paths, and `public_dir` to the name in
-lower case. Anything not answered is written as a visible `[to fill: …]` slot, never guessed.
+`frozen`, `copies`, `checks` (the project's own test and lint commands), `prune_after` (how long a rule may go
+unneeded) and `invariants` (the paragraphs carried over from an existing instruction file); `spec`, `plan`, `glossary`
+and `findings` default to the tree's own paths, and `public_dir` to the name in lower case. Anything not answered is
+written as a visible `[to fill: …]` slot, never guessed. The invariants are never asked and leave no slot: without
+any, the Invariants section says none is recorded yet, and its rule has the agent write one when the work shows it.
+*An invariant is found by the work that depends on it; one demanded on the first day is a guess, written into the
+file every session reads.*
 
 ## 3. Running the script
 
@@ -97,9 +105,9 @@ Write the answers as one JSON object to a file in the session's scratch folder, 
 
 ```json
 {"name": "Larder", "purpose": "a recipe book for people who cook for others, with what each dish contains",
- "invariants": ["a recipe lists every allergen of its ingredients, else someone goes to hospital"], "mode": "conductor",
- "cut": "plan", "graph": "lite", "families": {"APP": "the application", "DOC": "the documentation"},
- "outward": "gated", "claude_code_version": "<from claude --version>", "model": "<the session's model>",
+ "mode": "conductor", "cut": "plan", "graph": "lite",
+ "families": {"APP": "the application", "DOC": "the documentation"}, "outward": "gated",
+ "claude_code_version": "<from claude --version>", "model": "<the session's model>",
  "machine": {"resources": "8 cores, 16 GB", "load": "nothing else", "limits": "one run at a time", "timings": "yes"}}
 ```
 

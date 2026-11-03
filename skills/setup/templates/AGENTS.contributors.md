@@ -1,8 +1,8 @@
 # {{name}}: instructions for a contributor's agent
 
-{{name}} is {{purpose}}. Its invariants, each with what breaks if it fails: {{invariants}}. This file is for an
-agent working in this repository on a contributor's behalf. The skills and commands it cites come from Airone Giallo,
-its plugin (`/airone-giallo:<skill>`) and its Python packages, at https://github.com/Ev3nt1ne/airone-giallo.
+{{name}} is {{purpose}}. This file is for an agent working in this repository on a contributor's behalf. The
+skills and commands it cites come from Airone Giallo, its plugin (`/airone-giallo:<skill>`) and its Python packages,
+at https://github.com/Ev3nt1ne/airone-giallo.
 
 ## Where things are
 

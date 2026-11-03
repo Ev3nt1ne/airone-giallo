@@ -3,10 +3,17 @@
 Airone Giallo's skills for Claude Code. Each folder holds one skill: a `SKILL.md` with the frontmatter Claude Code reads
 to decide when to load it, then the rules, each with its reason.
 
+They give every session of a long project the same opening and close, and the same rules for writing and correcting
+its documents, so the next session starts from what the last one decided instead of working it out again.
+
+They come with the plugin; the install is in the [repository's README](../README.md#start). Claude Code loads a skill
+when the work matches its description, and each can also be called by name, `/airone-giallo:<skill>`. Run
+`/airone-giallo:setup` first, once per project: the other skills expect the documents it lays out.
+
 | Skill | What it is for |
 |---|---|
 | [markdown-docs](markdown-docs/SKILL.md) | Writing, searching, moving and correcting a project's Markdown documents so they stay findable and trustworthy |
-| [handoff](handoff/SKILL.md) | The state file a cold session starts from and the log each close appends to, and the sections that earned their place |
+| [handoff](handoff/SKILL.md) | The state file a cold session starts from and the log each close appends to, and what each of its sections is for |
 | [session](session/SKILL.md) | The order of a working session: open from the handoff, classify a decision and explain it to the owner, say where the work stands, two passes, close with state consistent in three places; with the method for verifying a claim and the template for the project's map |
 | [doc-discipline](doc-discipline/SKILL.md) | Keeping several design documents, the graph file and the status file true together: levels in sync, the ladder of places and the cut between public and private, a term renamed across the live documents and the archive, one allocator per identifier family, the cascade read before an edit, a milestone passed by the owner's ruling, when a review is due, and what a commit of the change holds |
 | [setup](setup/SKILL.md) | Installing Airone Giallo into an existing project, once: the questions a template cannot answer, then a script that writes its tree on the sides the cut of the ladder sets (the short instruction file, the invariants file it loads into every session, its rationale file, the machine file, `ai-docs/`, `archive/` and the optional tools chosen: the status file, the handoff, the graph file), backing up an old instruction file before it replaces or removes it, refusing to overwrite anything else, and reporting every step it did not perform |

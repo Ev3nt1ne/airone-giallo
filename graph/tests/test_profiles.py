@@ -67,4 +67,4 @@ def test_the_readme_example_lints_clean_in_lite_and_full():
             assert code == 0 and "0 error(s), 0 warning(s)" in out, (profile, out)
             assert "0 assertion(s) fail somewhere, 0 more not argued yet somewhere; 0 threat(s) undefended" in out
             code, out = call(["lint", "--graph", str(graph_path), "--what-if", "ASM-01", "--today", "2026-11-01"])
-            assert "UNSATISFIED — every satisfier lost (DEC-journal)" in out, out
+            assert "UNSATISFIED — every satisfier lost (DEC-daylight)" in out, out

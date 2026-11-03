@@ -60,7 +60,7 @@ The `full` profile adds objectives, goals, expectations, evidence, checks, open 
 justifications, with the relations `evidenced-by`, `verified-by` and `awaits`; a lite graph is valid under the
 full meta unchanged.
 
-A small example: an editor must not lose saved work. Write a short design document beside the graph file,
+A small example: a Mars rover must never drive off a cliff. Write a short design document beside the graph file,
 `design.md`:
 
 ```markdown
@@ -77,21 +77,21 @@ Then replace the empty `nodes: []` and `edges: []` in `graph.yml` with five node
 
 ```yaml
 nodes:
-  - {id: REQ-01, kind: requirement, support: satisfier, statement: "A saved document survives a crash of the editor.", where: "design.md §1"}
-  - {id: ASM-01, kind: assumption, support: given, statement: "The disk has the data once fsync returns.", where: "design.md §1", reviewed: 2026-10-01, watch: 365}
-  - {id: DEC-journal, kind: decision, support: chosen, statement: "A save writes a journal entry, then replaces the file.", where: "design.md §2"}
-  - {id: DEC-replay, kind: decision, support: chosen, statement: "On start, the editor replays any unfinished journal entry.", where: "design.md §2"}
-  - {id: ATK-01, kind: threat, statement: "Power is lost between the journal write and the file replace.", where: "design.md §3"}
+  - {id: REQ-01, kind: requirement, support: satisfier, statement: "The rover never drives off a cliff.", where: "design.md §1"}
+  - {id: ASM-01, kind: assumption, support: given, statement: "In daylight the camera sees every cliff edge ahead.", where: "design.md §1", reviewed: 2026-10-01, watch: 365}
+  - {id: DEC-daylight, kind: decision, support: chosen, statement: "The rover drives only in daylight.", where: "design.md §2"}
+  - {id: DEC-storm, kind: decision, support: chosen, statement: "In a dust storm the rover stops, and moves again only once the storm has passed.", where: "design.md §2"}
+  - {id: ATK-01, kind: threat, statement: "A dust storm blinds the camera.", where: "design.md §3"}
 edges:
-  - {from: DEC-journal, type: satisfies, to: REQ-01}
-  - {from: DEC-journal, type: requires, to: ASM-01}
+  - {from: DEC-daylight, type: satisfies, to: REQ-01}
+  - {from: DEC-daylight, type: requires, to: ASM-01}
   - {from: ATK-01, type: obstructs, to: REQ-01}
-  - {from: DEC-replay, type: mitigates, to: ATK-01}
+  - {from: DEC-storm, type: mitigates, to: ATK-01}
 ```
 
-Read it: the requirement needs a satisfier (`support: satisfier`), and the journal decision is one; the decision
-rests on an assumption about the disk, taken as given and re-checked every 365 days; a power cut obstructs the
-requirement until a defender holds, and replaying the journal is one.
+Read it: the requirement needs a satisfier (`support: satisfier`), and driving only in daylight is one; that decision
+rests on an assumption about the camera, taken as given and re-checked every 365 days; a dust storm obstructs the
+requirement until a defender holds, and stopping until the storm has passed is one.
 
 Check it. The first run writes each statement's fingerprint, so a later edit to a statement is noticed:
 
@@ -104,17 +104,18 @@ specgraph lint
 5 nodes, 4 edges
   backfill (schema, not warnings): W5 claim without check 0
   engine (computed, not warnings): 0 assertion(s) fail somewhere, 0 more not argued yet somewhere; 0 threat(s) undefended somewhere
-... lint: 0 error(s), 0 warning(s)
+specgraph lint: 0 error(s), 0 warning(s)
 ```
 
-Ask what happens if the assumption about the disk is wrong:
+Ask what happens if the assumption about the camera is wrong:
 
 ```sh
 specgraph lint --what-if ASM-01
 ```
 
-The decision fails, and the requirement loses its only satisfier, so it fails too. Remove `DEC-replay` and the threat
-is undefended: the requirement is then *not argued yet*, which is not a failure but a hole someone has to fill.
+The daylight decision fails, and the requirement loses its only satisfier, so it fails too. Remove `DEC-storm` and the
+dust storm is undefended: the requirement is then *not argued yet*, which is not a failure but a hole someone has to
+fill.
 
 To look nodes up: `near WORD…`, `show ID…`, `why ID`, `at PLACE`, `draw ID` (Mermaid, or Graphviz with `--dot`).
 To change the graph in reviewable steps: `batch FILE` previews a batch of edits and reads its tier (additive,

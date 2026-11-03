@@ -33,7 +33,7 @@ Each node carries four things that answer different questions.
 
 ### 2.1 Family: the address
 
-The ID's prefix (`REQ-04`, `DEC-journal`) names the family. Numbered families take two or three digits
+The ID's prefix (`REQ-04`, `DEC-daylight`) names the family. Numbered families take two or three digits
 (`meta.id_digits`); the families in `meta.slug_prefixes` take a lowercase slug (or a number). No rule but the ID
 grammar reads a family. *A family is how a node is cited; what the node is belongs to its kind, which can be
 corrected without renaming anything.*

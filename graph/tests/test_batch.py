@@ -72,10 +72,11 @@ GRAPH_TEXT = """meta: {prefixes: [DEC, REQ, ASM, ATK], slug_prefixes: [DEC], axe
     satisfies: {from: [decision, requirement], to: [requirement]}, mitigates: {from: [decision, requirement], to: [threat]},
     obstructs: {from: [threat], to: [requirement]}}}
 nodes:
-  - {id: REQ-01, kind: requirement, support: satisfier, statement: "A saved file survives a crash.", where: "spec.md §1"}
-  - {id: DEC-journal, kind: decision, support: chosen, statement: "Writes go through a journal.", where: "spec.md §1"}
+  - {id: REQ-01, kind: requirement, support: satisfier, statement: "The rover never drives off a cliff.", where: "spec.md §1"}
+  - {id: DEC-daylight, kind: decision, support: chosen, statement: "The rover drives only in daylight.", where: "spec.md §1"}
+  - {id: DEC-blind-stop, kind: decision, support: chosen, statement: "When the camera's image degrades, the rover stops, and moves again only once the image is clear.", where: "spec.md §1"}
 edges:
-  - {from: DEC-journal, type: satisfies, to: REQ-01}
+  - {from: DEC-daylight, type: satisfies, to: REQ-01}
 """
 
 
@@ -91,9 +92,9 @@ class TestPreviewAndApply:
         with tempfile.TemporaryDirectory() as d:
             p = self.setup_graph_file(d)
             b = Path(d) / "b.yml"
-            b.write_text('ops:\n  - {op: add_node, after: DEC-journal, line: \'{id: ATK-01, kind: threat, statement: "Power is '
-                         'cut mid-write.", where: "spec.md §1"}\'}\n'
-                         '  - {op: add_edge, after_edge: [DEC-journal, satisfies, REQ-01], line: "{from: DEC-journal, type: '
+            b.write_text('ops:\n  - {op: add_node, after: DEC-blind-stop, line: \'{id: ATK-01, kind: threat, statement: "A dust '
+                         'storm blinds the camera.", where: "spec.md §1"}\'}\n'
+                         '  - {op: add_edge, after_edge: [DEC-daylight, satisfies, REQ-01], line: "{from: DEC-blind-stop, type: '
                          'mitigates, to: ATK-01}"}\n')
             code, out = call(["batch", str(b), "--graph", str(p)])
             assert "tier A, additive" in out
@@ -107,7 +108,7 @@ class TestPreviewAndApply:
         with tempfile.TemporaryDirectory() as d:
             p = self.setup_graph_file(d)
             b = Path(d) / "b.yml"
-            b.write_text("ops:\n  - {op: remove_edge, from: DEC-journal, type: satisfies, to: REQ-01}\n")
+            b.write_text("ops:\n  - {op: remove_edge, from: DEC-daylight, type: satisfies, to: REQ-01}\n")
             code, out = call(["batch", str(b), "--graph", str(p)])
             assert "REQ-01                   holds -> not argued yet on all" in out
             assert "tier review" in out

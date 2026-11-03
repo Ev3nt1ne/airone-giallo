@@ -77,10 +77,10 @@ contradiction is raised, not edited away.
 
   ```yaml
   ops:
-    - {op: add_node, after: DEC-journal, line: '{id: ATK-01, kind: threat, statement: "…", where: "design.md §3"}'}
-    - {op: add_edge, after_edge: [DEC-journal, satisfies, REQ-01], line: "{from: ATK-01, type: obstructs, to: REQ-01}"}
+    - {op: add_node, after: DEC-daylight, line: '{id: ATK-01, kind: threat, statement: "…", where: "design.md §3"}'}
+    - {op: add_edge, after_edge: [DEC-daylight, satisfies, REQ-01], line: "{from: ATK-01, type: obstructs, to: REQ-01}"}
     - {op: set_statement, id: REQ-01, statement: "…"}
-    - {op: set_status, id: DEC-journal, status: suspect}
+    - {op: set_status, id: DEC-daylight, status: suspect}
     - {op: remove_edge, from: A, type: requires, to: B}
   ```
 

@@ -23,17 +23,17 @@ class TestZeroAxes:
         # threat is defended
         meta = dict(LITE)
         nodes = [{"id": "REQ-01", "kind": "requirement", "support": "satisfier"},
-                 {"id": "DEC-journal", "kind": "decision", "support": "chosen"},
+                 {"id": "DEC-daylight", "kind": "decision", "support": "chosen"},
                  {"id": "ASM-01", "kind": "assumption", "support": "given"},
                  {"id": "ATK-01", "kind": "threat"},
-                 {"id": "DEC-replay", "kind": "decision", "support": "chosen"}]
-        edges = [{"from": "DEC-journal", "type": "satisfies", "to": "REQ-01"},
+                 {"id": "DEC-blind-stop", "kind": "decision", "support": "chosen"}]
+        edges = [{"from": "DEC-daylight", "type": "satisfies", "to": "REQ-01"},
                  {"from": "REQ-01", "type": "requires", "to": "ASM-01"},
                  {"from": "ATK-01", "type": "obstructs", "to": "REQ-01"}]
         lg = read_as_logic(meta, nodes, edges)
         assert lg.elements == [ALL]
         assert lg.outcome("REQ-01", ALL) == "not argued yet"          # the threat has no defender yet
-        lg = read_as_logic(meta, nodes, edges + [{"from": "DEC-replay", "type": "mitigates", "to": "ATK-01"}])
+        lg = read_as_logic(meta, nodes, edges + [{"from": "DEC-blind-stop", "type": "mitigates", "to": "ATK-01"}])
         assert lg.outcome("REQ-01", ALL) == "holds"
         assert lg.outcome("ATK-01", ALL) == "defended"
 

@@ -315,7 +315,7 @@ def test_the_two_repository_form_refuses_without_the_public_repository(tmp_path,
     assert tree(plain) == {}
     # The dry run still shows the tree, and says the real run would stop.
     rc, out = install(missing, answers, "--dry-run", capsys=capsys)
-    assert rc == 1 and re.search(r"WOULD +inkwell/docs/README.md", out) and "the real run would stop here" in out
+    assert rc == 1 and re.search(r"CREATE +inkwell/docs/README.md", out) and "the real run would stop here" in out
     assert tree(missing) == {}
 
 
@@ -627,10 +627,12 @@ def test_a_dry_run_writes_nothing(tmp_path, capsys):
     assert rc == 0, out
     assert tree(folder) == before
     assert not (folder / "ai-docs").exists() and not (folder / "inkwell" / "docs").exists()
+    # The first line says nothing has been written; then each line starts with what the real run would do.
+    assert out.splitlines()[0].startswith("DRY RUN  nothing has been written")
     for rel in ("AGENTS.md", ".gitignore", "ai-docs/status.md", "archive/LOG.md", "inkwell/AGENTS.md",
                 "inkwell/graph.yml", "inkwell/docs/invariants.md"):
-        assert re.search(rf"WOULD +{re.escape(rel)} ", out), rel
-    assert "nothing was written" in out
+        assert re.search(rf"^CREATE +{re.escape(rel)} ", out, re.M), rel
+    assert "WOULD" not in out
 
 
 def test_a_dry_run_in_one_repository_writes_nothing_either(tmp_path, capsys):
@@ -642,7 +644,24 @@ def test_a_dry_run_in_one_repository_writes_nothing_either(tmp_path, capsys):
                       capsys=capsys)
     assert rc == 0, out
     assert tree(folder) == before
-    assert re.search(r"WOULD +\.ignore +append: archive/", out)
+    assert re.search(r"^APPEND +\.ignore +archive/$", out, re.M), out
+    assert re.search(r"^CREATE +AGENTS.md +the instruction file$", out, re.M), out
+
+
+def test_a_dry_run_names_what_it_would_replace_and_keep_and_the_real_run_what_it_did(tmp_path, capsys):
+    folder = project(tmp_path)
+    (folder / "AGENTS.md").write_text("old rules\n")
+    (folder / "RATIONALE.md").write_text("the project's own rationale\n")
+    rc, out = install(folder, MINIMAL, "--force", "--dry-run", capsys=capsys)
+    assert rc == 0, out
+    assert re.search(r"^REPLACE +AGENTS.md ", out, re.M) and re.search(r"^KEEP +RATIONALE.md +a record", out, re.M)
+    assert {ln.split()[0] for ln in out.splitlines()[2:]} <= {"CREATE", "REPLACE", "APPEND", "KEEP"}, out
+    # The real run keeps its status first: whether each step happened.
+    rc, out = install(folder, MINIMAL, "--force", capsys=capsys)
+    assert rc == 0, out
+    assert "DRY RUN" not in out and out.splitlines()[0].startswith("FORM")
+    assert re.search(r"^DONE +AGENTS.md +replaced: ", out, re.M) and re.search(r"^KEPT +RATIONALE.md ", out, re.M)
+    assert {ln.split()[0] for ln in out.splitlines()[1:-1]} <= {"DONE", "KEPT"}, out
 
 
 def test_an_existing_file_stops_the_whole_run(tmp_path, capsys):

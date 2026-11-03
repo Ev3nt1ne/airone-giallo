@@ -27,7 +27,9 @@ the project: the checks are Airone Giallo's installed commands.
 
 The rule it exists to obey: never report success for a step it did not perform. Every step is reported as done,
 kept, skipped or failed, and the exit code follows the report: 0 when every step was done or kept, 1 when any was
-refused, skipped or failed, 2 when the answers are invalid; a dry run exits 0 unless the real run would be refused.
+refused, skipped or failed, 2 when the answers are invalid. A dry run says first that nothing has been written, then
+gives each step the action the real run would take (create, replace, append or keep); it exits 0 unless the real run
+would be refused.
 Before writing anything it checks every target: an existing file stops the whole run unless --force, so a refusal
 never leaves half an install. With --force the instruction files are replaced, but a record (the status file, the
 closed file, the handoff, the archive's log, RATIONALE.md, the graph file, the folders' READMEs) is kept as it is,
@@ -850,19 +852,22 @@ def run(a, target, dry_run, force, out=None):
             print(f"  {s.path}", file=out)
         return 1
 
+    # The real run reports whether each step happened (DONE, KEPT, SKIPPED, FAILED); the dry run, which does nothing,
+    # what each step would do (CREATE, REPLACE, APPEND, KEEP).
+    kept = "KEEP" if dry_run else "KEPT"
     report, problems = [], False
     for s in steps:
         dest = target / s.path
         if s.kept:
-            report.append(("KEPT", s.path, s.kept))
+            report.append((kept, s.path, s.kept))
             continue
         if s.lines:
             missing = missing_groups(dest, s.lines)
             shown = " | ".join(ln for g in missing for ln in g if not ln.startswith("#"))
             if not missing:
-                report.append(("KEPT", s.path, "already holds the lines: " + s.what))
+                report.append((kept, s.path, "already holds the lines: " + s.what))
             elif dry_run:
-                report.append(("WOULD", s.path, f"{'append' if dest.exists() else 'create'}: {shown}"))
+                report.append(("APPEND" if dest.exists() else "CREATE", s.path, shown))
             else:
                 try:
                     prev = dest.read_text(encoding="utf-8") if dest.exists() else ""
@@ -879,11 +884,10 @@ def run(a, target, dry_run, force, out=None):
                     problems = True
             continue
         if dest.exists() and s.record:
-            report.append(("KEPT", s.path, "a record, never replaced"))
+            report.append((kept, s.path, "a record, never replaced"))
             continue
         if dry_run:
-            verb = "replace" if dest.exists() else "create"
-            report.append(("WOULD", s.path, f"{verb}: {s.what}"))
+            report.append(("REPLACE" if dest.exists() else "CREATE", s.path, s.what))
             continue
         if s.action:
             status, detail = s.action(target)
@@ -903,11 +907,12 @@ def run(a, target, dry_run, force, out=None):
         problems |= status not in ("DONE", "KEPT")
 
     width = max(len(p) for _, p, _ in report) + 1
+    if dry_run:
+        print("DRY RUN  nothing has been written; each line says what the real run would do", file=out)
     print(f"{'FORM':<8} {describe(a, lay)}", file=out)
     for status, path, detail in report:
         print(f"{status:<8} {path:<{width}} {detail}", file=out)
     if dry_run:
-        print("dry run: nothing was written", file=out)
         if problem:
             print(f"REFUSED  the real run would stop here: {problem}", file=out)
             return 1

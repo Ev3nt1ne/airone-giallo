@@ -114,17 +114,20 @@ Write the answers as one JSON object to a file in the session's scratch folder, 
 
 Then run it from the workspace root (the private repository in the two-repository form), in three steps:
 
-1. The dry run, which writes nothing and lists every file the real run would write:
+1. The dry run, which writes nothing: its first line says so, and each line after it starts with what the real run
+   would do to one file, `CREATE`, `REPLACE`, `APPEND` (lines a file lacks) or `KEEP` (a record, or lines already
+   there):
 
    ```sh
    python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json --dry-run
    ```
 
-2. Show the owner the dry run's file list as it printed, and end the turn there: the real run waits for the owner's
+2. Show the owner the dry run's list as it printed, and end the turn there: the real run waits for the owner's
    word and never runs in the same turn as the dry run. *The preview is where a wrong answer costs nothing, and only
    if the owner reads it before anything is written.* An answer the owner changes goes into ANSWERS.json, and the
    dry run is shown again.
-3. With the owner's word, the real run, which prints the same list with what it did to each file:
+3. With the owner's word, the real run, which prints the same list with what happened to each file first: `DONE`,
+   `KEPT`, `SKIPPED` or `FAILED`. *Before the run the question is what will be done, after it whether it was.*
 
    ```sh
    python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json

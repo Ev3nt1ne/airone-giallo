@@ -716,6 +716,7 @@ def test_the_handoffs_first_state_is_what_the_setup_knows_not_a_blank_form(tmp_p
     assert "**The cut**: `none`, so one private repository" in text
     assert "the status file `ai-docs/status.md`" in text and "the first for the stage `set-up`" in text
     assert "no specification graph" in text
+    assert "**The optional tools**: the status file `ai-docs/status.md`" in text
     # No invariant was carried over, so the state says there is none rather than pointing to one.
     assert "**Invariants**: none recorded yet." in text
     assert ("**For the owner**: the slots the setup left unanswered in the instruction file and the machine file."

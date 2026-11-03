@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the pieces of Airone Giallo a project chose, in Airone Giallo's tree, into that project's workspace.
+"""Install Airone Giallo's tree, with the optional tools a project chose, into that project's workspace.
 
     python3 scaffold.py --answers ANSWERS.json [--target DIR] [--dry-run] [--force]
     python3 scaffold.py --name N --purpose P --mode conductor [more flags] [--target DIR] ...
@@ -545,7 +545,7 @@ def first_state(block, a, lay, ctx, now, log_name, slotted):
             "- **Progress**: none recorded yet."),
         "2. What was decided, and why": items(
             f"- **The cut**: `{lay.cut}`, so {describe(a, lay)}. *Why:* the owner's answer at setup.",
-            f"- **The pieces**: {'; '.join(pieces)}. *Why:* the owner's answers at setup."),
+            f"- **The optional tools**: {'; '.join(pieces)}. *Why:* the owner's answers at setup."),
         "3. What is open": items(
             f"1. **For the owner**: {open_for_owner}.", "2. **Unexplained**: none.", "3. **Deferred**: none."),
         "4. What the next session does first": f"{items(step)}\n\nPrompt to paste:\n\n    {prompt}",
@@ -886,7 +886,7 @@ def run(a, target, dry_run, force, out=None):
 
 
 def parser():
-    p = argparse.ArgumentParser(description="Install the chosen pieces of Airone Giallo into a project.",
+    p = argparse.ArgumentParser(description="Install Airone Giallo into a project, with the optional tools it chose.",
                                 epilog="Every answer can also come from --answers FILE, a JSON object with the "
                                 "same names (underscores for dashes); a flag overrides the file.")
     p.add_argument("--answers", metavar="FILE", help="a JSON object of answers")

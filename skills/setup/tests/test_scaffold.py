@@ -142,6 +142,56 @@ def agents(folder):
     return (folder / "AGENTS.md").read_text(encoding="utf-8")
 
 
+def rows(out):
+    """The report's file lines, (status, path, detail), whatever section they sit in."""
+    return [(m[1], m[2], m[3]) for m in re.finditer(r"^ {4}([A-Z]+) +(\S+) *(.*)$", out, re.M)]
+
+
+def section(out, title):
+    """The lines of the report's section whose heading starts with `title`, up to the next section."""
+    m = re.search(rf"^{re.escape(title)}.*\n((?:(?: .*)?\n)*?)(?=\S|\Z)", out + "\n", re.M)
+    assert m, (title, out)
+    return m.group(1)
+
+
+# A generic old instruction file of about 5 KB, in sections, as a project might have one.
+OLD_FILE = "# Inkwell: notes for agents\n" + "".join(
+    f"\n## {title}\n\n" + (line + " ") * 14 + "\n" for title, line in (
+        ("Commands", "Run the tests with `make test` and the linter with `make lint` before every commit."),
+        ("Layout", "The editor lives in `app/`, the note format in `app/format.py`, fixtures in `tests/`."),
+        ("Saving", "A saved note is written to a new file and renamed over the old one, so a crash never halves it."),
+        ("Release", "Release with `make release` from a clean tree, after the tests pass."),
+        ("Style", "Prefer small functions, and name a test for the behaviour it checks.")))
+
+
+def unstamped(backup):
+    """The backup's bytes without the stamp block the setup adds, which must be the original's."""
+    data = backup.read_bytes()
+    assert data.startswith(b"---\narchived: "), data[:40]
+    return data[data.index(b"\n---\n") + 5:]
+
+
+def archive_checks(folder, public=None):
+    """check-archive and check-frontmatter, run as scripts from the clone on what is staged; in the two-repository
+    form the public folder is staged on its own and left out of the workspace's index, as `document_checks` does."""
+    if not (folder / ".git").exists():
+        git("init", "-q", cwd=folder)
+    if public:
+        assert git("add", "-A", cwd=folder / public).returncode == 0
+        assert git("add", "-A", "--", ".", f":!{public}", cwd=folder).returncode == 0
+    else:
+        assert git("add", "-A", cwd=folder).returncode == 0
+    archives = [f"{public}/archive"] if public else []
+    tools = sc.REPO / "tools" / "src"
+    out = []
+    for args in [["check_archive.py"]] + [["check_archive.py", "--archive", a] for a in archives] + \
+            [["check_frontmatter.py", "--all"]]:
+        proc = subprocess.run([sys.executable, str(tools / args[0]), *args[1:]], cwd=folder, capture_output=True,
+                              text=True)
+        out.append((args, proc.returncode, proc.stdout + proc.stderr))
+    return out
+
+
 def flat(text):
     return " ".join(text.split())
 
@@ -269,7 +319,7 @@ def test_the_cut_puts_each_rung_on_its_side(tmp_path, capsys, cut):
     a = dict(sc.DEFAULTS, **MINIMAL)
     a.update(cut=cut, graph="lite")
     sc.validate(a)
-    graph = sc.context(a, sc.Layout.of(a), folder)["graph_file"]
+    graph = sc.context(a, sc.Layout.of(a), lambda rel: folder / rel)["graph_file"]
     assert graph == ("inkwell/graph.yml" if form == "two" and last_public >= 2 else "graph.yml")
     words = flat(agents(folder))
     expected = {"all": "everything is public", "none": "everything is private"}.get(
@@ -295,7 +345,9 @@ def test_the_two_repository_form_refuses_without_the_public_repository(tmp_path,
     missing = project(tmp_path, "missing")
     git("init", "-q", cwd=missing)
     rc, out = install(missing, answers, capsys=capsys)
-    assert rc == 1 and "REFUSED" in out and "git submodule add <its URL> inkwell" in out
+    # The refusal says how the owner's folder comes in: moved whole, then registered where it is.
+    assert rc == 1 and "REFUSED" in out and "mv <the folder> inkwell" in out
+    assert "git submodule add <its URL, or ./inkwell without one> inkwell" in out
     assert tree(missing) == {}
     # A plain folder of the workspace is not a repository of its own.
     plain = project(tmp_path, "plain")
@@ -315,7 +367,8 @@ def test_the_two_repository_form_refuses_without_the_public_repository(tmp_path,
     assert tree(plain) == {}
     # The dry run still shows the tree, and says the real run would stop.
     rc, out = install(missing, answers, "--dry-run", capsys=capsys)
-    assert rc == 1 and re.search(r"CREATE +inkwell/docs/README.md", out) and "the real run would stop here" in out
+    assert rc == 1 and "docs/ (README, glossary, invariants)" in section(out, "Your repository:")
+    assert "the real run would stop here" in out and "mv <the folder> inkwell" in out
     assert tree(missing) == {}
 
 
@@ -627,12 +680,18 @@ def test_a_dry_run_writes_nothing(tmp_path, capsys):
     assert rc == 0, out
     assert tree(folder) == before
     assert not (folder / "ai-docs").exists() and not (folder / "inkwell" / "docs").exists()
-    # The first line says nothing has been written; then each line starts with what the real run would do.
-    assert out.splitlines()[0].startswith("DRY RUN  nothing has been written")
-    for rel in ("AGENTS.md", ".gitignore", "ai-docs/status.md", "archive/LOG.md", "inkwell/AGENTS.md",
-                "inkwell/graph.yml", "inkwell/docs/invariants.md"):
-        assert re.search(rf"^CREATE +{re.escape(rel)} ", out, re.M), rel
-    assert "WOULD" not in out
+    # The first line says nothing has been written; the owner's repository comes first, then the new workspace, and
+    # the new files are grouped by folder.
+    assert out.splitlines()[0] == "DRY RUN: nothing has been written yet."
+    public, workspace_part = section(out, "Your repository:"), section(out, "The workspace:")
+    assert out.index("Your repository:") < out.index("The workspace:")
+    assert re.search(r"^Your repository: .*/inkwell \(public\)$", out, re.M) and "The workspace: " in out
+    first, folders = re.search(r"  New files\n    CREATE   (.*)\n    CREATE   (.*)\n", public).groups()
+    assert set(first.split(", ")) == {".ignore", "AGENTS.md", "CLAUDE.md", "graph.yml"}, first
+    assert "docs/ (README, glossary, invariants)" in folders and "archive/ (README, LOG)" in folders
+    assert "AGENTS.md, CLAUDE.md, RATIONALE.md, local-machine.md" in workspace_part
+    assert "ai-docs/ (README, status, closed, handoff/current, " in workspace_part
+    assert "WOULD" not in out and "FORM" not in out
 
 
 def test_a_dry_run_in_one_repository_writes_nothing_either(tmp_path, capsys):
@@ -644,34 +703,156 @@ def test_a_dry_run_in_one_repository_writes_nothing_either(tmp_path, capsys):
                       capsys=capsys)
     assert rc == 0, out
     assert tree(folder) == before
-    assert re.search(r"^APPEND +\.ignore +archive/$", out, re.M), out
-    assert re.search(r"^CREATE +AGENTS.md +the instruction file$", out, re.M), out
+    have = section(out, "Your repository:")
+    assert re.search(r"^  Files you have\n(?:    .*\n)*    APPEND +\.ignore +1 line: archive/$", have, re.M), out
+    assert re.search(r"^  New files\n    CREATE   AGENTS.md, CLAUDE.md, RATIONALE.md, local-machine.md", have,
+                     re.M), out
 
 
 def test_a_dry_run_names_what_it_would_replace_and_keep_and_the_real_run_what_it_did(tmp_path, capsys):
     folder = project(tmp_path)
-    (folder / "AGENTS.md").write_text("old rules\n")
+    (folder / "local-machine.md").write_text("the old machine file\n")
     (folder / "RATIONALE.md").write_text("the project's own rationale\n")
     rc, out = install(folder, MINIMAL, "--force", "--dry-run", capsys=capsys)
     assert rc == 0, out
-    assert re.search(r"^REPLACE +AGENTS.md ", out, re.M) and re.search(r"^KEEP +RATIONALE.md +a record", out, re.M)
-    assert {ln.split()[0] for ln in out.splitlines()[2:]} <= {"CREATE", "REPLACE", "APPEND", "KEEP"}, out
-    # The real run keeps its status first: whether each step happened.
+    lines = rows(out)
+    found = [r[:2] for r in lines]
+    assert ("REPLACE", "local-machine.md") in found and ("KEEP", "RATIONALE.md") in found
+    assert {st for st, _, _ in lines} <= {"CREATE", "REPLACE", "APPEND", "KEEP"}, out
+    # The real run keeps its status first, whether each step happened, and lists every file.
     rc, out = install(folder, MINIMAL, "--force", capsys=capsys)
     assert rc == 0, out
     assert "DRY RUN" not in out and out.splitlines()[0].startswith("FORM")
-    assert re.search(r"^DONE +AGENTS.md +replaced: ", out, re.M) and re.search(r"^KEPT +RATIONALE.md ", out, re.M)
-    assert {ln.split()[0] for ln in out.splitlines()[1:-1]} <= {"DONE", "KEPT"}, out
+    lines = rows(out)
+    found = [r[:2] for r in lines]
+    assert ("DONE", "local-machine.md") in found and ("KEPT", "RATIONALE.md") in found
+    assert {st for st, _, _ in lines} <= {"DONE", "KEPT"} and ("DONE", "docs/glossary.md") in [r[:2] for r in lines]
 
 
 def test_an_existing_file_stops_the_whole_run(tmp_path, capsys):
     folder = project(tmp_path)
-    (folder / "AGENTS.md").write_text("the project's own rules\n")
+    (folder / "local-machine.md").write_text("the machine as it was\n")
     before = tree(folder)
     rc, out = install(folder, MINIMAL, capsys=capsys)
     assert rc == 1
-    assert "REFUSED" in out and "AGENTS.md" in out
+    assert "REFUSED" in out and "local-machine.md" in out
     assert tree(folder) == before
+
+
+def test_an_old_instruction_file_is_backed_up_then_replaced_or_removed_in_one_repository(tmp_path, capsys):
+    folder = project(tmp_path)
+    (folder / "CLAUDE.md").write_text(OLD_FILE)
+    (folder / ".claude").mkdir()
+    (folder / ".claude" / "CLAUDE.md").write_text("---\ntitle: x\n---\nmore rules\n")
+    before = tree(folder)
+    answers = dict(MINIMAL, carry=['"Commands" → ai-docs/guides/', '"Style" → AGENTS.md'])
+    rc, out = install(folder, answers, "--dry-run", capsys=capsys)
+    assert rc == 0 and tree(folder) == before, out
+    have = [r[:2] for r in rows(section(out, "Your repository:"))]
+    assert have[:4] == [("BACKUP", "CLAUDE.md"), ("REPLACE", "CLAUDE.md"), ("BACKUP", ".claude/CLAUDE.md"),
+                        ("REMOVE", ".claude/CLAUDE.md")] or have[:4] == [
+        ("BACKUP", ".claude/CLAUDE.md"), ("REMOVE", ".claude/CLAUDE.md"), ("BACKUP", "CLAUDE.md"),
+        ("REPLACE", "CLAUDE.md")], have
+    assert "unchanged, to archive/CLAUDE-before-setup.md" in out
+    assert "  Carried over after the run, as you confirmed\n    \"Commands\" → ai-docs/guides/" in out
+    # The real run needs no --force: nothing is lost, since the backup is checked before the file is touched.
+    rc, out = install(folder, answers, capsys=capsys)
+    assert rc == 0, out
+    assert (folder / "CLAUDE.md").read_text() == "@AGENTS.md\n" and not (folder / ".claude" / "CLAUDE.md").exists()
+    assert unstamped(folder / "archive" / "CLAUDE-before-setup.md") == OLD_FILE.encode()
+    # A file with a frontmatter of its own gets only the stamp line inside it.
+    nested = (folder / "archive" / "dot-claude-CLAUDE-before-setup.md").read_bytes()
+    assert re.fullmatch(rb"---\narchived: [0-9T:+-]+\ntitle: x\n---\nmore rules\n", nested), nested
+    assert "backed up to archive/CLAUDE-before-setup.md, its bytes read back and compared" in out
+    assert '"Style" → AGENTS.md' in out
+    for args, code, output in archive_checks(folder):
+        assert code == 0 and "0 error(s)" in output, (args, output)
+
+
+@needs_git
+def test_in_two_repositories_the_old_file_is_backed_up_in_the_workspace_and_removed_from_the_public_folder(
+        tmp_path, capsys):
+    folder = workspace(tmp_path)
+    (folder / "inkwell" / "CLAUDE.md").write_text(OLD_FILE)
+    answers = dict(MINIMAL, cut="plan", status=True, families=FAMILIES)
+    rc, out = install(folder, answers, "--dry-run", capsys=capsys)
+    assert rc == 0, out
+    have = [r[:2] for r in rows(section(out, "Your repository:"))]
+    assert have[:2] == [("BACKUP", "CLAUDE.md"), ("REMOVE", "CLAUDE.md")], have
+    assert "unchanged, to the workspace's archive/CLAUDE-before-setup.md" in out
+    rc, out = install(folder, answers, capsys=capsys)
+    assert rc == 0, out
+    # The backup is private, in the workspace's archive; the public folder keeps no instruction file, so the rule that
+    # sessions open at the root, where no instruction file exists, holds.
+    assert unstamped(folder / "archive" / "CLAUDE-before-setup.md") == OLD_FILE.encode()
+    assert not (folder / "inkwell" / "archive" / "CLAUDE-before-setup.md").exists()
+    assert not [n for n in sc.OLD_INSTRUCTIONS if (folder / "inkwell" / n).exists()]
+    assert "never inside `inkwell/`**, where no instruction file exists" in flat(agents(folder))
+    for args, code, output in archive_checks(folder, "inkwell"):
+        assert code == 0 and "0 error(s)" in output, (args, output)
+    # With the contributors' files, the old one is backed up and replaced by theirs.
+    both = workspace(tmp_path, "both")
+    (both / "inkwell" / "CLAUDE.md").write_text(OLD_FILE)
+    rc, out = install(both, dict(answers, agent_layer="both"), capsys=capsys)
+    assert rc == 0, out
+    assert (both / "inkwell" / "CLAUDE.md").read_text() == "@AGENTS.md\n"
+    assert unstamped(both / "archive" / "CLAUDE-before-setup.md") == OLD_FILE.encode()
+
+
+def test_an_old_file_is_left_as_it_was_when_its_backup_does_not_read_back(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(sc, "write_backup", lambda path, data: (path.parent.mkdir(parents=True, exist_ok=True),
+                                                                path.write_bytes(data[:-1])))
+    folder = project(tmp_path)
+    (folder / "CLAUDE.md").write_text(OLD_FILE)
+    rc, out = install(folder, MINIMAL, capsys=capsys)
+    assert rc == 1 and "SETUP INCOMPLETE" in out, out
+    assert ("FAILED", "CLAUDE.md") in [r[:2] for r in rows(out)]
+    assert (folder / "CLAUDE.md").read_text() == OLD_FILE
+
+
+def test_a_backup_is_never_written_over(tmp_path, capsys):
+    folder = project(tmp_path)
+    (folder / "CLAUDE.md").write_text(OLD_FILE)
+    (folder / "archive").mkdir()
+    (folder / "archive" / "CLAUDE-before-setup.md").write_text("an earlier backup\n")
+    before = tree(folder)
+    rc, out = install(folder, MINIMAL, "--force", capsys=capsys)
+    assert rc == 1 and "REFUSED" in out and "archive/CLAUDE-before-setup.md" in out, out
+    assert tree(folder) == before
+
+
+@needs_git
+def test_the_dry_run_before_the_move_shows_it_and_reads_the_owners_folder(tmp_path, capsys):
+    # The owner's folder, a repository with an ignored file, before it moves into the workspace.
+    source = project(tmp_path, "notes")
+    git("init", "-q", cwd=source)
+    (source / ".gitignore").write_text("node_modules/\n")
+    (source / "CLAUDE.md").write_text(OLD_FILE)
+    (source / "docs").mkdir()
+    (source / "docs" / "spec.md").write_text("the specification\n")
+    (source / "node_modules").mkdir()
+    (source / "node_modules" / "x").write_text("a dependency\n")
+    before = tree(source)
+    nido = tmp_path / "notes-nido"
+    answers = dict(MINIMAL, cut="plan", status=True, families=FAMILIES, move_from=str(source))
+    rc, out = install(nido, answers, "--dry-run", capsys=capsys)
+    assert rc == 0, out
+    assert tree(source) == before and not nido.exists()
+    lines = out.splitlines()
+    assert lines[0] == "DRY RUN: nothing has been written yet."
+    assert re.match(rf"MOVE +{re.escape(str(source))} → {re.escape(str(nido / 'notes'))} +your whole folder", lines[2])
+    assert re.match(rf"CREATE +{re.escape(str(nido))} +the new private workspace", lines[3])
+    # The public folder keeps the folder's name, and what it already holds is read from where it is now.
+    assert f"Your repository: {nido / 'notes'} (public)" in out and f"The workspace: {nido} (private, new)" in out
+    have = [r[:2] for r in rows(section(out, "Your repository:"))]
+    assert ("BACKUP", "CLAUDE.md") in have and ("REMOVE", "CLAUDE.md") in have and ("KEEP", "docs/") in have, have
+    # The real run waits for the move, and says how to make it.
+    nido.mkdir()
+    rc, out = install(nido, answers, capsys=capsys)
+    assert rc == 1 and "REFUSED" in out and "mv <the folder> notes" in out, out
+    assert tree(source) == before
+
+
 
 
 def test_force_replaces_the_instructions_and_keeps_every_record(tmp_path, capsys, monkeypatch):
@@ -867,7 +1048,7 @@ def test_the_graph_step_is_skipped_naming_the_install_when_neither_command_nor_m
     folder = project(tmp_path)
     rc, out = install(folder, dict(MINIMAL, graph="lite"), capsys=capsys)
     assert rc == 1
-    line = [ln for ln in out.splitlines() if re.match(r"SKIPPED +graph.yml", ln)][0]
+    line = [ln for ln in out.splitlines() if re.match(r" *SKIPPED +graph.yml", ln)][0]
     assert f"uv tool install {sc.REPO / 'graph'}" in line and "pipx install" in line, line
     assert "pip install <airone-giallo>" not in line
     assert not (folder / "graph.yml").exists()
@@ -931,6 +1112,7 @@ def test_a_flag_overrides_the_answers_file(tmp_path, capsys):
     {"public_dir": "inkwell"},
     {"public_dir": "ai-docs", "cut": "plan"},
     {"public_dir": "a/b", "cut": "plan"},
+    {"move_from": "/somewhere/notes"},
     {"invariants": ["   "]},
 ])
 def test_invalid_answers_exit_two_and_write_nothing(tmp_path, capsys, bad):
@@ -948,7 +1130,7 @@ def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_
     # One table: each question carries its label, and the groups are labels for the reader, not headings or rounds.
     labelled = re.findall(r"^\| ([A-Z]\d) · ([^|]+?) \| ", text, re.M)
     ids = [i for i, _ in labelled]
-    assert ids == ["A1", "A2", "A3", "A4", "B1", "C1", "C2", "C3", "D1"], ids
+    assert ids == ["A1", "A2", "A3", "B1", "C1", "C2", "C3", "D1"], ids
     assert not re.search(r"^#+ [A-Z]\. ", text, re.M)
     assert "a group is a label for the reader, never a round" in flat_text
     # Each question in three parts, which are the table's columns; a pending one reminded in a line, never re-asked.
@@ -981,10 +1163,31 @@ def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_
             'which]. Keep any by number, add your own, or answer none."') in flat_text
     for sample in ("new dependency", "live database", "passwords"):
         assert sample not in text, sample
-    # A3 exists only when the old file states invariants, and offers nothing it does not state.
-    assert "Asked only when the project's existing `AGENTS.md` or `CLAUDE.md` states invariants" in rows["A3"]
-    assert "Never offer as an invariant what the old file does not state as one" in flat_text
-    assert "when it states none, there is no A3" in flat_text
+    # The old instruction file has its own step before A1, which replaced the invariants question: its sections each
+    # get a place, confirmed once; the frame is the skill's, the lines are filled at each run.
+    assert rows["A3"].startswith("| A3 · This machine |") and "nvariants already written" not in text
+    unquoted = flat(re.sub(r"^> ?", "", text, flags=re.M))
+    step = unquoted[unquoted.index("**The old instruction file, before A1.**"):unquoted.index("Each answer has a name")]
+    assert "the owner confirms or changes any line, once, and it is not asked again" in step
+    assert ("Your existing CLAUDE.md. The setup replaces it with a one-line `@AGENTS.md`, and each part of it is "
+            "carried to where Airone Giallo keeps that kind of thing.") in step
+    assert "\n> Your CLAUDE.md is backed up, unchanged, as `archive/CLAUDE-before-setup.md`.\n" in text
+    assert ('Here is where each part would go: [one line per section: "<section>" → <place>]. Confirm, or change any '
+            "line.") in step
+    assert "removes the file from the public folder after backing it up in the workspace's archive" in step
+    for place in ("`AGENTS.md`: rules for how agents work here", "`docs/invariants.md`: rules the code depends on",
+                  "`docs/`: what the system is", "`ai-docs/guides/`: how a thing is done here",
+                  "the status file or `plan/`: open work", "`RATIONALE.md`: where a rule came from",
+                  "dropped: what no longer holds, with why", "elsewhere: a place the agent names, with why"):
+        assert place in step, place
+    assert "Never place as an invariant what the file does not state as one" in step
+    # The two-repository form moves the owner's folder whole, registered in place, and says the new path at the end.
+    assert "mv <folder> <folder>-nido/<folder>" in text and "never `git submodule absorbgitdirs`" in flat_text
+    assert "stale copy" not in text and "second clone" not in text
+    assert "close by giving the owner the new paths" in flat_text
+    # The one thing the script deletes: an old instruction file whose backup read back equal to it.
+    assert ("deletes nothing but an old instruction file of the owner's repository once its backup has been read back "
+            "equal to it") in flat_text
     # D1 is a closed box: its row and its paragraph say nothing of what the layer holds or how many rules it has.
     for inside in ("omment", "fix", "rreversible", "three", "two", "Four-Hands", "Conductor"):
         assert inside not in rows["D1"], inside
@@ -994,7 +1197,8 @@ def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_
     assert "Then, in either mode, list for the owner the choices the setup made that they did not" in flat_text
     # Every word the script starts a report line with is explained where the skill shows the two runs.
     runs = text[text.index("1. The dry run, which writes nothing"):text.index("What it writes, the dry run lists")]
-    for word in ("CREATE", "REPLACE", "APPEND", "KEEP", "DONE", "KEPT", "SKIPPED", "FAILED"):
+    for word in ("CREATE", "REPLACE", "APPEND", "KEEP", "BACKUP", "REMOVE", "DONE", "KEPT", "SKIPPED",
+                 "FAILED"):
         assert f"`{word}`" in runs, word
 
 

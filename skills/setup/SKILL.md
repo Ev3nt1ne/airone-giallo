@@ -11,10 +11,10 @@ is copied into the project: what stays there is what the script writes. Each rul
 
 ## 1. Before asking anything
 
-- **Start on a clean tree.** `git status` must be empty in every repository the setup writes into: the project in the
-  one-repository form; the workspace and the public repository in the two-repository form, which they are once the
-  submodule's addition below is committed. Afterwards it shows exactly what the setup added, and `git stash -u` or a
-  checkout undoes it. *An install mixed into uncommitted work cannot be reviewed or reverted on its own.*
+- **Start on a clean tree.** `git status` must be empty in the owner's repository before the dry run, and in the
+  two-repository form in the new workspace too once the submodule's addition (§3) is committed. Afterwards it shows
+  exactly what the setup added, and `git stash -u` or a checkout undoes it. *An install mixed into uncommitted work
+  cannot be reviewed or reverted on its own.*
 - **Read the repository first, and ask only what it cannot answer.** Look for an existing `AGENTS.md`, `CLAUDE.md`,
   `.gitignore`, a docs folder, a specification, a plan, a glossary, a findings folder, folders kept frozen,
   generated or vendored copies, the owner's own notes, and the test and lint commands. Take the Claude Code version
@@ -22,24 +22,13 @@ is copied into the project: what stays there is what the script writes. Each rul
   questions, only what they must confirm or what changes an answer, one line each; details only when asked. *A question
   the repository answers costs the owner a turn and tells them the agent did not look, and a finding that changes
   nothing is one more line to read past.*
-- **In the two-repository form, build the workspace before the setup, in this order, with the owner's go.**
-  1. `git init <name>-nido`, beside the project or wherever the owner keeps it, then work inside it. *The workspace is
-     the private repository; the project becomes one folder in it.*
-  2. Add the project as a submodule named after it: `git submodule add <its remote URL> <name>`, or, when it has no
-     remote yet, `git -c protocol.file.allow=always submodule add <its absolute path> <name>`. *Git refuses the file
-     transport by default; the option lifts it for that one command only.*
-  3. Commit the addition: `git commit -m "Add <name> as a submodule"`. *The setup then starts on a clean tree, and
-     the gitlink it later moves names a commit that exists.*
-
-  The submodule is a second clone of the project: from then on the work continues in `<name>-nido/<name>/`, and the
-  original checkout is left or removed as the owner prefers. *Two working copies of one repository drift apart unless
-  one is retired.* The script checks that the folder is a git work tree of its own declared in `.gitmodules`, and
-  refuses otherwise. *The submodule records which public commit the private documents refer to; a plain copy would
-  drift from them unseen.*
-- **An existing `AGENTS.md` or `CLAUDE.md` is read before anything is written.** The script refuses to replace one
-  without `--force`; with the owner, decide what of it moves into the new AGENTS.md or into RATIONALE.md first; the
-  invariants the file itself states are A3's (§2). *A project's instruction file holds rulings that exist nowhere
-  else.*
+- **In the two-repository form the owner's folder moves, whole, into a new workspace.** The workspace, `<folder>-nido`
+  beside it, is a new private repository, and the folder becomes its public side, registered as a submodule where it is:
+  one copy, with its ignored files (dependencies, `.env` files) kept. The move is shown by the dry run and done with the
+  owner's yes before the real run (§3). *A clone carries only committed files, and leaves a second copy beside the first
+  that drifts from it unseen.*
+- **An existing `AGENTS.md`, `CLAUDE.md` or `.claude/CLAUDE.md` is read before anything is written**, and gets its own
+  step before A1 (§2). *A project's instruction file holds rulings that exist nowhere else.*
 
 ## 2. The questions
 
@@ -57,14 +46,43 @@ cut can only place the files the tools add, and the rules on acting alone read w
 - **A question left unanswered is reminded in one line at the end of the next message** (`Still open: A2 families`),
   never asked again in full. *A question restated every round buries the new ones under it.*
 
+**The old instruction file, before A1.** When the repository has one, its step comes right after the opening findings:
+show the file's sections, one line each, with where each would go, and say what happens to the file itself; the owner
+confirms or changes any line, once, and it is not asked again. Said to the owner, the frame filled at each run from the
+file:
+
+> Your existing CLAUDE.md. The setup replaces it with a one-line `@AGENTS.md`, and each part of it is carried to where
+> Airone Giallo keeps that kind of thing.
+>
+> Your CLAUDE.md is backed up, unchanged, as `archive/CLAUDE-before-setup.md`.
+>
+> Here is where each part would go: [one line per section: "<section>" → <place>]. Confirm, or change any line.
+
+In the two-repository form the first sentence says instead that the setup removes the file from the public folder after
+backing it up in the workspace's archive. The places a line chooses from:
+
+- `AGENTS.md`: rules for how agents work here;
+- `docs/invariants.md`: rules the code depends on, as the file states them;
+- `docs/`: what the system is, its architecture, layout, data model;
+- `ai-docs/guides/`: how a thing is done here, its commands, its deploy steps;
+- the status file or `plan/`: open work;
+- `RATIONALE.md`: where a rule came from;
+- dropped: what no longer holds, with why;
+- elsewhere: a place the agent names, with why, for a part that fits none of these.
+
+The parts placed in `docs/invariants.md` go into `invariants`, word for word, one paragraph each, and the script writes
+them; every confirmed line goes into `carry` as said, and the session carries the other parts from the backup after the
+run (§4). *A part left in a file no session loads is a ruling nobody reads.* Never place as an invariant what the file
+does not state as one, such as a convention or a rule inferred from the code. *Finding new invariants is later work,
+proposed one by one under the rule AGENTS.md gives; at setup it opens a discussion nobody asked for.*
+
 Each answer has a name in the answers file (§3).
 
 | Question | What it is | The options | Recommend, and why | What the answer changes |
 |---|---|---|---|---|
 | A1 · Name and purpose | The project's name, and what it is and for whom in one line, each asked on its own line with its label, so that a one-word answer fills exactly one | the **name** (`name`); the **purpose** (`purpose`) | no default: both are the owner's words | the opening paragraph of AGENTS.md |
 | A2 · Tools to add | Which tools to add to the project, each optional and chosen on its own | the specification graph (`graph`: `none`, `lite`, `full`); the status file (`status`, with its `families`, asked whenever the status file is chosen, as the paragraph on families below says); the handoff (`handoff`, with the first log's `stage`) | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
-| A3 · Invariants already written | Asked only when the project's existing `AGENTS.md` or `CLAUDE.md` states invariants, as the paragraph on A3 below says: whether to move them, as written, into `docs/invariants.md`, which every session loads | yes or no, once, the invariants shown by their titles (`invariants`: each paragraph as written, or none) | yes: they are the project's own finding, and the old file is replaced or removed | `docs/invariants.md` |
-| A4 · This machine | This device: its resources, what else runs on it, the run limits, whether timings measured here count as results | one line each (`machine`: `resources`, `load`, `limits`, `timings`) | what the session can see (`nproc`, `free -h`, `df -h .`), for the owner to confirm: it is measured, not guessed | `local-machine.md`, git-ignored, one per device |
+| A3 · This machine | This device: its resources, what else runs on it, the run limits, whether timings measured here count as results | one line each (`machine`: `resources`, `load`, `limits`, `timings`) | what the session can see (`nproc`, `free -h`, `df -h .`), for the owner to confirm: it is measured, not guessed | `local-machine.md`, git-ignored, one per device |
 | B1 · What is public | Which rungs of the ladder are public, asked after the ladder's table below is shown and the cut explained; then where the owner's notes and the downloaded sources go, and in the two-repository form whether contributors get a short public instruction file | the highest public rung (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `all`); each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`); the agent layer (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
 | C1 · How you work | How the owner works with the agent | **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
 | C2 · What the agent sends out on your behalf | Pushes, tags, releases, issues, pull requests, comments, posts: whether the owner sees each before it goes out | **gated**, prepared as a branch or a draft for the owner to send, or **free**, done and reported, with an attribution trailer if they want one (`outward`, `attribution`) | `gated`: an act outside the repository cannot be taken back | the outward rule |
@@ -78,13 +96,6 @@ family, once declared, keeps its meaning. *A code chosen in haste is cited for t
 file is chosen, even by an answer such as "all" to A2, ask for the families in their own question, after saying
 what a family is; never fill them from anything but the owner's answer. *A family filled from elsewhere reads as
 answered, so nobody checks it, and the script refuses a status file with none.*
-
-**A3 is asked only when the old instruction file states invariants.** Show the invariants it states by their titles and
-ask once whether to move them, as written, into `docs/invariants.md`; on a yes, each goes into `invariants` as one
-paragraph, word for word. In the two-repository form that file is in the public folder: say so, since a paragraph
-written for a private file may name what is private. Never offer as an invariant what the old file does not state as
-one, such as a convention or a rule inferred from the code; when it states none, there is no A3. *Finding new invariants
-is later work, proposed one by one under the rule AGENTS.md gives; at setup it opens a discussion nobody asked for.*
 
 Before asking B1, show the owner the ladder of `doc-discipline` §1 as this table, copied rather than paraphrased. *The
 cut is a choice among these rungs, and the owner can only choose among what is in front of them.*
@@ -141,25 +152,45 @@ Write the answers as one JSON object to a file in the session's scratch folder, 
  "machine": {"resources": "8 cores, 16 GB", "load": "nothing else", "limits": "one run at a time", "timings": "yes"}}
 ```
 
-Then run it from the workspace root (the private repository in the two-repository form), in three steps:
+In the two-repository form add `move_from`, the owner's folder as it is now. Then run the script, in four steps, with
+`--target` the workspace root: the project in the one-repository form; in the two-repository form `<folder>-nido`, which
+the dry run may precede, reading the folder where it still is:
 
-1. The dry run, which writes nothing: its first line says so, and each line after it starts with what the real run
-   would do to one file, `CREATE`, `REPLACE`, `APPEND` (lines a file lacks) or `KEEP` (a record, or lines already
-   there):
+1. The dry run, which writes nothing. Its first line says so; in the two-repository form the move and the new workspace
+   follow. Then each repository has its own section, the owner's first: the files it already has, each line starting
+   with what the real run does to it (`BACKUP`, `REPLACE`, `APPEND`, `REMOVE`, `KEEP`); the new files, `CREATE`, grouped
+   by folder; and the lines of `carry`, which the session carries over after the run:
 
    ```sh
-   python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json --dry-run
+   python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json --target <root> --dry-run
    ```
 
 2. Show the owner the dry run's list as it printed, and end the turn there: the real run waits for the owner's
    word and never runs in the same turn as the dry run. *The preview is where a wrong answer costs nothing, and only
    if the owner reads it before anything is written.* An answer the owner changes goes into ANSWERS.json, and the
    dry run is shown again.
-3. With the owner's word, the real run, which prints the same list with what happened to each file first: `DONE`,
-   `KEPT`, `SKIPPED` or `FAILED`. *Before the run the question is what will be done, after it whether it was.*
+3. In the two-repository form, with the owner's yes, the move. Before the yes, say plainly that the folder's path
+   changes from `<folder>` to `<folder>-nido/<folder>`, that the editor, scripts and Claude Code's per-path memory do
+   not follow, and that moving the folder back undoes it:
 
    ```sh
-   python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json
+   git init <folder>-nido
+   mv <folder> <folder>-nido/<folder>
+   cd <folder>-nido && git submodule add <its remote URL, or ./<folder> without one> <folder>
+   git commit -m "Add <folder> as a submodule"
+   ```
+
+   `git submodule add` on a path that already holds a repository adopts it where it is ("Adding existing repo"); never
+   `git submodule absorbgitdirs`, which moves the folder's `.git` into the workspace. *With its `.git` inside, the
+   folder is still a repository of its own, so moving it back undoes the move.* The move takes the session's own working
+   folder with it: make it the turn's last act, after giving the owner the path of ANSWERS.json and the prompt to paste
+   in a new session opened at `<folder>-nido`, which goes on from the real run. *A session whose folder moved away
+   cannot rely on its working path.*
+4. With the owner's word, the real run, which lists every file by the same sections, with what happened to it first:
+   `DONE`, `KEPT`, `SKIPPED` or `FAILED`. *Before the run the question is what will be done, after it whether it was.*
+
+   ```sh
+   python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json --target <root>
    ```
 
 What it writes, the dry run lists file by file: at the workspace root the agent layer (`AGENTS.md`, `CLAUDE.md`,
@@ -168,7 +199,8 @@ the top of each repository `.ignore` with `archive/`, `archive/README.md` and th
 each rung's side `ai-docs/` with the status file, the handoff (a first state written from the answers, a first log
 with no entry yet) and a README for each of its places, a README in `docs/` and in `plan/` when the folder is new,
 `docs/glossary.md` when absent and no other glossary is answered, `docs/invariants.md` when absent, and `graph.yml`;
-`human-docs/README.md` and the `sources/README.md` manifest on their chosen sides.
+`human-docs/README.md` and the `sources/README.md` manifest on their chosen sides; and for each old instruction file of
+the owner's repository its backup in the workspace's archive, then the file replaced by the setup's own or removed.
 
 `--help` lists every answer as a flag; a flag overrides the file.
 
@@ -180,15 +212,21 @@ with no entry yet) and a README for each of its places, a README in `docs/` and 
 - **The exit code is the report.** 0: every step done or kept. 1: a step was refused, skipped or failed, each named
   in the report. 2: the answers are invalid. *A setup that says "done" over a step it skipped is the failure this
   script exists to prevent.*
-- **An existing file stops the whole run before anything is written.** `--force` replaces the instruction files
-  (AGENTS.md, CLAUDE.md, the machine file, the contributors' files, the workspace's allowlist `.gitignore`); a record
-  (RATIONALE.md, the status file, the closed file, the handoff, the archive's log, the graph file, the folders'
-  READMEs, the invariants file) is never replaced, even then, and is reported KEPT. An existing `docs/` or `plan/`
-  gets no index and only the files it lacks (the glossary, the invariants file), which changes none of its own;
-  `.ignore` and a one-repository `.gitignore` only get the lines they lack. *An empty status file written over a full
-  one deletes the project's history.* A project's own `docs/invariants.md` is loaded as it is, so invariants carried
-  over from its old instruction file stop the run: add them to that file with the owner, and leave `invariants`
-  empty. *The script never writes into a file of the project's, and paragraphs it dropped would be lost unseen.*
+- **An old instruction file of the owner's repository is backed up, then replaced or removed.** Each `AGENTS.md`,
+  `CLAUDE.md` and `.claude/CLAUDE.md` there is copied into the workspace's archive as `archive/<NAME>-before-setup.md`,
+  a name no tool loads, with only the `archived:` stamp the archive requires added; the copy is read back and compared
+  with the original before the file is replaced by the setup's own or removed, and a copy that differs leaves the file
+  as it was and fails the step. A backup of that name already there stops the run, even with `--force`. *Once the file
+  is replaced the backup is the only copy of the original, and a copy nobody compared is the one that is lost.*
+- **Any other existing file stops the whole run before anything is written.** `--force` replaces the other instruction
+  files (the machine file, the workspace's own AGENTS.md and CLAUDE.md, the workspace's allowlist `.gitignore`); a
+  record (RATIONALE.md, the status file, the closed file, the handoff, the archive's log, the graph file, the folders'
+  READMEs, the invariants file) is never replaced, even then, and is reported KEPT. An existing `docs/` or `plan/` gets
+  no index and only the files it lacks (the glossary, the invariants file), which changes none of its own; `.ignore` and
+  a one-repository `.gitignore` only get the lines they lack. *An empty status file written over a full one deletes the
+  project's history.* A project's own `docs/invariants.md` is loaded as it is, so invariants carried over from its old
+  instruction file stop the run: add them to that file with the owner, and leave `invariants` empty. *The script never
+  writes into a file of the project's, and paragraphs it dropped would be lost unseen.*
 
 The templates in `templates/` use the syntax the script implements: `{{name}}` is a value, `{{#name}}…{{/name}}`
 keeps its body when the answer is true or non-empty, `{{^name}}…{{/name}}` when it is false or empty; a tag alone on a
@@ -197,6 +235,11 @@ unnoticed. `templates/tree/` mirrors the folders the script writes. To change wh
 and the answer it reads, with a test.
 
 ## 4. After the script
+
+First, with an old instruction file, carry each part from its backup to the place its line in `carry` names, in that
+document's own form (the frontmatter of `markdown-docs`, the status file's identifiers), and leave out what was
+confirmed dropped; the parts placed in `docs/invariants.md` are already there. The setup is not done before every line
+is carried. *The backup keeps the content, but a part nobody carries is a ruling no session reads.*
 
 The checks are Airone Giallo's installed commands, never copies in the project: `uv tool install ./graph` and
 `uv tool install ./tools`, from the clone or from the plugin's copy of it, give `specgraph`, `check-status`,
@@ -234,16 +277,19 @@ not what the agent made of them, and a choice nobody lists is a decision nobody 
 
 Then propose a local commit of what was installed, by the project's own commit rules: in the two-repository form one
 in the public repository first, then one in the private workspace with the updated gitlink, *so the gitlink names a
-commit that exists.* Anything outward follows the answer to C2.
+commit that exists.* The public commit removes the old instruction file; its earlier versions stay in that repository's
+history, which the owner should know before anything is pushed. Anything outward follows the answer to C2.
 
-In the two-repository form, close by telling the owner that the original folder was not touched and is now the stale
-copy, which they may keep, remove, or pull the public commit into. *The work continues in the submodule, and an owner
-who looks in the original folder finds none of the setup there.*
+In the two-repository form, close by giving the owner the new paths: the folder at `<folder>-nido/<folder>`, the
+workspace at `<folder>-nido`, where sessions now open. *The editor, scripts and Claude Code's per-path memory still
+point at the old path, where nothing is left.*
 
 ## 5. What the script does not do
 
-It runs no `git submodule` and no other git command that changes anything, commits nothing, deletes nothing and copies
-no script into the project; it writes no hook and no CI workflow (the lines a project copies into its own are in Airone
-Giallo's `tools/README.md`), and it moves no existing document into the tree: that is a session's work with the owner,
-file by file. Not done yet: injecting the agent layer into the public checkout, several public folders under one
-workspace, and `.git/info/exclude` in place of a visible ignore block.
+It runs no `git submodule` and no other git command that changes anything, commits nothing, moves no folder (the
+two-repository move is the session's, with the owner's yes), deletes nothing but an old instruction file of the owner's
+repository once its backup has been read back equal to it, and copies no script into the project; it writes no hook and
+no CI workflow (the lines a project copies into its own are in Airone Giallo's `tools/README.md`), and it carries no
+document's content into the tree: that is a session's work with the owner, file by file. Not done yet: injecting the
+agent layer into the public checkout, several public folders under one workspace, and `.git/info/exclude` in place of a
+visible ignore block.

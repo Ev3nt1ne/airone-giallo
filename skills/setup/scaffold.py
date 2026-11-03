@@ -72,6 +72,10 @@ LAYERS = ("private", "public", "both")
 ROOT_NAMES = {"ai-docs", "archive", "human-docs", "sources", "docs", "plan", "graph.yml", ".claude", ".git",
               "AGENTS.md", "CLAUDE.md", "RATIONALE.md", "local-machine.md", ".ignore", ".gitignore", ".gitmodules"}
 GRAPHS = ("none", "lite", "full")
+# The files an agent tool loads as a folder's instructions (Claude Code: CLAUDE.md and .claude/CLAUDE.md; others:
+# AGENTS.md). Those the owner's repository already holds are backed up into the workspace's archive under a name no
+# tool loads, then replaced by the setup's own or removed.
+OLD_INSTRUCTIONS = ("AGENTS.md", "CLAUDE.md", ".claude/CLAUDE.md")
 OUTWARD = ("gated", "free")
 # The status checker's own grammar for a family code; a code it would reject is refused here, before writing.
 FAMILY_RE = re.compile(r"^[A-Z][A-Z0-9]{1,4}(?:-[A-Z][A-Z0-9]{1,4})?$")
@@ -86,6 +90,7 @@ DEFAULTS = {
     "stage": "stage-1", "outward": "gated", "attribution": "", "reserved": [], "opinionated": False,
     "claude_code_version": "", "model": "", "spec": "", "plan": "", "glossary": "", "findings": "",
     "owner_notes": "", "frozen": [], "copies": [], "checks": "", "prune_after": "", "machine": {},
+    "move_from": "", "carry": [],
 }
 REQUIRED = ("name", "purpose", "mode")
 MACHINE_KEYS = ("resources", "load", "limits", "timings")
@@ -225,7 +230,7 @@ def validate(a):
     for key in ("status", "handoff", "opinionated"):
         if not isinstance(a[key], bool):
             raise AnswerError(f"'{key}' must be true or false")
-    for key in ("invariants", "reserved", "frozen", "copies"):
+    for key in ("invariants", "reserved", "frozen", "copies", "carry"):
         if not isinstance(a[key], list) or not all(isinstance(x, str) for x in a[key]):
             raise AnswerError(f"'{key}' must be a list of strings")
     if not all(x.strip() for x in a["invariants"]):
@@ -244,6 +249,8 @@ def validate(a):
     unknown = set(a["machine"]) - set(MACHINE_KEYS)
     if unknown:
         raise AnswerError("unknown machine answer(s): " + ", ".join(sorted(unknown)))
+    if not isinstance(a["move_from"], str):
+        raise AnswerError("'move_from' is the path of the owner's folder before it moves into the workspace")
     if not re.match(r"^[A-Za-z0-9._-]+$", a["stage"]):
         raise AnswerError("'stage' names a file: letters, digits, dot, dash or underscore")
     validate_sides(a)
@@ -276,11 +283,12 @@ def validate_sides(a):
         raise AnswerError("with cut 'all' the one repository is public, and the agent layer in it too")
     a["agent_layer"] = layer or ("public" if form == "one-public" else "private")
     if form != "two":
-        if a["public_dir"]:
-            raise AnswerError(f"'public_dir' names the public folder of the two-repository form; cut "
-                              f"'{a['cut']}' gives one repository")
+        for key in ("public_dir", "move_from"):
+            if a[key]:
+                raise AnswerError(f"'{key}' belongs to the two-repository form; cut '{a['cut']}' gives one repository")
         return
-    public = a["public_dir"] or slug(a["name"])
+    # The owner's folder moves into the workspace whole and keeps its name, unless the owner names the folder.
+    public = a["public_dir"] or (Path(a["move_from"]).name if a["move_from"] else slug(a["name"]))
     if not public:
         raise AnswerError("the name gives no folder name; answer 'public_dir', the public repository's folder")
     if not re.match(r"^[A-Za-z0-9._-]+$", public) or public in (".", "..") or public in ROOT_NAMES:
@@ -354,7 +362,7 @@ def join(items):
     return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
 
 
-def context(a, lay, target):
+def context(a, lay, disk):
     """The values the templates read, derived from the answers and the layout. What is not answered shows as a
     visible slot."""
     ai = lay.at("ai-docs", "ai-docs")
@@ -365,7 +373,7 @@ def context(a, lay, target):
     glossary_file = f"{docs}/glossary.md"
     invariants_file = f"{docs}/invariants.md"
     # Without an answer the glossary is the tree's own, written when absent; an answered one lives elsewhere.
-    has_glossary = not a["glossary"] or (target / glossary_file).is_file()
+    has_glossary = not a["glossary"] or disk(glossary_file).is_file()
 
     families = []
     if graph_file:
@@ -428,7 +436,7 @@ def context(a, lay, target):
         "invariants": "\n\n".join(x.strip() for x in a["invariants"]),
         "invariants_file": invariants_file,
         # A project's own invariants file is kept as it is, and then states what it states.
-        "has_invariants": bool(a["invariants"]) or (target / invariants_file).is_file(),
+        "has_invariants": bool(a["invariants"]) or disk(invariants_file).is_file(),
         "claude_code_version": a["claude_code_version"] or SLOT.format("version"),
         "model": a["model"] or SLOT.format("model"),
         "four_hands": a["mode"] == "four-hands", "conductor": a["mode"] == "conductor",
@@ -474,6 +482,8 @@ class Step:
     action: object = None    # for a step that is not a plain write (the graph)
     lines: tuple = ()        # for an append step: groups of lines, each appended whole when any line is missing
     kept: str = ""           # for a step decided at planning: why it is not done
+    backup: str = ""         # for an old instruction file: its backup's path, written and checked before the step
+    remove: bool = False     # for an old instruction file the setup does not replace: removed once backed up
 
 
 def stamp_frontmatter(text, now):
@@ -663,7 +673,7 @@ def allowlist(a, lay):
     return "\n".join(lines) + "\n"
 
 
-def plan(a, lay, ctx, now, target):
+def plan(a, lay, ctx, now, disk):
     agents = template("AGENTS.md", ctx, now)
     if a["opinionated"]:
         agents += render(TEMPLATES.joinpath("opinionated.md").read_text(encoding="utf-8"), ctx)
@@ -741,20 +751,20 @@ def plan(a, lay, ctx, now, target):
         # An existing folder gets no index: its own layout is the project's. A new file beside its files changes
         # none of them, so the glossary is written into it when absent.
         folder = lay.at(rung, rung)
-        if (target / folder).exists():
+        if disk(folder).exists():
             steps.append(Step(f"{folder}/", "", kept="the folder exists; no index written into it"))
         else:
             steps.append(Step(f"{folder}/README.md", f"the index of {folder}/ (rung {RUNGS.index(rung) + 1})",
                               tree(f"{rung}/README.md"), record=True))
         if rung == "docs" and not a["glossary"]:
             glossary = f"{folder}/glossary.md"
-            if (target / glossary).exists():
+            if disk(glossary).exists():
                 steps.append(Step(glossary, "", kept="the glossary exists"))
             else:
                 steps.append(Step(glossary, "the glossary", tree("docs/glossary.md"), record=True))
         if rung == "docs":
             invariants = ctx["invariants_file"]
-            if (target / invariants).exists():
+            if disk(invariants).exists():
                 steps.append(Step(invariants, "", kept="the project's own invariants file exists, loaded as it is"))
             else:
                 # Its own name: the steps run after plan() returns, so a lambda reading a rebound `text` would
@@ -772,8 +782,52 @@ def plan(a, lay, ctx, now, target):
         steps.append(Step(f"{lay.public_dir}/.gitignore", "the public sources' files ignored, the manifest kept",
                           lines=(("# Airone Giallo: downloaded sources; the manifest is committed, the files are not",
                                   "/sources/*", "!/sources/README.md"),)))
+    # The owner's repository may hold its old instruction files: each is backed up, then replaced by the setup's own
+    # file of that name or removed. The backup goes to the workspace's archive: an instruction file is the top rung.
+    repo = f"{lay.public_dir}/" if lay.form == "two" else ""
+    written = {s.path: s for s in steps}
+    for name in OLD_INSTRUCTIONS:
+        old = repo + name
+        if disk(old).is_file():
+            backup = f"{ARCHIVE}/{backup_name(name)}"
+            if old in written:
+                written[old].backup = backup
+            else:
+                steps.append(Step(old, "once backed up; its parts are carried over after the run, as confirmed",
+                                  remove=True, backup=backup))
     # The workspace root first, then the public folder: the order the dry run is read in.
     return sorted(steps, key=lambda s: lay.form == "two" and s.path.startswith(lay.public_dir + "/"))
+
+
+def backup_name(name):
+    """The backup's file name: never the name a tool loads, so the archived copy instructs nobody."""
+    stem = Path(name).stem
+    return (f"dot-claude-{stem}" if name.startswith(".claude/") else stem) + "-before-setup.md"
+
+
+def stamped(original, now):
+    """The backup's bytes: the original's, with only what the archive requires added, an `archived:` stamp in a
+    frontmatter block (inserted into the original's own block when it has one). Returns (bytes, where, what added)."""
+    stamp = f"archived: {now.strftime('%Y-%m-%dT%H:%M:%S+00:00')}\n".encode()
+    if original.startswith(b"---\n") and b"\n---\n" in original[3:]:
+        added, at = stamp, 4
+    else:
+        added, at = b"---\n" + stamp + b"---\n", 0
+    return original[:at] + added + original[at:], at, added
+
+
+def write_backup(path, data):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+
+
+def back_up(source, backup, now):
+    """Write the backup and read it back: it must be the original's bytes plus the stamp, and nothing else."""
+    original = source.read_bytes()
+    data, at, added = stamped(original, now)
+    write_backup(backup, data)
+    back = backup.read_bytes()
+    return back == data and back[:at] + back[at + len(added):] == original
 
 
 def missing_groups(path, groups):
@@ -784,8 +838,10 @@ def missing_groups(path, groups):
 
 
 def public_folder_problem(target, folder):
-    """Why the public folder cannot take the public rungs, or None: it must be a git work tree of its own."""
-    add = f"add the public repository first, with: git submodule add <its URL> {folder}"
+    """Why the public folder cannot take the public rungs, or None: it must be a git work tree of its own, declared as
+    a submodule of the workspace."""
+    add = (f"move the owner's folder in whole and register it in place first: mv <the folder> {folder}, then "
+           f"git submodule add <its URL, or ./{folder} without one> {folder}")
     where = target / folder
     if not where.is_dir():
         return f"the public folder {folder}/ is not there; {add}"
@@ -816,78 +872,217 @@ def describe(a, lay):
             f"side ends at {RUNG_NAMES[lay.cut]} (cut {lay.cut}), the agent layer {lay.agent_layer}")
 
 
-def invariants_problem(a, ctx, target):
+def invariants_problem(a, ctx, disk):
     """Why the carried invariants cannot be written, or None: an existing invariants file is the project's own and is
     never replaced, so the paragraphs carried over would be lost without a word."""
     path = ctx["invariants_file"]
-    if a["invariants"] and (target / path).exists():
+    if a["invariants"] and disk(path).exists():
         return (f"{path} exists and is never replaced, so the invariants carried over have no file to go into; add "
                 "them to it with the owner and leave the answer 'invariants' empty")
     return None
+
+
+def resolver(a, lay, target):
+    """(disk, source). disk(path) is where a path of the plan is on disk now: before the move, the public folder is
+    still the owner's folder at `move_from`, which is then `source`; once moved, or without a move, source is None."""
+    source = None
+    if lay.form == "two" and a["move_from"] and not (target / lay.public_dir).exists():
+        source = Path(a["move_from"]).expanduser().resolve()
+    prefix = lay.public_dir + "/"
+
+    def disk(rel):
+        if source is not None and (rel == lay.public_dir or rel.startswith(prefix)):
+            return source if rel == lay.public_dir else source / rel[len(prefix):]
+        return target / rel
+    return disk, source
+
+
+def move_problem(source):
+    """Why the owner's folder cannot be moved in as the public side, or None: it must be a git work tree of its own."""
+    if not source.is_dir():
+        return f"the folder to move, {source}, is not there"
+    if shutil.which("git") is None:
+        return f"git is not installed, so {source} cannot be checked to be a repository of its own"
+    proc = subprocess.run(["git", "-C", str(source), "rev-parse", "--show-toplevel"], capture_output=True, text=True)
+    if proc.returncode != 0 or Path(proc.stdout.strip()).resolve() != source:
+        return f"{source} is not a git work tree of its own, so it cannot become the public repository"
+    return None
+
+
+def shown(path):
+    """A path as the owner reads it: from the home folder when it is under it, absolute otherwise."""
+    try:
+        return "~/" + str(Path(path).relative_to(Path.home()))
+    except ValueError:
+        return str(path)
+
+
+def grouped(paths):
+    """New files by folder: the files at the repository's top, then each folder with the files in it."""
+    top, folders = [], {}
+    for rel in paths:
+        head, _, rest = rel.partition("/")
+        if rest:
+            folders.setdefault(head, []).append(rest[:-3] if rest.endswith(".md") else rest)
+        else:
+            top.append(rel)
+    lines = [top] if top else []
+    if folders:
+        lines.append([f"{f}/ ({', '.join(rs)})" for f, rs in folders.items()])
+    return lines
+
+
+def wrap_items(items, width):
+    """Items joined by commas, a line broken only between two items, never inside one."""
+    lines, line = [], ""
+    for item in items:
+        piece = item if not line else f"{line}, {item}"
+        if line and len(piece) > width:
+            lines.append(line + ",")
+            line = item
+        else:
+            line = piece
+    return lines + [line]
+
+
+def print_report(rows, a, lay, target, dry_run, out):
+    """The rows by repository, the owner's own first, each split into the files it already had and the new ones; the
+    dry run groups the new files by folder, the real run lists every file."""
+    public = lay.form == "two"
+    prefix = lay.public_dir + "/"
+    sections = [("public", f"Your repository: {shown(target / lay.public_dir)} (public)"),
+                ("root", f"The workspace: {shown(target)} (private{', new' if not target.exists() else ''})")] \
+        if public else [("root", f"Your repository: {shown(target)}")]
+    for key, title in sections:
+        mine = [(st, path[len(prefix):] if key == "public" else path, detail, had)
+                for st, path, detail, had in rows if (public and path.startswith(prefix)) == (key == "public")]
+        print(f"\n{title}", file=out)
+        have, new = [r for r in mine if r[3]], [r for r in mine if not r[3]]
+        for label, part in (("Files you have", have), ("New files", new)):
+            if not part:
+                continue
+            print(f"  {label}", file=out)
+            if dry_run and label == "New files":
+                for items in grouped([path for _, path, _, _ in part]):
+                    print(f"    {'CREATE':<8} " + f"\n{' ' * 13}".join(wrap_items(items, WIDTH - 13)), file=out)
+                continue
+            width = max(len(path) for _, path, _, _ in part) + 1
+            for st, path, detail, _ in part:
+                print(f"    {st:<8} {path:<{width}} {detail}".rstrip(), file=out)
+        if a["carry"] and key == sections[0][0]:
+            print("  Carried over after the run, as you confirmed", file=out)
+            for line in a["carry"]:
+                print(f"    {line}", file=out)
 
 
 def run(a, target, dry_run, force, out=None):
     out = out or sys.stdout
     now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
     lay = Layout.of(a)
+    disk, source = resolver(a, lay, target)
     try:
-        ctx = context(a, lay, target)
-        steps = plan(a, lay, ctx, now, target)
+        ctx = context(a, lay, disk)
+        steps = plan(a, lay, ctx, now, disk)
     except (OSError, RuntimeError, KeyError) as ex:
         print(f"FAILED  cannot prepare the install: {ex}", file=out)
         return 1
 
-    # The public folder is the owner's to add; without it the public rungs have nowhere to go.
-    problem = public_folder_problem(target, lay.public_dir) if lay.form == "two" else None
-    problem = problem or invariants_problem(a, ctx, target)
+    # The real run needs the public folder in place; the dry run may come before the move, which it then shows.
+    problem = None
+    if lay.form == "two":
+        problem = move_problem(source) if dry_run and source is not None else public_folder_problem(target,
+                                                                                                    lay.public_dir)
+    problem = problem or invariants_problem(a, ctx, disk)
     if problem and not dry_run:
         print(f"REFUSED  {problem}. Nothing was written.", file=out)
         return 1
 
-    existing = [s for s in steps if not s.lines and not s.kept and (target / s.path).exists()]
+    existing = [s for s in steps if not s.lines and not s.kept and not s.backup and disk(s.path).exists()]
     if existing and not force:
         print("REFUSED  these files exist; nothing was written. Read them, keep what the owner wants, then rerun "
               "with --force (records are kept even then):", file=out)
         for s in existing:
             print(f"  {s.path}", file=out)
         return 1
+    # A backup is never written over another: the earlier one may be the only copy of an original.
+    taken = [s for s in steps if s.backup and disk(s.backup).exists()]
+    if taken:
+        print("REFUSED  a backup of that name exists, and a backup is never replaced; nothing was written:", file=out)
+        for s in taken:
+            print(f"  {s.backup}, the backup {s.path} would get", file=out)
+        return 1
 
     # The real run reports whether each step happened (DONE, KEPT, SKIPPED, FAILED); the dry run, which does nothing,
-    # what each step would do (CREATE, REPLACE, APPEND, KEEP).
+    # what each step would do (CREATE, REPLACE, APPEND, KEEP, and BACKUP and REMOVE for an old instruction file).
     kept = "KEEP" if dry_run else "KEPT"
-    report, problems = [], False
+    rows, problems = [], False
+
+    def add(status, path, detail, had):
+        rows.append((status, path, detail, had))
+
     for s in steps:
-        dest = target / s.path
+        dest = disk(s.path)
+        had = dest.exists()
         if s.kept:
-            report.append((kept, s.path, s.kept))
+            add(kept, s.path, s.kept, True)
             continue
-        if s.lines:
-            missing = missing_groups(dest, s.lines)
-            shown = " | ".join(ln for g in missing for ln in g if not ln.startswith("#"))
-            if not missing:
-                report.append((kept, s.path, "already holds the lines: " + s.what))
-            elif dry_run:
-                report.append(("APPEND" if dest.exists() else "CREATE", s.path, shown))
+        if s.backup:
+            to = ("the workspace's " if lay.form == "two" else "") + s.backup
+            if dry_run:
+                add("BACKUP", s.path, f"unchanged, to {to}", True)
+                if s.remove:
+                    add("REMOVE", s.path, s.what, True)
+                    continue
             else:
                 try:
-                    prev = dest.read_text(encoding="utf-8") if dest.exists() else ""
+                    ok = back_up(dest, target / s.backup, now)
+                except OSError:
+                    ok = False
+                if not ok:
+                    add("FAILED", s.path, f"its backup {to} did not read back as the original plus its stamp; the "
+                        "file is left as it was", True)
+                    problems = True
+                    continue
+                add("DONE", s.path, f"backed up to {to}, its bytes read back and compared", True)
+                if s.remove:
+                    try:
+                        dest.unlink()
+                        ok = not dest.exists()
+                    except OSError:
+                        ok = False
+                    add("DONE" if ok else "FAILED", s.path, "removed " + s.what if ok else "not removed", True)
+                    problems |= not ok
+                    continue
+        if s.lines:
+            missing = missing_groups(dest, s.lines)
+            lines = [ln for g in missing for ln in g if not ln.startswith("#")]
+            shown_lines = " | ".join(lines)
+            if not missing:
+                add(kept, s.path, "already holds the lines: " + s.what, had)
+            elif dry_run:
+                add("APPEND" if had else "CREATE", s.path,
+                    f"{len(lines)} line{'s' if len(lines) != 1 else ''}: {shown_lines}" if had else shown_lines, had)
+            else:
+                try:
+                    prev = dest.read_text(encoding="utf-8") if had else ""
                     sep = "" if not prev or prev.endswith("\n") else "\n"
+                    dest.parent.mkdir(parents=True, exist_ok=True)
                     dest.write_text(prev + sep + "\n".join(ln for g in missing for ln in g) + "\n",
                                     encoding="utf-8")
                     ok = not missing_groups(dest, s.lines)
                     verb = "appended" if prev else "written"
-                    report.append(("DONE" if ok else "FAILED", s.path, f"{verb}: {shown}" if ok
-                                   else "the lines are still missing after the write"))
+                    add("DONE" if ok else "FAILED", s.path, f"{verb}: {shown_lines}" if ok
+                        else "the lines are still missing after the write", had)
                     problems |= not ok
                 except OSError as ex:
-                    report.append(("FAILED", s.path, str(ex)))
+                    add("FAILED", s.path, str(ex), had)
                     problems = True
             continue
-        if dest.exists() and s.record:
-            report.append((kept, s.path, "a record, never replaced"))
+        if had and s.record:
+            add(kept, s.path, "a record, never replaced", True)
             continue
         if dry_run:
-            report.append(("REPLACE" if dest.exists() else "CREATE", s.path, s.what))
+            add("REPLACE" if had else "CREATE", s.path, s.what, had)
             continue
         if s.action:
             status, detail = s.action(target)
@@ -895,23 +1090,30 @@ def run(a, target, dry_run, force, out=None):
             try:
                 text = s.make()
                 dest.parent.mkdir(parents=True, exist_ok=True)
-                was = dest.exists()
                 dest.write_text(text, encoding="utf-8")
                 # Read back what was written: the report states what is on disk, not what was meant.
                 ok = dest.read_text(encoding="utf-8") == text
                 status = "DONE" if ok else "FAILED"
-                detail = ("replaced: " if was else "") + s.what if ok else "the file read back differs"
+                detail = ("replaced: " if had else "") + s.what if ok else "the file read back differs"
             except OSError as ex:
                 status, detail = "FAILED", str(ex)
-        report.append((status, s.path, detail))
+        add(status, s.path, detail, had)
         problems |= status not in ("DONE", "KEPT")
 
-    width = max(len(p) for _, p, _ in report) + 1
     if dry_run:
-        print("DRY RUN  nothing has been written; each line says what the real run would do", file=out)
-    print(f"{'FORM':<8} {describe(a, lay)}", file=out)
-    for status, path, detail in report:
-        print(f"{status:<8} {path:<{width}} {detail}", file=out)
+        print("DRY RUN: nothing has been written yet.", file=out)
+        if source is not None or not target.exists():
+            print("", file=out)
+        if source is not None:
+            print(f"{'MOVE':<8} {shown(source)} → {shown(target / lay.public_dir)}   your whole folder becomes the "
+                  "public side, ignored files included; the session moves it before the real run", file=out)
+        if not target.exists():
+            print(f"{'CREATE':<8} {shown(target)}   the new private workspace, a new repository; the session creates "
+                  "it before the real run", file=out)
+    else:
+        print(f"{'FORM':<8} {describe(a, lay)}", file=out)
+    print_report(rows, a, lay, target, dry_run, out)
+    print("", file=out)
     if dry_run:
         if problem:
             print(f"REFUSED  the real run would stop here: {problem}", file=out)
@@ -962,19 +1164,24 @@ def parser():
     p.add_argument("--copies", action="append", metavar="PATH", help="repeatable: a generated or synced copy")
     for k in MACHINE_KEYS:
         p.add_argument(f"--machine-{k}")
+    p.add_argument("--move-from", metavar="DIR", help="two repositories: the owner's folder, which the session moves "
+                   "whole into the workspace as the public side; a dry run before the move shows it")
+    p.add_argument("--carry", action="append", metavar="LINE", help="repeatable: one confirmed line of where a part "
+                   "of the old instruction file goes, carried over by the session after the run")
     return p
 
 
 def main(argv=None):
     args = parser().parse_args(argv)
-    target = Path(args.target).resolve()
-    if not target.is_dir():
-        print(f"FAILED  the target {target} is not a folder", file=sys.stderr)
-        return 2
+    target = Path(args.target).expanduser().resolve()
     try:
         answers = load_answers(args)
     except AnswerError as ex:
         print(f"invalid answers: {ex}", file=sys.stderr)
+        return 2
+    # Before the move the workspace may not exist yet: only a dry run that shows the move may look at it.
+    if not target.is_dir() and not (args.dry_run and answers["move_from"]):
+        print(f"FAILED  the target {target} is not a folder", file=sys.stderr)
         return 2
     return run(answers, target, args.dry_run, args.force)
 

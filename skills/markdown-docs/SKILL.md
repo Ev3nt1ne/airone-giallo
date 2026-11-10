@@ -135,8 +135,19 @@ Read it before the first `iwe` call in a project.
 
 - Lead with the finding, then the evidence, not the story of finding it.
 - Tables for more than two dimensions; prose for reasoning.
-- A term with a precise sense is written one way throughout, as the project's glossary says. *The reader never
-  guesses which is meant.*
+- A word is written in one of three ways, never mixed: a defined term, capitalised and in italics (*Order*), is the
+  concept exactly as the project's glossary defines it; a code name in backticks (`Order`) is a name in the code,
+  something called, passed or returned; the plain word (order) is the ordinary word, used only where no defined term
+  could be meant, and a sentence where it could be read as the term is rephrased. *The reader never guesses which is
+  meant: the capital marks the term in mid-sentence, the italics tell it from a word capitalised because it opens a
+  sentence, and bold stays free for emphasis.*
+- Only a word the glossary defines is written as a term; coining one adds it to the glossary in the same change. *A
+  term with no entry promises a definition the reader cannot find.*
+- Where a term and a code name share a spelling, the form follows what the sentence is about: the concept is *Order*,
+  the value in the code is `Order`. *Both are right somewhere, and only the form says which one this sentence means.*
+- In Airone Giallo's skills italics also carry each rule's reason: a term is a capitalised word or short noun phrase
+  inside a sentence, a reason is a whole sentence. *Without the difference, a reader of a skill takes an italic reason
+  for a term.*
 - Never write a key, token, password, credential or hash into a document, note, pasted log or commit message.
   *A secret in a Markdown file is in every clone and every copy of the history.* Write the form of the command
   that hides it.

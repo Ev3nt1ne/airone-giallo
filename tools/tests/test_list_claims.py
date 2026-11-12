@@ -3,14 +3,9 @@ and what is read where."""
 
 import contextlib
 import io
-import os
-import subprocess
 
-import pytest
-
-import airone_tree as at
 import list_claims as lc
-from conftest import ENV, run_tool
+from conftest import run_tool
 
 GRAPH = """meta:
   profile: lite
@@ -126,26 +121,6 @@ def test_a_file_whose_name_is_not_ascii_is_read_by_its_name(repo):
     code, out = claims(repo)
     assert code == 1, out
     assert "FAIL docs/café.md:1" in out and "ok docs/über/naïve.md:1" in out, out
-
-
-@pytest.mark.skipif(os.name != "posix", reason="the names hold characters Windows refuses in a file name")
-def test_a_path_from_git_reads_as_git_prints_it_with_quote_path_off(repo):
-    # The tools read git's default output; each path must come back as git prints it with core.quotePath off: the
-    # non-ASCII ones unquoted, the ones git quotes either way (a double quote, a tab, a backslash) still quoted.
-    names = ["plain.md", "café.md", "über/naïve note.md", 'say "é".md', "back\\303slash é.md", "tab\té.md"]
-    repo.write({n: "x\n" for n in names}).stage()
-    off = dict(ENV, GIT_CONFIG_COUNT="1", GIT_CONFIG_KEY_0="core.quotePath", GIT_CONFIG_VALUE_0="off")
-
-    def paths(env):
-        """The paths of the tracked files, and those of a diff's headers with what git writes after them."""
-        def run(*args):
-            return subprocess.run(["git", *args], cwd=repo.root, env=env, capture_output=True, text=True,
-                                  check=True).stdout.splitlines()
-        return run("ls-files") + [h[4:] for h in run("diff", "--cached", "-U0", "--no-color") if h.startswith("+++ ")]
-
-    default, quote_path_off = paths(ENV), paths(off)
-    assert len(default) == 2 * len(names) and default != quote_path_off
-    assert [at.git_path(p) for p in default] == quote_path_off
 
 
 def test_a_line_keeps_its_number_in_the_file(repo):

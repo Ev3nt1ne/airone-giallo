@@ -25,8 +25,6 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
-import airone_tree as at
-
 LOG, INDEX = "LOG.md", "README.md"  # the archive's own files, at its top: not archived documents
 CHANGES = ("date", "file", "what", "why and who decided", "commit")
 CONFLICTS = ("date", "kind", "old", "now", "where the current meaning is defined")
@@ -272,14 +270,15 @@ class Git:
         self.prefix = "" if rel == "." else rel + "/"
 
     def run(self, *args):
-        return subprocess.run([self.binary, *args], cwd=self.top, capture_output=True, text=True)
+        return subprocess.run([self.binary, "-c", "core.quotepath=off", *args], cwd=self.top, capture_output=True,
+                              text=True)
 
     def under(self, path):
         return path.startswith(self.prefix)
 
     def tracked(self):
         p = self.run("ls-files", "--", self.prefix or ".")
-        return {at.git_path(f) for f in p.stdout.splitlines()} if p.returncode == 0 else set()
+        return set(p.stdout.splitlines()) if p.returncode == 0 else set()
 
     def staged(self):
         """[(letter, old path, new path)] of the staged changes under the archive, renames detected inside it."""
@@ -288,7 +287,7 @@ class Git:
         for line in p.stdout.splitlines():
             parts = line.split("\t")
             letter = parts[0][:1]
-            out.append((letter, at.git_path(parts[1]), at.git_path(parts[-1])))
+            out.append((letter, parts[1], parts[-1]))
         return out
 
     def entered(self, path):
@@ -302,7 +301,7 @@ class Git:
                 continue
             when = datetime.fromisoformat(lines[0].strip())
             parts = lines[1].split("\t")
-            letter, old, new = parts[0][:1], at.git_path(parts[1]), at.git_path(parts[-1])
+            letter, old, new = parts[0][:1], parts[1], parts[-1]
             if not self.under(new):
                 return None
             # A copy is a new file, wherever it was copied from; only a rename inside the archive is followed on.

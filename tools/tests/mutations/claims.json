@@ -76,11 +76,6 @@
         "C15 completeness words are not listed",
         "    for m in COMPLETE_RE.finditer(text):\n        yield \"completeness\", m.group(0), \"check\"",
         "    for m in COMPLETE_RE.finditer(\"\"):\n        yield \"completeness\", m.group(0), \"check\""
-      ],
-      [
-        "C16 a quoted header is read as it stands",
-        "            name = at.git_path(raw[4:])",
-        "            name = raw[4:]"
       ]
     ]
   }

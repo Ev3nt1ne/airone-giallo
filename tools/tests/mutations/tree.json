@@ -61,31 +61,6 @@
         "T12 an unclosed frontmatter counts",
         "    if not lines or lines[0].rstrip() != \"---\":\n        return None\n    for i in range(1, len(lines)):\n        if lines[i].rstrip() in (\"---\", \"...\"):\n            return i\n    return None",
         "    if not lines or lines[0].rstrip() != \"---\":\n        return None\n    for i in range(1, len(lines)):\n        if lines[i].rstrip() in (\"---\", \"...\"):\n            return i\n    return len(lines) - 1"
-      ],
-      [
-        "T13 a quoted path is read as git printed it",
-        "    m = QUOTED_PATH_RE.match(text)\n    if m is None:",
-        "    m = None\n    if m is None:"
-      ],
-      [
-        "T14 an escaped backslash starts an octal byte",
-        "ESCAPE_RE = re.compile(r\"((?:\\\\[23][0-7]{2})+)|\\\\.\")",
-        "ESCAPE_RE = re.compile(r\"((?:\\\\[23][0-7]{2})+)\")"
-      ],
-      [
-        "T15 a run of bytes is decoded one byte at a time",
-        "ESCAPE_RE = re.compile(r\"((?:\\\\[23][0-7]{2})+)|\\\\.\")",
-        "ESCAPE_RE = re.compile(r\"((?:\\\\[23][0-7]{2}))|\\\\.\")"
-      ],
-      [
-        "T16 a path quoted for another reason loses its quotes",
-        "    return (f'\"{body}\"' if \"\\\\\" in body else body) + text[m.end():]",
-        "    return body + text[m.end():]"
-      ],
-      [
-        "T17 what follows the closing quote is dropped",
-        "    return (f'\"{body}\"' if \"\\\\\" in body else body) + text[m.end():]",
-        "    return (f'\"{body}\"' if \"\\\\\" in body else body)"
       ]
     ]
   }

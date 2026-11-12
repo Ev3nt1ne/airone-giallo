@@ -18,9 +18,9 @@ is copied into the project: what stays there is what the script writes. Each rul
   `.gitignore`, a docs folder, a specification, a plan, a glossary, a findings folder, folders kept frozen,
   generated or vendored copies, the owner's own notes, and the test and lint commands. Take the Claude Code version
   from `claude --version` and the model from the session's own environment. Put to the owner, as one list and not as
-  questions, only what they must confirm or what changes an answer, one line each; details only when asked. *A question
-  the repository answers costs the owner a turn and tells them the agent did not look, and a finding that changes
-  nothing is one more line to read past.*
+  questions, only what stops the setup and the facts it will write that no question asks (§2), one line each; details
+  only when asked. *A question the repository answers costs the owner a turn and tells them the agent did not look, and
+  a finding that changes nothing is one more line to read past.*
 - **In the two-repository form the owner's folder moves, whole, into a new workspace, and the move is the setup's last
   act.** The workspace, `<folder>-nido` beside it, is a new private repository, and the folder becomes its public side,
   registered as a submodule where it is: one copy, with its ignored files (dependencies, `.env` files) kept. *A clone
@@ -41,33 +41,69 @@ cut can only place the files the tools add, and the rules on acting alone read w
 - **The first message holds only the opening findings** and, when the repository has an old instruction file, that
   file's step (below); no question of any group. *The findings and the old file are what the questions' proposals rest
   on; asked beside them, a question is answered before they are read.*
-- **Each later message holds questions of one group only, never of two**, in the labels' order, and as many as the owner
-  can read, understand and answer in one go. Weigh each question by how much there is to read, how hard it is to follow
-  and how long it takes to answer: a demanding one comes alone, such as B1 with its ladder and its follow-ups, or C3
-  with its candidates; light ones may come together, such as A3's machine to confirm and the handoff's stage name. There
-  is no fixed number per message. Each question carries its label; no heading per group. *A message is answered at the
-  pace of its hardest question, and one that mixes groups or stacks demanding questions comes back answered in part.*
+- **Each later message holds questions of one group only, never of two**, in this run: A1, A2 and A3; B1; C1 and C2;
+  C3; D1; then the dry run (§3). *B1 and C3 have the most to read, so each comes alone, and a message that mixes groups
+  comes back answered in part.*
+- **Every question has the same frame, and the agent writes what goes in it from this repository.** The question's
+  label in bold on a line of its own, never as a heading, then four parts, each opened by its name in bold and a colon,
+  in this order:
+  - **What it is**: what is being decided and what for, in plain words. A term of Airone Giallo's (the status file, the
+    handoff, a stage, the graph and its profiles, a family, a rung, the cut, gated) is explained in a few words where it
+    first appears: the owner has not read this skill.
+  - **Options**: one line each, the option and what choosing it does. Left out where the answer is the owner's own
+    words, as in A1 and A3.
+  - **Suggestion**: what the agent would choose for this repository and why, with where the reason comes from; where
+    the repository gives no grounds, that it gives none.
+  - **Watch out**: only when this repository warrants it, what an option would expose, break or destroy here, such as
+    personal data in a folder that would become public, a command that publishes, a script that deletes. Absent
+    otherwise.
+
+  *The same four parts in the same order let the owner find the recommendation and the risk at a glance in every
+  question; what fills them is this repository's, which no skill can write in advance.*
+- **Each part is short, and says a thing once.** What it is, two sentences, or one line for each thing it has to
+  explain; Options, one line an option, saying what the option does for the owner and nothing a part above already
+  said; Suggestion, one line for each thing the owner decides; Watch out, two lines. As a measure, a question takes
+  about a hundred words, and A2 and B1 about two hundred beside B1's table. Outside the frames a message holds one
+  thing at most, in a sentence or two at its head: what the answer just given means here. An answer that takes an
+  option a Watch out warned about is met that way, with what it means now and what the owner can do, and is not argued
+  again. A message does not say what was checked, sum up the answers or announce the next message. *A question is read
+  at the length of its longest part, and a warning worth giving is lost in a message that explains everything.*
 - **Propose whenever the repository gives grounds, write only what the owner confirmed, and say plainly when there are
   no grounds.** A proposal says where it comes from (the README, the old instruction file, the folders, the repository's
   name); with no grounds, say so and ask. *A bare question costs the owner a draft the agent could have made, and a
   proposal written without the owner's yes is a decision nobody took.*
-- **Say each question in three parts**: what it is, in one or two sentences; the options; the recommendation, with its
-  reason in one line. An example only when the question cannot be understood without one. *A question the owner has to
-  decode is answered a turn late or answered wrongly, and the answer is written into every file the script makes.*
 - **A question left unanswered is reminded in one line at the end of the next message** (`Still open: A2 families`),
   never asked again in full. *A question restated every round buries the new ones under it.*
 
+**The opening findings** have a frame too, two parts under their names in bold:
+
+- **What I found**: one line per fact the repository has, as "<what>: <where>", among the facts the setup writes that
+  no question asks: the specification, the plan, the glossary, the findings, the owner's own notes, the folders never
+  edited, the generated or vendored copies, the test and lint commands. A kind the repository lacks gets no line, and a
+  repository with none of them one line saying so. It opens by saying that these are what AGENTS.md will record, to
+  confirm or correct.
+- **Watch out**: only when warranted, two lines at most each: what stops the setup, such as uncommitted changes or a
+  command to install, with what the owner does about it; and what in this repository the questions will turn on, such
+  as personal data in tracked files or a site that is live.
+
+The message starts at What I found. What was checked and found in order is not reported, what the repository lacks is
+not listed, and what bears on one question waits for that question. *A list
+of everything the agent read hides the few lines the owner has to check.*
+
 **The old instruction file, before A1.** When the repository has one, its step comes right after the opening findings:
 in the first message, show the file's sections, one line each, with where each would go, and say what happens to the
-file itself; the owner confirms or changes any line, once, and it is not asked again. Said to the owner, the frame
-filled at each run from the file:
+file itself; the owner confirms or changes any line, once, and it is not asked again. A section is one line, named by
+its heading; one whose parts go to different places gets a line for each place, saying which parts, and no two lines
+share a section and a place. *A line for each sentence of the old file is the old file again, and nobody confirms it
+line by line.* Said to the owner, the frame filled at each run from the file:
 
 > Your existing CLAUDE.md. The setup replaces it with a one-line `@AGENTS.md`, and each part of it is carried to where
 > Airone Giallo keeps that kind of thing.
 >
 > Your CLAUDE.md is backed up, unchanged, as `archive/CLAUDE-before-setup.md`.
 >
-> Here is where each part would go: [one line per section: "<section>" → <place>]. Confirm, or change any line.
+> Here is where each part would go: [numbered, one line per section: "<section>" → <place>]. Confirm, or change any
+> line.
 
 In the two-repository form the first sentence says instead that the setup removes the file from the public folder after
 backing it up in the workspace's archive. The places a line chooses from:
@@ -87,30 +123,33 @@ run (§4). *A part left in a file no session loads is a ruling nobody reads.* Ne
 does not state as one, such as a convention or a rule inferred from the code. *Finding new invariants is later work,
 proposed one by one under the rule AGENTS.md gives; at setup it opens a discussion nobody asked for.*
 
-Each answer has a name in the answers file (§3).
+The table gives each question's matter: what fills the frame comes from it and from the repository. The names in
+backticks are the answers file's (§3) and the last column is the agent's own; neither is said to the owner unless they
+ask. *The owner answers a question, and the script's field names are one more thing to read past.*
 
-| Question | What it is | The options | Recommend, and why | What the answer changes |
+| Question | What it is, its terms in plain words | The options | Recommend, and why | What the answer changes |
 |---|---|---|---|---|
-| A1 · Name and purpose | The project's name, and what it is and for whom in one line, each asked on its own line with its label, so that a one-word answer fills exactly one | the **name** (`name`); the **purpose** (`purpose`) | drafts of both, taken from the README, the old instruction file or the repository's name and said with their source, for the owner to confirm or replace; where none gives grounds, say so and ask | the opening paragraph of AGENTS.md |
-| A2 · Tools to add | Which tools to add to the project, each optional and chosen on its own | the specification graph (`graph`: `none`, `lite`, `full`); the status file (`status`, with its `families`, asked whenever the status file is chosen, as the paragraph on families below says); the handoff (`handoff`, with the first log's `stage`) | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
-| A3 · This machine | This device: its resources, what else runs on it, the run limits, whether timings measured here count as results | one line each (`machine`: `resources`, `load`, `limits`, `timings`) | what the session can see (`nproc`, `free -h`, `df -h .`), for the owner to confirm: it is measured, not guessed | `local-machine.md`, git-ignored, one per device |
-| B1 · What is public | Which rungs of the ladder are public, asked after the ladder's table below is shown and the cut explained; then where the owner's notes and the downloaded sources go, and in the two-repository form whether contributors get a short public instruction file | the highest public rung (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `all`); each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`); the agent layer (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements; say what the repository already shows, such as a public remote or a licence | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
-| C1 · How you work | How the owner works with the agent | **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: the repository cannot show how the owner works, so say so and ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
-| C2 · What the agent sends out on your behalf | Pushes, tags, releases, issues, pull requests, comments, posts: whether the owner sees each before it goes out | **gated**, prepared as a branch or a draft for the owner to send, or **free**, done and reported, with an attribution trailer if they want one (`outward`, `attribution`) | `gated`: an act outside the repository cannot be taken back | the outward rule |
-| C3 · Actions asked first | Actions the agent always stops and asks about before doing them. Say that the answer becomes one sentence in AGENTS.md | Propose candidates: actions found in the repository that can do damage, one line each with why. Do not propose an action that `session` §2 already leaves to the owner in every project (scope, priorities, cost, anything irreversible or public, a change to a recorded ruling); when a candidate is already covered by B1 or C2, say which, as the text below does. The owner keeps some by number, adds their own, or answers none (`reserved`) | the candidates the repository suggests; none is an answer too, and more are added as they surface | one sentence in the first rule on deciding |
+| A1 · Name and purpose | The project's name, and what it is and for whom in one line; AGENTS.md, the instruction file every session reads, opens with them. Each on its own line, so that a one-word answer fills exactly one | the **name** (`name`); the **purpose** (`purpose`) | drafts of both, taken from the README, the old instruction file or the repository's name and said with their source, for the owner to confirm or replace; where none gives grounds, say so and ask | the opening paragraph of AGENTS.md |
+| A2 · Tools to add | Three tools, each optional and chosen on its own. The status file is the one list of the open work, each item under an ID that never changes. The handoff is the state a new session starts from, with a log each session adds to when it closes; its first log is named after the stage, the stretch of the work it covers. The specification graph holds decisions, requirements, assumptions and threats as nodes that rest on each other, checked by a command | the status file, yes or no (`status`, with its `families`, proposed in the same question as the paragraph on families below says); the handoff, yes or no (`handoff`, with the first log's `stage`, proposed with it); the graph (`graph`): `none`, `lite` with those four kinds, `full` with evidence, checks and open questions too | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
+| A3 · This machine | This device, for `local-machine.md`, a file git ignores and each device has its own, so that a test or a long run fits what the device can take: its resources, what else runs on it, the run limits, whether timings measured here count as results | one line each (`machine`: `resources`, `load`, `limits`, `timings`) | what the session can see (`nproc`, `free -h`, `df -h .`), for the owner to confirm: it is measured, not guessed | `local-machine.md`, git-ignored, one per device |
+| B1 · What is public | Which rungs of the ladder are public: the ladder's table below, then the cut in the sentences under it, then the form each cut gives. In the same question, three smaller choices: on which side the two folders the setup adds beside the ladder go unless the cut is `none`, `human-docs/` for the owner's own notes and `sources/` for downloaded sources, and in the two-repository form whether contributors get a short public instruction file | the highest public rung (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `all`); each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`); the agent layer (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements and no contributors' file; say what the repository already shows, such as a public remote or a licence | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
+| C1 · How you work | How the owner works with the agent; it sets which working rules AGENTS.md gets | **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: the repository cannot show how the owner works, so say so and ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
+| C2 · What the agent sends out on your behalf | Pushes, tags, releases, issues, pull requests, comments, posts: whether the owner sees each before it goes out | **gated**, prepared as a branch or a draft for the owner to send, or **free**, done and reported, with an attribution trailer, a line naming the agent, if they want one (`outward`, `attribution`) | `gated`: an act outside the repository cannot be taken back | the outward rule |
+| C3 · Actions asked first | Actions the agent always stops and asks about before doing them, said in the words below in place of the frame | Propose candidates: actions found in the repository that can do damage, one line each with why. Do not propose an action that `session` §2 already leaves to the owner in every project (scope, priorities, cost, anything irreversible or public, a change to a recorded ruling); when a candidate is already covered by B1 or C2, say which, as the text below does. The owner keeps some by number, adds their own, or answers none (`reserved`) | the candidates the repository suggests; none is an answer too, and more are added as they surface | the list becomes one sentence in AGENTS.md, in the first rule on deciding |
 | D1 · Opinionated rules | Whether the project takes the more opinionated, less general rules of Airone Giallo's author, as one block, asked as the paragraph on D1 below says | yes or no (`opinionated`) | no, unless the owner wants them: never assumed | the author's rules, appended to AGENTS.md under their own heading |
 
 A family of the status file is a code of 2 to 5 capitals or digits starting with a capital, or two joined by a hyphen,
-and a line saying what it covers. Declare one per area of the work (the application, the documentation), never one per
-repository. *An item's family says what the work is about, and the work on one area often crosses both repositories.* A
-family, once declared, keeps its meaning. *A code chosen in haste is cited for the life of the project.* When the status
-file is chosen, even by an answer such as "all" to A2, ask for the families in their own question, after saying what a
-family is: propose families from the areas of work found in the repository, one line each with its code, and write only
-those the owner confirms; never take them from memory or from another project. *A family written without the owner's yes
-reads as answered, so nobody checks it, and the script refuses a status file with none.*
+and a line saying what it covers; each item's ID starts with its family's code. Declare one per area of the work (the
+application, the documentation), never one per repository. *An item's family says what the work is about, and the work
+on one area often crosses both repositories.* A family, once declared, keeps its meaning. *A code chosen in haste is
+cited for the life of the project.* In A2, after saying in a line what a family is, propose families from the areas of
+work found in the repository, one line each with its code, and write only those the owner confirms; never take them
+from memory or from another project. *A family written without the owner's yes reads as answered, so nobody checks it,
+and the script refuses a status file with none; proposed beside the status file, they cost the owner no round of their
+own.*
 
-Before asking B1, show the owner the ladder of `doc-discipline` §1 as this table, copied rather than paraphrased. *The
-cut is a choice among these rungs, and the owner can only choose among what is in front of them.*
+B1 shows the owner the ladder of `doc-discipline` §1 as this table, copied rather than paraphrased. *The cut is a choice
+among these rungs, and the owner can only choose among what is in front of them.*
 
 | Rung | Folder | What it holds |
 |---|---|---|
@@ -120,17 +159,23 @@ cut is a choice among these rungs, and the owner can only choose among what is i
 | 4 | `ai-docs/` | what agents write: the status file, the handoff, design notes, findings, guides |
 | 5 | the workspace root | the agent layer, `AGENTS.md`, `CLAUDE.md`, `RATIONALE.md` and the project's skills: how sessions are run |
 
-Then explain the cut in two sentences: the cut names the highest rung that is public, so it and every rung below it
-are public and every rung above it is private. `none` keeps everything private, `plan` makes the specification, the
-graph and the plan public and keeps the agents' documents and the instruction files private, and `all` makes
-everything public. A rung cites only rungs at or below it, so one cut is enough. *One cut instead of a side per
-document keeps every public text free of links into the private side.* A doubtful rung starts private: *a file moved
-from public to private keeps its public history.* The archive is beside the ladder and has no side to answer: each
-repository gets its own, `archive/` at its top, so an archived document stays on the side it was on. With `cut: all`
-the agent layer is public and RATIONALE.md drops the owner's words from its form; `agent_layer: both` keeps the full
-layer private and adds a contributors' `AGENTS.md` that cites only public rungs.
+Under the table, B1 explains the cut in two sentences: the cut names the highest rung that is public, so it and every
+rung below it are public and every rung above it is private. `none` keeps everything private, `plan` makes the
+specification, the graph and the plan public and keeps the agents' documents and the instruction files private, and
+`all` makes everything public. Then the form, in one sentence: `none` and `all` keep one repository, and a cut between
+them makes two, the owner's folder becoming the public one and moving, at the end and with their yes, into a new private
+repository, `<folder>-nido`, beside it. The three smaller choices are always asked, in one line with their suggestion,
+whatever cut is suggested: the owner may choose another. B1's Watch out says what in this repository a cut would make
+public that the owner may not want public. The rest is said when the owner asks. A rung cites only rungs at or below it,
+so one cut is enough. *One cut instead of a side per document keeps every public text free of links into the private
+side.* A doubtful rung starts private: *a file moved from public to private keeps its public history.* The archive is
+beside the ladder and has no side to answer: each repository gets its own, `archive/` at its top, so an archived
+document stays on the side it was on. With `cut: all` the agent layer is public and RATIONALE.md drops the owner's words
+from its form; `agent_layer: both` keeps the full layer private and adds a contributors' `AGENTS.md` that cites only
+public rungs.
 
-C3 is said to the owner as written here, the bracket filled at each run with the candidates found in the repository:
+C3 and D1 have no frame: each is said under its label in the words given here. C3 is said to the owner as written
+here, the bracket filled at each run with the candidates found in the repository, numbered:
 "Actions I always ask you about first. You already decided which parts of the repository are public (B1), and what I may
 send out under your name (C2). Here you can name actions in this repository that I must never take on my own; your list
 becomes one line in AGENTS.md. From the repository, these look worth naming: [the candidates, one line each with why;
@@ -139,9 +184,9 @@ owner who is not told what reserving does, and what earlier answers already cove
 already decided.*
 
 **D1 is a closed box.** Ask it as one yes or no, in words such as "Do you want Airone Giallo's author's more
-opinionated, less general rules for this project?", without describing what the rules say or how many there are. *The
-layer is the author's and may change; a question that summarised it would drift from it, and the owner would answer the
-summary.*
+opinionated, less general rules for this project?", saying that without a yes they are left out, and without describing
+what the rules say or how many there are. *The layer is the author's and may change; a question that summarised it
+would drift from it, and the owner would answer the summary.*
 
 **The answers no question asks.** The facts of §1 go in as `spec`, `plan`, `glossary`, `findings` (each a path or a
 short phrase, written into the map as given; a path is written from the workspace root and in backticks, as the defaults
@@ -179,10 +224,10 @@ Both runs find the folder where it is: the real run writes the public side into 
    python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json --target <root> --dry-run
    ```
 
-2. Show the owner the dry run's list as it printed, and end the turn there: the real run waits for the owner's
-   word and never runs in the same turn as the dry run. *The preview is where a wrong answer costs nothing, and only
-   if the owner reads it before anything is written.* An answer the owner changes goes into ANSWERS.json, and the
-   dry run is shown again.
+2. Show the owner the dry run's output whole and as it printed, in a code block, say in one line what a yes starts,
+   and end the turn there: the real run waits for the owner's word and never runs in the same turn as the dry run.
+   *The preview is where a wrong answer costs nothing, and only if the owner reads it before anything is written.* An
+   answer the owner changes goes into ANSWERS.json, and the dry run is shown again.
 3. In the two-repository form, with the owner's yes, the workspace: `git init <folder>-nido`, beside the folder. *The
    real run writes into it; the folder itself moves only at the end (§4).*
 4. With the owner's word, the real run, which lists every file by the same sections, with what happened to it first:

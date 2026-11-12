@@ -1280,13 +1280,14 @@ def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_
     ids = [i for i, _ in labelled]
     assert ids == ["A1", "A2", "A3", "B1", "C1", "C2", "C3", "D1"], ids
     assert not re.search(r"^#+ [A-Z]\. ", text, re.M)
-    # The first message holds the findings and the old file's step only; each later one a single group, sized by how
-    # demanding its questions are, with no fixed number.
+    # The first message holds the findings and the old file's step only; each later one a single group, in one fixed
+    # run, the two questions with the most to read alone.
     assert ("The first message holds only the opening findings** and, when the repository has an old instruction "
             "file, that file's step (below); no question of any group") in flat_text
     assert "Each later message holds questions of one group only, never of two**" in flat_text
-    assert "a demanding one comes alone, such as B1 with its ladder" in flat_text
-    assert "There is no fixed number per message" in flat_text and "rounds of one to four" not in text
+    assert "in this run: A1, A2 and A3; B1; C1 and C2; C3; D1; then the dry run (§3)" in flat_text
+    assert "B1 and C3 have the most to read, so each comes alone" in flat_text
+    assert "There is no fixed number per message" not in flat_text and "rounds of one to four" not in text
     # One principle for proposing: drafts where the repository gives grounds, only the confirmed written, no grounds
     # said plainly.
     assert ("Propose whenever the repository gives grounds, write only what the owner confirmed, and say plainly when "
@@ -1298,13 +1299,49 @@ def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_
     assert "propose families from the areas of work found in the repository" in flat_text
     assert "write only those the owner confirms; never take them from memory or from another project" in flat_text
     assert "never fill them from anything but the owner's answer" not in flat_text
-    # Each question in three parts, which are the table's columns; a pending one reminded in a line, never re-asked.
-    assert "| Question | What it is | The options | Recommend, and why | What the answer changes |" in text
-    assert "An example only when the question cannot be understood without one" in flat_text
+    # Every question has one frame of four named parts, filled from the repository: the shape is fixed, the words are
+    # not. Each part has a length, and a message holds one thing outside its frames. A pending question is reminded in
+    # a line, never re-asked.
+    assert ("**Every question has the same frame, and the agent writes what goes in it from this repository.** The "
+            "question's label in bold on a line of its own, never as a heading, then four parts, each opened by its "
+            "name in bold and a colon, in this order:") in flat_text
+    parts = re.findall(r"^  - \*\*([A-Z][a-z ]+)\*\*: ", text, re.M)
+    assert parts == ["What it is", "Options", "Suggestion", "Watch out"], parts
+    assert "is explained in a few words where it first appears: the owner has not read this skill" in flat_text
+    assert "**Watch out**: only when this repository warrants it, what an option would expose, break or destroy here" \
+        in flat_text and "Absent otherwise." in flat_text
+    assert "**Each part is short, and says a thing once.**" in flat_text
+    assert ("What it is, two sentences, or one line for each thing it has to explain; Options, one line an option, "
+            "saying what the option does for the owner and nothing a part above already said; Suggestion, one line "
+            "for each thing the owner decides; Watch out, two lines.") in flat_text
+    assert "a question takes about a hundred words, and A2 and B1 about two hundred beside B1's table" in flat_text
+    assert ("An answer that takes an option a Watch out warned about is met that way, with what it means now and what "
+            "the owner can do, and is not argued again.") in flat_text
+    assert "A message does not say what was checked, sum up the answers or announce the next message." in flat_text
+    assert "Say each question in three parts" not in flat_text and "add nothing around them" not in flat_text
+    assert "the words written for it below" not in flat_text
+    assert ("| Question | What it is, its terms in plain words | The options | Recommend, and why | What the answer "
+            "changes |") in text
+    assert "neither is said to the owner unless they ask" in flat_text
     assert ("reminded in one line at the end of the next message** (`Still open: A2 families`), never asked again "
             "in full") in flat_text
     # The opening findings hold only what the owner must confirm or what changes an answer.
-    assert "only what they must confirm or what changes an answer, one line each; details only when asked" in flat_text
+    assert ("only what stops the setup and the facts it will write that no question asks (§2), one line each; details "
+            "only when asked") in flat_text
+    assert "**The opening findings** have a frame too, two parts under their names in bold:" in flat_text
+    assert "- **What I found**: one line per fact the repository has" in flat_text
+    assert "A kind the repository lacks gets no line" in flat_text
+    assert "- **Watch out**: only when warranted, two lines at most each: what stops the setup" in flat_text
+    assert "what in this repository the questions will turn on" in flat_text
+    assert "The message starts at What I found." in flat_text
+    # A2 proposes the families and B1 asks its three smaller choices in the question itself, so neither costs a round.
+    assert "ask for the families in their own question" not in flat_text
+    assert "proposed beside the status file, they cost the owner no round of their own" in flat_text
+    assert ("The three smaller choices are always asked, in one line with their suggestion, whatever cut is suggested") \
+        in flat_text
+    assert "B1's Watch out says what in this repository a cut would make public" in flat_text
+    assert "Before asking B1" not in flat_text
+    assert "C3 and D1 have no frame: each is said under its label in the words given here." in flat_text
     # No reference by the old numbers is left, and every reference outside the table names a question that exists.
     assert not re.search(r"\bquestions? \d", text)
     prose = "\n".join(ln for ln in text.splitlines() if not ln.startswith("|"))
@@ -1332,13 +1369,15 @@ def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_
     # get a place, confirmed once; the frame is the skill's, the lines are filled at each run.
     assert rows["A3"].startswith("| A3 · This machine |") and "nvariants already written" not in text
     unquoted = flat(re.sub(r"^> ?", "", text, flags=re.M))
-    step = unquoted[unquoted.index("**The old instruction file, before A1.**"):unquoted.index("Each answer has a name")]
+    step = unquoted[unquoted.index("**The old instruction file, before A1.**"):
+                    unquoted.index("The table gives each question's matter")]
+    assert "no two lines share a section and a place" in step
     assert "the owner confirms or changes any line, once, and it is not asked again" in step
     assert ("Your existing CLAUDE.md. The setup replaces it with a one-line `@AGENTS.md`, and each part of it is "
             "carried to where Airone Giallo keeps that kind of thing.") in step
     assert "\n> Your CLAUDE.md is backed up, unchanged, as `archive/CLAUDE-before-setup.md`.\n" in text
-    assert ('Here is where each part would go: [one line per section: "<section>" → <place>]. Confirm, or change any '
-            "line.") in step
+    assert ('Here is where each part would go: [numbered, one line per section: "<section>" → <place>]. Confirm, or '
+            "change any line.") in step
     assert "removes the file from the public folder after backing it up in the workspace's archive" in step
     for place in ("`AGENTS.md`: rules for how agents work here", "`docs/invariants.md`: rules the code depends on",
                   "`docs/`: what the system is", "`ai-docs/guides/`: how a thing is done here",
@@ -1379,6 +1418,7 @@ def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_
         assert inside not in rows["D1"], inside
     assert "**D1 is a closed box.**" in text
     assert "without describing what the rules say or how many there are" in flat_text
+    assert "saying that without a yes they are left out" in flat_text
     # The setup's close lists its own choices whatever the mode.
     assert "Then, in either mode, list for the owner the choices the setup made that they did not" in flat_text
     # Every word the script starts a report line with is explained where the skill shows the two runs.

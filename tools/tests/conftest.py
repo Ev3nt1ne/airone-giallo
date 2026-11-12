@@ -17,8 +17,12 @@ sys.path.insert(0, str(SRC))
 if shutil.which("git") is None:  # every tool reads the tracked tree through git
     pytest.skip("git is not installed", allow_module_level=True)
 
-ENV = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1", GIT_AUTHOR_NAME="A",
-           GIT_AUTHOR_EMAIL="a@example.com", GIT_COMMITTER_NAME="A", GIT_COMMITTER_EMAIL="a@example.com")
+# A test's subprocess gets these variables of the machine's environment by name, and no other: where programs are
+# found, the home and temporary folders, the locale, and the Windows names a program needs to start there.
+PASSED = ("PATH", "HOME", "LANG", "LC_ALL", "LC_CTYPE", "TMPDIR", "SYSTEMROOT", "COMSPEC", "PATHEXT", "TEMP", "TMP")
+GIT = dict(GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1", GIT_AUTHOR_NAME="A", GIT_AUTHOR_EMAIL="a@example.com",
+           GIT_COMMITTER_NAME="A", GIT_COMMITTER_EMAIL="a@example.com")
+ENV = {**{name: os.environ[name] for name in PASSED if name in os.environ}, **GIT}
 
 
 class Repo:

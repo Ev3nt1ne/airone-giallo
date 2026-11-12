@@ -1,14 +1,14 @@
 # Airone Giallo · mark guidelines
 
-**The mark.** The standing yellow heron in a Notte circle (`airone-standing-circle-notte.svg`), the figure
-centred on its bounding box. Backup: the climbing heron, built the same way (`airone-climbing-*.svg`). For avatars, favicons and
-app icons, use the tight crop (`airone-standing-tight-circle-notte.svg`): the same drawing closer up, the whole figure inside the circle with a small margin.
+**The mark.** The standing yellow heron in a Notte circle ([airone-standing-circle-notte.svg](airone-standing-circle-notte.svg)), the figure
+centred on its bounding box. Backup: the climbing heron, built the same way (the files whose names start with airone-climbing). For avatars, favicons and
+app icons, use the tight crop ([airone-standing-tight-circle-notte.svg](airone-standing-tight-circle-notte.svg)): the same drawing closer up, the whole figure inside the circle with a small margin.
 The lockup puts the mark left of the wordmark *Airone Giallo* (EB Garamond, outlined;
-SIL Open Font License): `lockup-light.svg` and `lockup-dark.svg`.
+SIL Open Font License): [lockup-light.svg](lockup-light.svg) and [lockup-dark.svg](lockup-dark.svg).
 
 **specgraph's mark.** The climbing heron as the hub of a graph: faint edges run from behind its body to nodes, in a
-tone of Notte that never touches the heron (`specgraph.svg`; `graph/.claude-plugin/icon.png` is its 512 px render).
-Its one-colour and reversed versions drop the graph (`specgraph-mono-black.svg`, `specgraph-mono-white.svg`). At 16 px
+tone of Notte that never touches the heron ([specgraph.svg](specgraph.svg); [graph/.claude-plugin/icon.png](../graph/.claude-plugin/icon.png) is its 512 px render).
+Its one-colour and reversed versions drop the graph ([specgraph-mono-black.svg](specgraph-mono-black.svg), [specgraph-mono-white.svg](specgraph-mono-white.svg)). At 16 px
 the graph fades and the pose tells it from Airone Giallo's standing heron, so Airone Giallo keeps the standing one.
 
 ## Colours
@@ -33,9 +33,9 @@ grounds, where the heron carries the mark).
 
 ## One colour and reversed
 
-- **One ink:** use the knockout (`*-circle-knockout-black.svg`), a solid disc with the heron as a hole. Where a disc is
-  not wanted, use the figure alone (`*-figure-black.svg`).
-- **Dark grounds:** use the white knockout (`*-circle-knockout-white.svg`) or the white figure (`*-figure-white.svg`).
+- **One ink:** use the knockout (either heron's black circle-knockout file), a solid disc with the heron as a hole. Where a disc is
+  not wanted, use the figure alone (either heron's black figure file).
+- **Dark grounds:** use the white knockout (either heron's white circle-knockout file) or the white figure (either heron's white figure file).
   The full-colour circle also works there, with the caveat above.
 - **Squares:** where a circle cannot be used, use a square with the circle's area (side 0.886 of the circle's diameter), so the mark
   keeps the same visual size.

@@ -14,6 +14,7 @@ from pathlib import Path
 import pytest
 
 import check_archive as ca
+from conftest import ENV, GIT, PASSED
 
 HERE = Path(__file__).resolve().parent
 SRC = HERE.parent / "src"
@@ -71,9 +72,7 @@ class Repo:
         return path
 
     def git(self, *args, when=DAY1):
-        env = dict(os.environ, GIT_CONFIG_GLOBAL=os.devnull, GIT_CONFIG_NOSYSTEM="1",
-                   GIT_AUTHOR_NAME="A", GIT_AUTHOR_EMAIL="a@example.com", GIT_COMMITTER_NAME="A",
-                   GIT_COMMITTER_EMAIL="a@example.com", GIT_AUTHOR_DATE=when, GIT_COMMITTER_DATE=when)
+        env = dict(ENV, GIT_AUTHOR_DATE=when, GIT_COMMITTER_DATE=when)
         p = subprocess.run(["git", *args], cwd=self.root, env=env, capture_output=True, text=True)
         assert p.returncode == 0, p.stderr
         return p.stdout
@@ -179,6 +178,27 @@ def test_a_file_being_archived_is_compared_with_now(tmp_path):
 
 
 @needs_git
+def test_a_file_whose_name_is_not_ascii_is_read_by_its_name(tmp_path):
+    # git quotes such a name in its output unless told not to; the check still finds the file tracked and compared.
+    repo = Repo(tmp_path)
+    repo.archive_file("café.md", DAY1)
+    repo.archive_file("naïve.md", DAY2, stamp=DAY1)
+    errors, notes, _, _ = run(repo)
+    assert notes == [], notes
+    only_error(errors, "naïve.md", DAY1, DAY2)
+
+
+@needs_git
+def test_a_rename_inside_the_archive_of_a_file_whose_name_is_not_ascii_is_followed(tmp_path):
+    repo = Repo(tmp_path)
+    repo.archive_file("café.md", DAY1)
+    repo.git("mv", "archive/café.md", "archive/café-v1.md")
+    repo.write("archive/LOG.md", log([change("café-v1.md", what="renamed from café.md")]))
+    repo.commit("rename café.md inside the archive", DAY2)
+    assert run(repo)[:2] == ([], [])
+
+
+@needs_git
 def test_an_untracked_file_is_noted_not_compared(tmp_path):
     repo = Repo(tmp_path)
     repo.write("archive/loose.md", doc(stamp=DAY1))
@@ -261,6 +281,17 @@ def test_a_staged_rename_needs_its_row(tmp_path):
     repo.git("mv", "archive/design.md", "archive/design-v1.md")
     only_error(run(repo)[0], "archive/design.md -> archive/design-v1.md", "renamed")
     repo.write("archive/LOG.md", log([change("design-v1.md", what="renamed from design.md")]))
+    repo.git("add", "-A")
+    assert run(repo)[0] == []
+
+
+@needs_git
+def test_a_staged_rename_of_a_file_whose_name_is_not_ascii_names_both_and_needs_its_row(tmp_path):
+    repo = Repo(tmp_path)
+    repo.archive_file("café.md", DAY1)
+    repo.git("mv", "archive/café.md", "archive/café-v1.md")
+    only_error(run(repo)[0], "archive/café.md -> archive/café-v1.md", "renamed")
+    repo.write("archive/LOG.md", log([change("café-v1.md", what="renamed from café.md")]))
     repo.git("add", "-A")
     assert run(repo)[0] == []
 
@@ -514,3 +545,9 @@ def test_the_package_command_names_the_checker_main():
     assert module in layout["py-modules"]
     assert (HERE.parent / layout["package-dir"][""] / f"{module}.py") == SRC / "check_archive.py"
     assert callable(getattr(ca, func, None))
+
+
+def test_a_tests_subprocess_gets_the_named_variables_and_no_others():
+    # The tests give git and the tools the variables named in conftest and the git ones they set; nothing else of
+    # the machine's environment (a token, a remote's address) reaches a subprocess.
+    assert set(ENV) <= set(PASSED) | set(GIT) and ENV.items() >= GIT.items()

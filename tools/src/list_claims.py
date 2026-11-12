@@ -171,7 +171,8 @@ def added_lines(diff):
     path, n = None, 0
     for raw in diff.splitlines():
         if raw.startswith("+++ "):
-            path = raw[6:] if raw.startswith("+++ b/") else None
+            name = at.git_path(raw[4:])
+            path = name[2:] if name.startswith("b/") else None
         elif raw.startswith("@@"):
             m = re.search(r"\+([0-9]+)", raw)
             n = int(m.group(1)) if m else 0

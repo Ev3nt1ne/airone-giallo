@@ -22,10 +22,33 @@ def git(root, *args, check=False):
     binary = shutil.which("git")
     if binary is None:
         raise Usage("git is not installed")
-    p = subprocess.run([binary, "-c", "core.quotepath=off", *args], cwd=root, capture_output=True, text=True)
+    p = subprocess.run([binary, *args], cwd=root, capture_output=True, text=True)
     if check and p.returncode != 0:
         raise Usage(f"git {' '.join(args)} failed in {root}: {p.stderr.strip()}")
     return p
+
+
+# A path in git's line output (-z output is never quoted): git puts a path in double quotes when it holds a control
+# character, a double quote, a backslash or a byte above 0x7f, each written as a C escape, the bytes above 0x7f as
+# three octal digits; core.quotePath off leaves those bytes alone and quotes the rest as before.
+QUOTED_PATH_RE = re.compile(r'"((?:[^"\\]|\\.)*)"')
+ESCAPE_RE = re.compile(r"((?:\\[23][0-7]{2})+)|\\.")
+
+
+def _high_bytes(m):
+    """A run of octal escapes of bytes above 0x7f, decoded as the UTF-8 text they spell; any other escape, as is."""
+    return bytes(int(o, 8) for o in m[1].split("\\")[1:]).decode("utf-8") if m[1] else m[0]
+
+
+def git_path(text):
+    """A path as git's line output prints it, the way it prints it with core.quotePath off: a path quoted only for its
+    bytes above 0x7f comes back unquoted and decoded; one quoted for another reason keeps its quotes and other escapes;
+    what follows the closing quote (the tab git puts after a name with a space in a diff's header) stays."""
+    m = QUOTED_PATH_RE.match(text)
+    if m is None:
+        return text
+    body = ESCAPE_RE.sub(_high_bytes, m[1])
+    return (f'"{body}"' if "\\" in body else body) + text[m.end():]
 
 
 def top(start="."):

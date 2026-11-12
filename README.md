@@ -62,6 +62,19 @@ writes nothing; the real run waits for your word. When only some of the project'
 project becomes two repositories: a new private one, `<folder>-nido`, is created beside the project's folder, and the
 folder moves into it, whole, as its public side. The move is the setup's last step, and it too waits for your yes.
 
+### Where it runs and what it runs
+
+Airone Giallo is made for Claude Code. Its skills also load in claude.ai chat and in Cowork, but the commands they call
+need a terminal and a git repository. The plugin has no hooks and no MCP servers: it carries skills, text that tells
+Claude what to run. Claude then runs the commands installed above; the setup's script, `skills/setup/scaffold.py`, which
+comes with the plugin and runs with `python3`; and the git commands a skill names, such as `git mv`, and, each with your
+yes, the setup's `git init`, `git submodule add` and commits. The commands read and write the project's files and run
+local git commands (such as `ls-files`, `log`, `show`, `diff`, `mv`); `mutate` also runs the test command it is given.
+None of them opens a network connection: `check-links` counts external links and skips them without fetching them. The
+network is used to install the commands from GitHub, and by `uvx`, which the graph skill offers when `specgraph` is not
+installed and which downloads the graph package from GitHub at a fixed commit. No skill tells Claude to push, open an
+issue or post; the setup asks whether the project's agents may, and writes the answer into the project's instructions.
+
 ### What it costs in context
 
 The figures below are a dated measurement, not a property of the plugin: Claude Code's own estimate, printed by
@@ -90,8 +103,9 @@ uv tool install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=
 ```
 
 The skill is then `/specgraph:graph`, and the command `specgraph`; `pipx install` takes the same argument as
-`uv tool install`, and `uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph' specgraph`
-runs it with nothing installed. See [graph/README.md](graph/README.md).
+`uv tool install`, and
+`uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git@261602f957613ffe2131e716db10efa9bfa8f930#subdirectory=graph' specgraph`
+runs it with nothing installed, at a fixed commit. See [graph/README.md](graph/README.md).
 
 ## Licence
 

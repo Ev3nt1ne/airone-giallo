@@ -40,8 +40,8 @@ or, from a clone of the repository, `uv tool install ./graph`; `pipx install` ta
 `pip install` works inside a project's own venv. This puts the command `specgraph` on the PATH; installed with `pip`,
 the package is importable too, and `python -m specgraph` is the same command. For developing the graph,
 `pip install -e graph` from the clone, in a venv, installs it editable, as under Tests. The examples below use the
-command. With `uv`, the command runs with nothing installed:
-`uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph' specgraph …`.
+command. With `uv`, the command runs with nothing installed, at a fixed commit:
+`uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git@261602f957613ffe2131e716db10efa9bfa8f930#subdirectory=graph' specgraph …`.
 
 In Claude Code, the skill that teaches an agent the graph ([skills/graph/SKILL.md](skills/graph/SKILL.md)) comes as
 the plugin `specgraph`, from the repository's marketplace: `/plugin marketplace add Ev3nt1ne/airone-giallo`, then

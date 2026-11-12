@@ -19,10 +19,10 @@ contradiction is raised, not edited away.
 
 - `specgraph` is a Python package. Installed with
   `uv tool install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph'` (`pipx install` takes the
-  same argument), or run without installing with
-  `uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=graph' specgraph …`. If neither works, ask
-  the owner to install it; do not reimplement a check. *The tools follow `docs/spec-graph.md`; a check written in the
-  session follows memory.*
+  same argument), or run without installing, at the commit this skill was written for, with
+  `uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git@261602f957613ffe2131e716db10efa9bfa8f930#subdirectory=graph' specgraph …`.
+  If neither works, ask the owner to install it; do not reimplement a check. *The tools follow `docs/spec-graph.md`; a
+  check written in the session follows memory.*
 - Every command takes `--graph PATH`; the default is `graph.yml` in the current folder. Each has `--help`.
 - A project without a graph gets one only at the owner's word: `specgraph init --profile lite` writes an empty
   `graph.yml` whose `meta` block is the schema every command reads. *Lite (requirement, assumption, decision,

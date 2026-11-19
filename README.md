@@ -8,11 +8,15 @@
 # Airone Giallo
 
 Airone Giallo runs a long project with Claude Code agents: weeks or months of sessions on one codebase, where the
-problems are continuity (a session that forgets what was decided), drift (a rule nobody enforces) and trust (a
-number nobody measured). It installs whole: a setup that lays out the project's documents, skills that run the
-sessions on that layout, and commands that check it. The project chooses which parts it uses when it runs the setup.
-Some parts also stand on their own: the specification graph is a package of its own, used by Airone Giallo and usable
-without it.
+problems are four: continuity (each new session loses the context of the last and works out again what was already
+decided), truth maintenance (every decision depends on others, and when one changes the rest must be rechecked by rule,
+not by memory), drift (a rule in CLAUDE.md that nobody enforces stops being followed, and documents that should agree
+stop agreeing) and trust (a session reports a number nobody measured, or a commit that never ran). It installs whole:
+a setup that lays out the project's documents, including the status file and the handoff a new session starts from;
+skills that open and close each session on that layout; and commands that check it. The project chooses which parts
+it uses when it runs the setup. Some parts also stand on their own: the specification graph, which keeps a project's
+decisions, requirements and assumptions as a graph and computes which of them still hold, is a package of its own,
+used by Airone Giallo and usable without it.
 
 Airone Giallo gives a project a structure and a direction; it does not collect fixes. A rule is here because many
 projects meet the case and an agent does not find the answer on its own. What one project learned from its own incidents
@@ -106,6 +110,14 @@ The skill is then `/specgraph:graph`, and the command `specgraph`; `pipx install
 `uv tool install`, and
 `uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git@261602f957613ffe2131e716db10efa9bfa8f930#subdirectory=graph' specgraph`
 runs it with nothing installed, at a fixed commit. See [graph/README.md](graph/README.md).
+
+## Other projects
+
+- [Embers](https://github.com/Ev3nt1ne/embers): keeps Claude Code subagents' prompt caches from going cold.
+- [cache-watch](https://github.com/Ev3nt1ne/cache-watch): warns you before a Claude Code session's prompt cache goes
+  cold.
+- [grammar-guard](https://github.com/Ev3nt1ne/grammar-guard): grammar and spell check for the prompts you type or
+  dictate into Claude Code.
 
 ## Licence
 

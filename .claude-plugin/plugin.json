@@ -9,5 +9,5 @@
   "license": "MIT",
   "icon": "./brand/icon-512.png",
   "skills": ["./graph/skills/"],
-  "keywords": ["claude-code", "skills", "long-project", "handoff", "specification-graph", "documentation"]
+  "keywords": ["claude-code", "claude-code-plugin", "claude-code-skills", "agent-skills", "context-engineering", "agent-memory", "session-handoff", "requirements-engineering", "architecture-decision-records", "docs-as-code"]
 }

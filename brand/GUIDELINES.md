@@ -6,7 +6,7 @@ app icons, use the tight crop ([airone-standing-tight-circle-notte.svg](airone-s
 The lockup puts the mark left of the wordmark *Airone Giallo* (EB Garamond, outlined;
 SIL Open Font License): [lockup-light.svg](lockup-light.svg) and [lockup-dark.svg](lockup-dark.svg).
 
-**specgraph's mark.** The climbing heron as the hub of a graph: faint edges run from behind its body to nodes, in a
+**SpecGraph's mark.** The climbing heron as the hub of a graph: faint edges run from behind its body to nodes, in a
 tone of Notte that never touches the heron ([specgraph.svg](specgraph.svg); [graph/.claude-plugin/icon.png](../graph/.claude-plugin/icon.png) is its 512 px render).
 Its one-colour and reversed versions drop the graph ([specgraph-mono-black.svg](specgraph-mono-black.svg), [specgraph-mono-white.svg](specgraph-mono-white.svg)). At 16 px
 the graph fades and the pose tells it from Airone Giallo's standing heron, so Airone Giallo keeps the standing one.

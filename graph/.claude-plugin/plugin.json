@@ -1,7 +1,7 @@
 {
   "name": "specgraph",
-  "displayName": "specgraph (Airone Giallo)",
-  "version": "0.1.1",
+  "displayName": "SpecGraph (Airone Giallo)",
+  "version": "0.1.2",
   "description": "The specification graph alone: a skill for reading, extending and checking a project's graph.yml with the specgraph command. The command is a Python package, installed separately.",
   "author": { "name": "Ev3nt1ne", "url": "https://github.com/Ev3nt1ne" },
   "homepage": "https://github.com/Ev3nt1ne/airone-giallo/tree/main/graph",

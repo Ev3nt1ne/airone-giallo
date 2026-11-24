@@ -1,4 +1,11 @@
-# The specification graph
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Ev3nt1ne/airone-giallo/main/brand/specgraph.svg" alt="SpecGraph" width="160">
+</p>
+
+# SpecGraph
+
+The specification graph: it keeps a project's decisions, requirements and assumptions as a graph and computes which of
+them still hold.
 
 A project's design is a web of conditional statements: *this requirement holds because that decision satisfies it,
 provided this assumption about the world is true, and as long as that threat is defended*. Usually the web lives in

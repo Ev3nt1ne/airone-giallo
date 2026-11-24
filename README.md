@@ -21,9 +21,9 @@ asks the project a few questions and lays out its documents, among them the stat
 starts from. Skills open and close every session on that layout, and commands check it. The project chooses which
 parts it uses when it runs the setup.
 
-Some parts also stand on their own. The specification graph keeps a project's decisions, requirements and assumptions
-as a graph and computes which of them still hold. It is a package of its own: Airone Giallo uses it, and you can use
-it without Airone Giallo.
+Some parts also stand on their own. SpecGraph, the specification graph, keeps a project's decisions, requirements and
+assumptions as a graph and computes which of them still hold. It is a package of its own: Airone Giallo uses it, and
+you can use it without Airone Giallo.
 
 Airone Giallo gives a project a structure and a direction; it does not collect fixes. A rule is here because many
 projects meet the case and an agent does not find the answer on its own. What one project learned from its own
@@ -36,7 +36,7 @@ bounces your ideas back; the heron does more with them.
 |---|---|
 | The skills: open and close a session, verify a claim, keep documents true together, and the setup | [skills/](skills/) |
 | The commands: four checks for a hook and CI, a mover, a mutation round, a claim lister, a public gate | [tools/](tools/) |
-| The specification graph, whose truth is computed; a package of its own, usable alone | [graph/](graph/) |
+| SpecGraph, the specification graph, whose truth is computed; a package of its own, usable alone | [graph/](graph/) |
 | The plugin, which carries the skills into Claude Code | [.claude-plugin/](.claude-plugin/) |
 | The brand: the mark, its lockups and the rules for using them | [brand/](brand/) |
 
@@ -134,13 +134,22 @@ uvx --from 'git+https://github.com/Ev3nt1ne/airone-giallo.git@261602f957613ffe21
 
 See [graph/README.md](graph/README.md).
 
-## Other projects
+## More Claude Code projects by Ev3nt1ne
 
-- [Embers](https://github.com/Ev3nt1ne/embers): keeps Claude Code subagents' prompt caches from going cold.
-- [cache-watch](https://github.com/Ev3nt1ne/cache-watch): warns you before a Claude Code session's prompt cache goes
-  cold.
-- [grammar-guard](https://github.com/Ev3nt1ne/grammar-guard): grammar and spell check for the prompts you type or
-  dictate into Claude Code.
+<table>
+  <tr>
+    <td width="66"><a href="https://github.com/Ev3nt1ne/embers"><picture><source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Ev3nt1ne/embers/main/assets/embers-square-color-dark.svg"><img src="https://raw.githubusercontent.com/Ev3nt1ne/embers/main/assets/embers-square-color.svg" alt="Embers" width="40" height="40"></picture></a></td>
+    <td><a href="https://github.com/Ev3nt1ne/embers"><b>Embers</b></a><br>Keeps Claude Code subagents' prompt caches from going cold.</td>
+  </tr>
+  <tr>
+    <td width="66"><a href="https://github.com/Ev3nt1ne/cache-watch"><img src="https://raw.githubusercontent.com/Ev3nt1ne/cache-watch/main/assets/cache-watch-mark.svg" alt="Cache Watch" width="40" height="40"></a></td>
+    <td><a href="https://github.com/Ev3nt1ne/cache-watch"><b>Cache Watch</b></a><br>Warns you before a Claude Code session's prompt cache goes cold.</td>
+  </tr>
+  <tr>
+    <td width="66"><a href="https://github.com/Ev3nt1ne/grammar-guard"><img src="https://raw.githubusercontent.com/Ev3nt1ne/grammar-guard/master/assets/grammar-guard-mark.svg" alt="Grammar Guard" width="40" height="40"></a></td>
+    <td><a href="https://github.com/Ev3nt1ne/grammar-guard"><b>Grammar Guard</b></a><br>Grammar and spell check for the prompts you type or dictate into Claude Code.</td>
+  </tr>
+</table>
 
 ## Licence
 

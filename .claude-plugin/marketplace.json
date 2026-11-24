@@ -1,6 +1,6 @@
 {
   "name": "airone-giallo",
-  "description": "Airone Giallo, for running a long project with Claude Code agents, and its specification graph alone.",
+  "description": "Airone Giallo, for running a long project with Claude Code agents, and SpecGraph, its specification graph, usable alone.",
   "owner": { "name": "Ev3nt1ne", "url": "https://github.com/Ev3nt1ne" },
   "plugins": [
     {

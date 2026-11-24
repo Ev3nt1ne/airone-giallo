@@ -11,10 +11,11 @@ and nothing says it is no longer what it was; a term is renamed and a frozen fil
 now means something else; a test passes, and nobody has seen it fail when the thing it guards breaks; a commit
 message claims a hash, an identifier and "every case" that nobody resolved.
 
-This folder is Airone Giallo's commands, seven of them, each one file of standard-library Python beside the module
+This folder is Airone Giallo's commands, eight of them, each one file of standard-library Python beside the module
 they share (`airone_tree.py`): four checks that run in a hook and in CI (the status file, the archive, the links with
-the ladder, the frontmatter), a mover that keeps the references true, a mutation round, and a lister of the claims a
-change makes. They read a project's own values from its files or their arguments, never from constants: the ladder's
+the ladder, the frontmatter), a mover that keeps the references true, a mutation round, a lister of the claims a
+change makes, and the gate a public repository's commits and pushes go through when the project's history stays
+private. They read a project's own values from its files or their arguments, never from constants: the ladder's
 cut, the graph file's `meta`, the status file's `status-meta` block, the archive's place.
 
 It is part of Airone Giallo, described in the [repository](https://github.com/Ev3nt1ne/airone-giallo); the graph,
@@ -67,7 +68,8 @@ change (§6 of the `session` skill itself, Two passes), which `claims` starts.
 ## Start
 
 Python 3.10 or newer, standard library only, and git; the package is `airone-tools`, MIT, with no dependencies.
-This gives the seven commands below:
+`check-public` also needs the `gitleaks` command, which it runs and never replaces. This gives the eight commands
+below:
 
 ```sh
 uv tool install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=tools'
@@ -78,7 +80,9 @@ or, from a clone of the repository, `uv tool install ./tools`; `pipx install` ta
 installing (`python3 <airone-giallo>/tools/src/check_links.py`); none is ever copied into the
 project. *A copied script is a second copy that the next version of Airone Giallo does not reach.*
 
-The setup skill installs no hook. A project that wants the checks at every commit copies these lines into its own
+The setup skill installs no hook of these checks; the one hook it writes is the public repository's `pre-push` gate
+when the history stays private (`check-public`, below). A project that wants the checks at every commit copies these
+lines into its own
 `.git/hooks/pre-commit` (or the hook manager it uses), each command exiting non-zero on a finding; `<cut>` is the
 last public rung its instruction file names, `all` or `none` in one repository:
 
@@ -301,6 +305,94 @@ matched, not that the change is true. Known false positive: a run of 7 to 40 hex
 digit in it is read as a commit hash, so a checksum reports as an unknown hash; read each failure before believing
 it.
 
+### `check-public`
+
+The gate a public repository's commits and pushes go through when a project's history stays private: the setup's
+private-history direction, where the owner's folder is the private repository and the public one is born inside it.
+The setup runs it before the first public commit; the public repository's `pre-push` hook runs it before every push.
+
+```sh
+check-public --staged [--root DIR] [--message TEXT]      # what the next commit would hold
+check-public --pre-push REMOTE URL [--root DIR]          # what a push sends: git gives the refs on standard input
+```
+
+It reads two lists the private side keeps and the public side never holds, at the private repository's root (the
+superproject, or `--private-root`, or `--sides` and `--markers`):
+
+- **`public-paths.txt`**, one rule a line, a side and a path from the project's root, a folder ending in `/`:
+  `public` goes into the public repository, `private` stays, and `local` is an ignored entry under a public path that
+  travels with it and stays ignored there (an environment file, installed dependencies). `public SRC -> DEST`
+  publishes SRC under another name (the setup's answer writes it `"SRC": "public as DEST"`); two sources for one
+  public name are refused, and so is a path holding a `.git` folder or the arrow. `setup FILE` is a file the setup
+  wrote on the public side, one line per file, never a folder, and an explicit `private` rule wins over it. The
+  longest matching path wins, and a path no rule covers is private. `old-email-ok yes` is the owner's yes to an
+  identity the old history used.
+- **`public-markers.txt`**, the owner's words that must never be published, one a line. It is read as UTF-8, a
+  byte-order mark at its start dropped and lines ending in LF or CRLF alike; each line is stripped of the whitespace
+  around it, and every line left non-empty is a marker. The file has no comment syntax and no header, so a line
+  starting with `#` is a marker too. The setup and the gate read it through one function. With none, the output says
+  that no markers were given. A marker matches as plain text with case ignored and every whitespace character (line
+  breaks, tabs and no-break spaces included), hyphen, underscore and dot removed on both sides, across the whole text,
+  and is placed on the line where it starts; so `Wren Halloway` also hits `wren-halloway`, `WrenHalloway` and a name
+  wrapped across two lines, a short marker hits inside longer words, and letters that only look alike, or accented
+  ones, are not folded and do not hit. A marker that folds to fewer than 3 characters would match nothing or nearly
+  everything, and is refused with a message, by the setup and by the gate (exit 2).
+
+What fails the gate:
+
+- a path not declared public;
+- an agent tool's file (`.claude/`, `.mcp.json`, `AGENTS.md`, `CLAUDE.md`, at any depth, whatever the case of their
+  letters, since a file system that ignores case reads `claude.md` as `CLAUDE.md`);
+- a marker in a path, a file, a ref's name, an identity or a message, named by its number and place, never by its
+  words;
+- a finding of gitleaks, which is required: when it is missing, or ran without writing its report, the gate fails;
+- a gitleaks configuration (`.gitleaks.toml`, `.gitleaksignore`) in the public folder that is not tracked; a tracked
+  `.gitleaks.toml` is in effect, and the output says so, while a `.gitleaksignore` is never honoured;
+- inside the public folder, an ignored entry that is not `local` or holds a `private` path, a `local` one not ignored
+  by the public repository's own tracked rules, or an untracked file;
+- the old history's e-mail as an identity.
+
+Images and binary files are listed for a person, not read; a text file over 1 MiB is read like any other and listed
+too. With `--pre-push` the gate judges the objects the push adds to the remote, not the diffs. They are every object
+reachable from the pushed ids and not from the ids the remote says, on the hook's standard input, that it holds.
+Remote-tracking refs are not believed, so a new branch, or a remote emptied and created again, is judged whole. Of
+those objects it judges the content of every new file, every path of every new commit's tree and of any tree a pushed
+ref or tag names, and the raw text of every new commit and annotated tag. That text is parsed as git writes it: the
+headers run to the first blank line, and the message is the rest, searched whole, whatever it holds (a signed tag's
+signature, and lines that look like headers, included). In the headers, only the `tree`, `parent` and `object` ids
+and a commit's `gpgsig` (or `gpgsig-sha256`) signature are left out, since nobody wrote them; a merge's `mergetag`
+holds a tag, parsed the same way, its tagger and its whole message read. Each pushed ref's name is judged too. So a marker added in one commit and removed in the
+next, a file added and removed, content only a merge brings, a rename onto a marker, a tag's message, and a signed
+tag merged into a commit are all stops. The secret scan reads exactly the new files, copied into a private temporary
+folder; a path with an empty, `.`, `..` or `.git` part is refused and never written there. Git runs with replace refs
+off in every mode, so a replace ref cannot hide what is sent, and a git command that fails stops the gate (exit 2),
+never reads as an empty answer. When a path a rule made private after it was pushed blocks a push, the output says
+in one line that the commits already on the remote publish it and that only a new history without them can be pushed.
+The hook lives where git looks by default, the public repository's `.git/hooks`, and runs on a push from the
+repository or from any worktree of it. The setup refuses to run, and to make the first commit, while a
+`core.hooksPath` is in effect for the public repository, and names the command that unsets it; it cannot see one set
+afterwards, or one behind a conditional include that matches only later (once a remote exists, say), and either
+turns the gate off without a word. A hook manager that sets `core.hooksPath` when it installs (husky, and tools like
+it, often on the first `npm install`) turns the gate off the same way; with one, add the gate's call,
+`check-public --pre-push "$@"`, to that manager's own pre-push hook. After `git submodule absorbgitdirs` the hook
+stops every push, and says how to put the git folder back. A clone has no hook until one is installed. The push gate reads every new object
+of a push in one pass and holds their paths and texts in memory, so a long first push of a large history is slow
+and needs memory in proportion; it has not been measured beyond a few hundred files. Exit 0 when
+clean, 1 on a finding or a scan that could not run, 2 on a bad argument or a list it cannot read.
+
+```text
+$ check-public --staged
+check-public: the staged tree of /work/larder/public
+declared public: 41 of 41 file(s)
+the agent tool's files: none
+markers: 3 given, none found
+gitleaks: ran on the 41 staged file(s), 0 finding(s)
+ignore: 2 ignored entries inside, 2 local rule(s)
+identity: not an e-mail of the old history
+images, binary files and files over 1 MiB, listed, not read: app/logo.png (18342 B)
+0 error(s)
+```
+
 ## What it is not
 
 - **Not a linter of prose.** The checks hold the shape (links, dates, sides); whether a document says something true
@@ -308,7 +400,8 @@ it.
 - **Not a fixer.** The four checks change nothing; `move-paths` changes only what it listed.
 - **Not a changelog, and not a decision.** A closed item records what was chosen, not every step taken; `check-archive
   rename` lists and the log records, and which archived occurrences change is the owner's ruling, file by file.
-- **Not installed by setup.** The hook lines above are the project's to copy, under its own commit rules.
+- **Not installed by setup.** The hook lines above are the project's to copy, under its own commit rules. The one
+  hook the setup writes is the public repository's `pre-push`, running `check-public`, when the history stays private.
 
 ## Tests
 

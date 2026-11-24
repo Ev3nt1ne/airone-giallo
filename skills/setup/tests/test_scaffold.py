@@ -938,6 +938,7 @@ def test_the_two_repository_setup_runs_where_the_folder_is_and_the_move_comes_la
     before = tree(source)
     nido = tmp_path / "notes-nido"
     answers = dict(MINIMAL, cut="plan", status=True, families=FAMILIES, handoff=True, move_from=str(source),
+                   history="publish",
                    carry=['"Commands" → ai-docs/guides/', '"Style" → AGENTS.md'])
     rc, out = install(nido, answers, "--dry-run", capsys=capsys)
     assert rc == 0 and tree(source) == before and not nido.exists(), out
@@ -1278,15 +1279,16 @@ def test_the_skills_questions_are_labelled_and_every_reference_names_a_question_
     # One table: each question carries its label, and the groups are labels for the reader, not headings or rounds.
     labelled = re.findall(r"^\| ([A-Z]\d) · ([^|]+?) \| ", text, re.M)
     ids = [i for i, _ in labelled]
-    assert ids == ["A1", "A2", "A3", "B1", "C1", "C2", "C3", "D1"], ids
+    assert ids == ["A1", "A2", "A3", "B1", "B2", "C1", "C2", "C3", "D1"], ids
     assert not re.search(r"^#+ [A-Z]\. ", text, re.M)
     # The first message holds the findings and the old file's step only; each later one a single group, in one fixed
     # run, the two questions with the most to read alone.
     assert ("The first message holds only the opening findings** and, when the repository has an old instruction "
             "file, that file's step (below); no question of any group") in flat_text
     assert "Each later message holds questions of one group only, never of two**" in flat_text
-    assert "in this run: A1, A2 and A3; B1; C1 and C2; C3; D1; then the dry run (§3)" in flat_text
-    assert "B1 and C3 have the most to read, so each comes alone" in flat_text
+    assert "in this run: A1, A2 and A3; B1; B2; C1 and C2; C3; D1; then the dry run (§3)" in flat_text
+    assert "B2 is asked only when the repository has commits" in flat_text
+    assert "B1, B2 and C3 have the most to read, so each comes alone" in flat_text
     assert "There is no fixed number per message" not in flat_text and "rounds of one to four" not in text
     # One principle for proposing: drafts where the repository gives grounds, only the confirmed written, no grounds
     # said plainly.

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "airone-tools"
 version = "0.1.0"
-description = "Airone Giallo's checks and helpers for a project's documents and tests: the status file, the archive, dead links and the ladder, frontmatter, moving files with their references, a mutation round, and the claims a change makes."
+description = "Airone Giallo's checks and helpers for a project's documents and tests: the status file, the archive, dead links and the ladder, frontmatter, moving files with their references, a mutation round, the claims a change makes, and the gate before a public commit or push."
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
@@ -23,13 +23,14 @@ check-frontmatter = "check_frontmatter:main"
 move-paths = "move_paths:main"
 mutate = "mutate_round:main"
 claims = "list_claims:main"
+check-public = "check_public:main"
 
 # Each command stays one file in src/, beside the module they share, so it still runs as a script from the clone;
 # installed, each is a top-level module. The tests in tests/ are not installed.
 [tool.setuptools]
 package-dir = {"" = "src"}
 py-modules = ["airone_tree", "check_status", "check_archive", "check_links", "check_frontmatter", "move_paths",
-              "mutate_round", "list_claims"]
+              "mutate_round", "list_claims", "check_public"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

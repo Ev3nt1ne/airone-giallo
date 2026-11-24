@@ -1,0 +1,29 @@
+#!/bin/sh
+# Airone Giallo: the gate before every push of this public repository, written by the setup when the project's
+# history stays private. check-public judges every object the push adds to the remote (each new file's content, each
+# path of each new commit, each commit's and tag's message and identities, the secret scan) and each pushed ref's name,
+# reading the lists the private side keeps. A push it cannot judge does not go: without the command, this hook stops
+# the push. A push from a linked worktree of this repository runs this same hook, and is judged the same way.
+gitdir=$(cd "$(dirname "$0")/.." && pwd -P)
+here=$(dirname "$gitdir")
+if [ "$(basename "$gitdir")" != ".git" ]; then
+  top=$(git rev-parse --show-toplevel 2>/dev/null)
+  echo "pre-push: this hook sits in $gitdir, a git folder taken out of the public folder it guards (git submodule" \
+       "absorbgitdirs does this), so it cannot tell which folder that is and stops every push. Put the git folder" \
+       "back in the public folder, then push again:" >&2
+  echo "way out: git config --file \"$gitdir/config\" --unset core.worktree && rm \"${top:-<the public folder>}/.git\"" \
+       "&& mv \"$gitdir\" \"${top:-<the public folder>}/.git\"" >&2
+  exit 1
+fi
+common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)
+if [ -z "$common" ] || [ "$(cd "$common" 2>/dev/null && pwd -P)" != "$gitdir" ]; then
+  echo "pre-push: this is the push gate of $here, and the push runs in ${common:-no repository}, another" \
+       "repository; push from $here or from a worktree of it" >&2
+  exit 1
+fi
+if ! command -v check-public >/dev/null 2>&1; then
+  echo "pre-push: check-public is not installed, so the gate cannot run and nothing is pushed; install Airone" \
+       "Giallo's tools: uv tool install 'git+https://github.com/Ev3nt1ne/airone-giallo.git#subdirectory=tools'" >&2
+  exit 1
+fi
+exec check-public --root "$here" --pre-push "$@"

@@ -41,17 +41,20 @@ Standard library only; the graph step runs specgraph in a child process, its com
 import argparse
 import datetime
 import errno
+import hashlib
 import importlib.util
 import json
 import os
 import re
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
+import tempfile
 import textwrap
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates"
@@ -96,7 +99,17 @@ DEFAULTS = {
     "claude_code_version": "", "model": "", "spec": "", "plan": "", "glossary": "", "findings": "",
     "owner_notes": "", "frozen": [], "copies": [], "checks": "", "prune_after": "", "machine": {},
     "move_from": "", "carry": [],
+    # The history's direction (B2), and with `private` the project's own paths' sides, the owner's markers and the
+    # public commits' identity. `markers` is None until answered: an empty list is an answer, its absence is not.
+    "history": "", "sides": {}, "markers": None, "public_author": "", "old_email_ok": False,
 }
+HISTORIES = ("private", "publish")
+SIDE_WORDS = ("public", "private", "local")
+AUTHOR_RE = re.compile(r"^[^<>]+ <[^<>@\s]+@[^<>\s]+>$")
+# Where the tools sit in this checkout: the private direction's gate is the `check-public` command's own code.
+TOOLS = REPO / "tools" / "src"
+PRE_PUSH_TEMPLATE = TEMPLATES / "pre-push"
+FIRST_MESSAGE = "First public state"
 REQUIRED = ("name", "purpose", "mode")
 MACHINE_KEYS = ("resources", "load", "limits", "timings")
 
@@ -204,6 +217,14 @@ def load_answers(args):
         flag = getattr(args, key, None)
         if flag is not None and key != "machine":
             answers[key] = flag
+    if args.side:
+        sides = {}
+        for item in args.side:
+            path, _, word = item.rpartition("=")
+            sides[path.strip()] = word.strip()
+        answers["sides"] = sides
+    if args.marker:
+        answers["markers"] = list(args.marker)
     if args.family:
         fams = {}
         for item in args.family:
@@ -258,7 +279,69 @@ def validate(a):
         raise AnswerError("'move_from' is the path of the owner's folder before it moves into the workspace")
     if not re.match(r"^[A-Za-z0-9._-]+$", a["stage"]):
         raise AnswerError("'stage' names a file: letters, digits, dot, dash or underscore")
+    validate_history(a)
     validate_sides(a)
+
+
+def validate_history(a):
+    """The history's direction and, with `private`, what it needs; an answer of the private history given without it
+    is refused, never silently dropped."""
+    if a["history"] not in ("",) + HISTORIES:
+        raise AnswerError(f"'history' is {a['history']!r}; it must be one of {', '.join(HISTORIES)}")
+    if a["history"] != "private":
+        for key, empty in (("sides", {}), ("markers", None), ("public_author", ""), ("old_email_ok", False)):
+            if a[key] != empty:
+                raise AnswerError(f"'{key}' belongs to a history that stays private (history: private)")
+        return
+    if a["move_from"]:
+        raise AnswerError("'move_from' moves the folder into a new workspace, which is the publish direction; with "
+                          "history private the folder stays where it is and the public repository is born inside it")
+    if a["cut"] == "all":
+        raise AnswerError("history private needs two repositories: with cut 'all' everything is public, and there is "
+                          "no private side to keep the history")
+    sides = a["sides"]
+    if not isinstance(sides, dict) or not sides:
+        raise AnswerError("'sides' is required when the history stays private: each of the project's own paths and "
+                          "its side, public, private or local")
+    for path, word in sides.items():
+        if not isinstance(word, str) or (word not in SIDE_WORDS and not re.match(r"^public as \S", word)):
+            raise AnswerError(f"'sides': {path} is {word!r}; a side is one of {', '.join(SIDE_WORDS)}, or `public as "
+                              "<the public name>`")
+        parts = Path(path).parts
+        if not isinstance(path, str) or not path or path.startswith("/") or ".." in parts:
+            raise AnswerError(f"'sides': {path!r} is not a path from the project's root")
+        if path in ROOT_OWN and word.startswith("public"):
+            raise AnswerError(f"'sides': {path} is the private repository's own and never moves; to give the public "
+                              f"repository one, publish a file of the project's under that name, such as "
+                              f"\"public-root{path}\": \"public as {path}\"")
+    if not any(w.startswith("public") for w in sides.values()):
+        raise AnswerError("'sides': no path is public, so the public repository would be empty")
+    try:
+        sides_of(a)
+    except check_public().Usage as ex:
+        raise AnswerError(f"'sides': {ex}") from None
+    if a["agent_layer"] == "both":
+        raise AnswerError("'agent_layer: both' writes a contributors' instruction file into the public folder, and the "
+                          "gate refuses every instruction file there when the history stays private")
+    markers = a["markers"]
+    if markers is None:
+        raise AnswerError("'markers' is required when the history stays private: the owner's words that must never be "
+                          "published; [] gives none, and the gate says so")
+    if not isinstance(markers, list) or not all(isinstance(m, str) and m.strip() for m in markers):
+        raise AnswerError("'markers' must be a list of words, each not blank")
+    broken = [m for m in markers if "\n" in m or "\r" in m]
+    if broken:
+        raise AnswerError("'markers': a marker is one line of the markers file, so it holds no line break: "
+                          + ", ".join(repr(m) for m in broken))
+    try:
+        check_public().markers_from(markers, "'markers'")  # the one reader the gates use, its refusals included
+    except check_public().Usage as ex:
+        raise AnswerError(str(ex)) from None
+    if not isinstance(a["public_author"], str) or not AUTHOR_RE.match(a["public_author"]):
+        raise AnswerError("'public_author' is required when the history stays private, as `Name <email>`: the identity "
+                          "of the public commits")
+    if not isinstance(a["old_email_ok"], bool):
+        raise AnswerError("'old_email_ok' must be true or false")
 
 
 def form_of(cut):
@@ -287,7 +370,9 @@ def validate_sides(a):
     if layer == "private" and form == "one-public":
         raise AnswerError("with cut 'all' the one repository is public, and the agent layer in it too")
     a["agent_layer"] = layer or ("public" if form == "one-public" else "private")
-    if form != "two":
+    # With a private history the two repositories come from the direction, not the cut: even with cut 'none' the
+    # public repository is born inside the owner's folder, holding only the project's own public paths.
+    if form != "two" and a["history"] != "private":
         for key in ("public_dir", "move_from"):
             if a[key]:
                 raise AnswerError(f"'{key}' belongs to the two-repository form; cut '{a['cut']}' gives one repository")
@@ -308,10 +393,22 @@ class Layout:
     form: str
     public_dir: str
     agent_layer: str
+    nest: bool = False       # the history stays private: the public repository is born inside the owner's folder
 
     @classmethod
     def of(cls, a):
-        return cls(a["cut"], form_of(a["cut"]), a["public_dir"], a["agent_layer"])
+        return cls(a["cut"], form_of(a["cut"]), a["public_dir"], a["agent_layer"], a["history"] == "private")
+
+    @property
+    def two(self):
+        """Whether there are two repositories: by the cut, or by a private history even with cut 'none'."""
+        return self.form == "two" or self.nest
+
+    @property
+    def owner_repo(self):
+        """Where the owner's repository is, from the workspace root: the public folder in today's direction, the root
+        itself when the history stays private."""
+        return f"{self.public_dir}/" if self.form == "two" and not self.nest else ""
 
     def public(self, rung):
         return RUNGS.index(rung) + 1 <= CUTS.index(self.cut)
@@ -343,8 +440,11 @@ def code(path):
 def sides_in_words(a, lay):
     """The cut in words, for the ladder rule of AGENTS.md: which places are public, which private."""
     outside = (("human_docs", "human-docs"), ("sources", "sources"))
+    own = (f"; the project's own paths are on the side `{PUBLIC_PATHS_FILE}` gives each, the public ones in the "
+           f"public repository `{lay.public_dir}/`, which the history never reached") if lay.nest else ""
     if lay.form == "one-private":
-        return "everything is private, and the ladder still orders the citations"
+        return "everything the setup writes is private, and the ladder still orders the citations" + own \
+            if lay.nest else "everything is private, and the ladder still orders the citations"
     if lay.form == "one-public":
         local = ["`local-machine.md`"] + [f"`{rel}/`" for key, rel in outside if lay.local_only(a[key])]
         return ("everything is public, and the ladder still orders the citations; "
@@ -360,7 +460,7 @@ def sides_in_words(a, lay):
              f"root; outside the ladder, {elements}, and each repository's `{ARCHIVE}/` is on its repository's side")
     if lay.agent_layer == "both":
         words += f"; the contributors' `{lay.public_dir}/AGENTS.md` cites only the public rungs"
-    return words
+    return words + own
 
 
 def join(items):
@@ -400,7 +500,7 @@ def context(a, lay, disk):
     checks += [code(c) for c in archive_checks]
     # The documents' checks: the links walk the public folder from the workspace root and hold both sides to the cut;
     # the frontmatter is read in the repository whose commit is being made.
-    if lay.form == "two":
+    if lay.two:
         checks.append(f"`check-links --public {lay.public_dir} --cut {lay.cut}`")
         checks.append("`check-frontmatter`, in the repository being committed")
     else:
@@ -444,7 +544,7 @@ def context(a, lay, disk):
         "has_invariants": bool(a["invariants"]) or disk(invariants_file).is_file(),
         # The old instruction files the owner's repository holds now, each backed up by the run.
         "old_files": [n for n in OLD_INSTRUCTIONS
-                      if disk((f"{lay.public_dir}/" if lay.form == "two" else "") + n).is_file()],
+                      if disk(lay.owner_repo + n).is_file()],
         "claude_code_version": a["claude_code_version"] or SLOT.format("version"),
         "model": a["model"] or SLOT.format("model"),
         "four_hands": a["mode"] == "four-hands", "conductor": a["mode"] == "conductor",
@@ -452,7 +552,7 @@ def context(a, lay, disk):
         "commands": join([code(c) for c, on in (("specgraph", graph_file), ("check-status", a["status"]),
                                                     ("check-archive", True), ("check-links", True),
                                                     ("check-frontmatter", True)) if on]),
-        "two_repos": lay.form == "two", "public_dir": lay.public_dir, "contributors": lay.agent_layer == "both",
+        "two_repos": lay.two, "public_dir": lay.public_dir, "contributors": lay.agent_layer == "both",
         "status": a["status"], "handoff": a["handoff"], "graph_on": bool(graph_file), "graph_file": graph_file,
         "status_file": status_file, "closed_file": closed_file, "handoff_state": handoff_state,
         "spec": a["spec"] or code(f"{docs}/"), "plan": a["plan"] or code(f"{plan_dir}/"),
@@ -671,7 +771,7 @@ def body_rewrapped(text):
 def agent_files(lay, disk):
     """The agent tool's files the public folder holds, to move to the workspace's root: `.claude/` when it holds more
     than a `CLAUDE.md` (which the old-file step backs up and removes first), and `.mcp.json`."""
-    if lay.form != "two":
+    if lay.form != "two" or lay.nest:
         return []
     found = []
     for name in AGENT_FILES:
@@ -731,7 +831,7 @@ def plan(a, lay, ctx, now, disk):
     # The .ignore of each repository sits at its top, beside its archive.
     steps += [Step(f"{d[:-len(ARCHIVE)]}.ignore", "the archive out of every search unless named",
                    lines=((f"{ARCHIVE}/",),)) for d in lay.archives]
-    if lay.form == "two":
+    if lay.form == "two" and not lay.nest:
         text = allowlist(a, lay, agent_files(lay, disk))
         steps.append(Step(".gitignore", f"the allowlist; {lay.public_dir}/ tracked as its gitlink only",
                           lambda: text))
@@ -820,7 +920,7 @@ def plan(a, lay, ctx, now, disk):
                                   "/sources/*", "!/sources/README.md"),)))
     # The owner's repository may hold its old instruction files: each is backed up, then replaced by the setup's own
     # file of that name or removed. The backup goes to the workspace's archive: an instruction file is the top rung.
-    repo = f"{lay.public_dir}/" if lay.form == "two" else ""
+    repo = lay.owner_repo
     written = {s.path: s for s in steps}
     for name in OLD_INSTRUCTIONS:
         old = repo + name
@@ -926,6 +1026,12 @@ def public_folder_problem(target, folder):
 # ---------------------------------------------------------------- running
 
 def describe(a, lay):
+    if lay.nest:
+        kit = ("every file the setup writes private" if lay.form == "one-private" else
+               f"the setup's own public side ending at {RUNG_NAMES[lay.cut]} (cut {lay.cut})")
+        return (f"two repositories: this private repository, its history kept, and the public repository born inside "
+                f"it in {lay.public_dir}/ from one gated commit, holding the paths {PUBLIC_PATHS_FILE} declares "
+                f"public; {kit}, the agent layer {lay.agent_layer}")
     if lay.form == "one-public":
         return "one public repository: every rung public, the ladder still orders the citations"
     if lay.form == "one-private":
@@ -1046,6 +1152,8 @@ def run(a, target, dry_run, force, out=None):
     out = out or sys.stdout
     now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
     lay = Layout.of(a)
+    if lay.nest:
+        return run_private(a, lay, target, dry_run, force, out)
     disk, source = resolver(a, lay, target)
     try:
         ctx = context(a, lay, disk)
@@ -1090,6 +1198,15 @@ def run(a, target, dry_run, force, out=None):
               file=out)
         return 1
 
+    rows, problems = execute(steps, disk, target, lay, dry_run, now)
+    return finish(a, lay, target, dry_run, source, problem, rows, problems, out)
+
+
+def execute(steps, disk, target, lay, dry_run, now, track=None):
+    """Run or, in a dry run, describe each step: (rows of status, path, detail, whether it existed; any problem).
+    `track`, when given, is told of each write before it happens (the bytes it will leave, or None for a removal, or
+    `unknown` when a command writes) and after it: the private direction records them so that `--undo` can reverse
+    them, even when the run is stopped between a write and its record."""
     # The real run reports whether each step happened (DONE, KEPT, SKIPPED, FAILED); the dry run, which does nothing,
     # what each step would do (CREATE, REPLACE, APPEND, KEEP, and BACKUP and REMOVE for an old instruction file).
     kept = "KEEP" if dry_run else "KEPT"
@@ -1097,6 +1214,14 @@ def run(a, target, dry_run, force, out=None):
 
     def add(status, path, detail, had):
         rows.append((status, path, detail, had))
+
+    def intend(path, data=None, unknown=False):
+        if track:
+            track.intend(str(path.relative_to(target)), data, unknown=unknown)
+
+    def did(path):
+        if track:
+            track.did(str(path.relative_to(target)))
 
     for s in steps:
         dest = disk(s.path)
@@ -1114,7 +1239,7 @@ def run(a, target, dry_run, force, out=None):
             problems |= not ok
             continue
         if s.backup:
-            to = ("the workspace's " if lay.form == "two" else "") + s.backup
+            to = ("the workspace's " if lay.owner_repo else "") + s.backup
             if dry_run:
                 add("BACKUP", s.path, f"unchanged, to {to}", True)
                 if s.remove:
@@ -1122,7 +1247,9 @@ def run(a, target, dry_run, force, out=None):
                     continue
             else:
                 try:
+                    intend(target / s.backup, stamped(dest.read_bytes(), now)[0])
                     ok = back_up(dest, target / s.backup, now)
+                    did(target / s.backup)
                 except OSError:
                     ok = False
                 if not ok:
@@ -1133,7 +1260,9 @@ def run(a, target, dry_run, force, out=None):
                 add("DONE", s.path, f"backed up to {to}, its bytes read back and compared", True)
                 if s.remove:
                     try:
+                        intend(dest, None)
                         dest.unlink()
+                        did(dest)
                         ok = not dest.exists()
                     except OSError:
                         ok = False
@@ -1153,9 +1282,11 @@ def run(a, target, dry_run, force, out=None):
                 try:
                     prev = dest.read_text(encoding="utf-8") if had else ""
                     sep = "" if not prev or prev.endswith("\n") else "\n"
+                    new = prev + sep + "\n".join(ln for g in missing for ln in g) + "\n"
+                    intend(dest, new.encode("utf-8"))
                     dest.parent.mkdir(parents=True, exist_ok=True)
-                    dest.write_text(prev + sep + "\n".join(ln for g in missing for ln in g) + "\n",
-                                    encoding="utf-8")
+                    dest.write_text(new, encoding="utf-8")
+                    did(dest)
                     ok = not missing_groups(dest, s.lines)
                     verb = "appended" if prev else "written"
                     add("DONE" if ok else "FAILED", s.path, f"{verb}: {shown_lines}" if ok
@@ -1172,12 +1303,16 @@ def run(a, target, dry_run, force, out=None):
             add("REPLACE" if had else "CREATE", s.path, s.what, had)
             continue
         if s.action:
+            intend(dest, unknown=True)
             status, detail = s.action(disk)
+            did(dest)
         else:
             try:
                 text = s.make()
+                intend(dest, text.encode("utf-8"))
                 dest.parent.mkdir(parents=True, exist_ok=True)
                 dest.write_text(text, encoding="utf-8")
+                did(dest)
                 # Read back what was written: the report states what is on disk, not what was meant.
                 ok = dest.read_text(encoding="utf-8") == text
                 status = "DONE" if ok else "FAILED"
@@ -1186,7 +1321,11 @@ def run(a, target, dry_run, force, out=None):
                 status, detail = "FAILED", str(ex)
         add(status, s.path, detail, had)
         problems |= status not in ("DONE", "KEPT")
+    return rows, problems
 
+
+def finish(a, lay, target, dry_run, source, problem, rows, problems, out):
+    """Today's direction's report, and the exit code that follows it."""
     if dry_run:
         print("DRY RUN: nothing has been written yet.", file=out)
         if source is not None or not target.exists():
@@ -1213,6 +1352,1144 @@ def run(a, target, dry_run, force, out=None):
         return 1
     print("every step done or kept", file=out)
     return 0
+
+
+# ---------------------------------------------------------------- the private history
+
+PUBLIC_PATHS_FILE = "public-paths.txt"
+MARKERS_FILE = "public-markers.txt"
+# In the private repository's git folder, never tracked: the record of every act of the real run, and the bytes of
+# every file it changed or removed, so that `--undo` gives back exactly what was there and nothing else.
+SPLIT_STATE = "airone-split.json"
+SAVED = "airone-undo"
+# The private repository's own root files: git reads them there, so they never move; a public repository gets one of
+# these as another file of the project's, published under that name.
+ROOT_OWN = (".gitignore", ".gitmodules", ".gitattributes")
+CODE_EXT = (".js", ".mjs", ".cjs", ".ts", ".tsx", ".jsx", ".mts")
+IMPORT_RE = re.compile(r"""(?:\bfrom\s+|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)['"](\.{1,2}/[^'"]+)['"]""",
+                       re.M)
+JOIN_RE = re.compile(r"\b(?:join|resolve)\s*\(((?:[^()]|\((?:[^()]|\([^()]*\))*\))*)\)")
+HERE_RE = re.compile(r"__dirname|import\.meta\.(?:url|dirname)")
+STRING_RE = re.compile(r"""['"]([^'"\n]*)['"]""")
+
+
+class GitFailed(RuntimeError):
+    """A git command whose failure is not an answer: the step it serves stops, never reads it as empty."""
+
+
+def check_public():
+    """The gate's code is the `check-public` command's, from this checkout's tools: one gate, the setup's and the
+    hook's."""
+    if str(TOOLS) not in sys.path:
+        sys.path.insert(0, str(TOOLS))
+    return importlib.import_module("check_public")
+
+
+def git_run(root, *args, stdin=None):
+    """Git with replace refs off, as the gate runs it, so the old history read here is the one that exists."""
+    return subprocess.run(["git", "-c", "core.quotepath=off", "-C", str(root), *args], capture_output=True,
+                          text=True, input=stdin, encoding="utf-8", errors="surrogateescape",
+                          env={**os.environ, "GIT_NO_REPLACE_OBJECTS": "1"})
+
+
+def git_ok(root, *args, allowed=(0,), stdin=None):
+    """A git command's output; an exit outside `allowed` raises GitFailed with git's own words."""
+    p = git_run(root, *args, stdin=stdin)
+    if p.returncode not in allowed:
+        raise GitFailed(f"git {' '.join(args)} in {shown(root)} failed (exit {p.returncode}): "
+                        f"{(p.stderr.strip() or p.stdout.strip())[:300]}")
+    return p.stdout
+
+
+def zsplit(text):
+    return [x for x in text.split("\0") if x]
+
+
+def has_commits(folder):
+    """Whether the folder is the top of a git repository of its own with at least one commit. Both git calls answer
+    yes or no; a failure is a no, which only asks the history question where it may not be needed."""
+    folder = Path(folder).expanduser()
+    if not folder.is_dir() or shutil.which("git") is None:
+        return False
+    top = git_run(folder, "rev-parse", "--show-toplevel")
+    return (top.returncode == 0 and Path(top.stdout.strip()).resolve() == folder.resolve()
+            and git_run(folder, "rev-parse", "--verify", "-q", "HEAD").returncode == 0)
+
+
+def author(a):
+    """(name, email) of the public commits."""
+    name, _, rest = a["public_author"].partition("<")
+    return name.strip(), rest.rstrip(">").strip()
+
+
+def sides_of(a):
+    return check_public().Sides.from_answers(a["sides"])
+
+
+def hooks_path(where=None):
+    """(the value, the file that sets it) of a core.hooksPath in effect, includes followed, or None: for a new
+    repository (where=None) the global and the system configuration it would inherit; for an existing one, what git
+    reads there. `git config` exits 1 when the key is unset, an answer; any other exit stops the step, since an
+    unreadable configuration might hide one."""
+    scopes = [["--global"], ["--system"]] if where is None else [[]]
+    for scope in scopes:
+        args = ["git"] + (["-C", str(where)] if where else []) + ["config", *scope, "--includes", "--show-origin",
+                                                                   "--get", "core.hooksPath"]
+        p = subprocess.run(args, capture_output=True, text=True)
+        if p.returncode not in (0, 1):
+            raise GitFailed(f"git config --get core.hooksPath failed (exit {p.returncode}): {p.stderr.strip()}")
+        if p.returncode == 0 and p.stdout.strip():
+            origin, _, value = p.stdout.strip().partition("\t")
+            return value, origin.split(":", 1)[1] if origin.startswith("file:") else origin
+    return None
+
+
+def hooks_path_problem(found, where):
+    """The refusal when a core.hooksPath is in effect: git would run the hooks from there, never the public
+    repository's own pre-push gate. The setup leaves every configuration alone; the command is the owner's."""
+    value, origin = found
+    said = (f"core.hooksPath is set to {value} (in {origin}), so git would run the hooks from there and never the "
+            "public repository's own pre-push gate")
+    if origin.startswith("command line"):
+        return (f"{said}. It comes from the environment (GIT_CONFIG_COUNT with GIT_CONFIG_KEY_n and GIT_CONFIG_VALUE_n, "
+                "or GIT_CONFIG_PARAMETERS) or from a `git -c` option: unset that variable, or drop the option, in the "
+                "shell or the tool that runs the setup, then run again")
+    if not Path(origin).is_absolute() and where is not None and Path(origin).name == "config.worktree":
+        command = f"git -C {shlex.quote(str(where))} config --worktree --unset core.hooksPath"
+    elif not Path(origin).is_absolute() and where is not None and Path(origin).name == "config":
+        command = f"git -C {shlex.quote(str(where))} config --local --unset core.hooksPath"
+    elif Path(origin).is_absolute():
+        command = f"git config --file {shlex.quote(origin)} --unset core.hooksPath"
+    else:
+        return f"{said}. Take it out of {origin}, then run again"
+    return f"{said}; unset it ({command}), then run again"
+
+
+def old_emails_of(target):
+    return set(zsplit(git_ok(target, "log", "--all", "--format=%ae%x00%ce").replace("\n", "\0")))
+
+
+@dataclass
+class Survey:
+    """What the private direction finds in the owner's repository before anything is written."""
+    problems: list
+    sides: object = None
+    tracked: list = None
+    moving: list = None      # tracked files whose side is public: they move into the public folder
+    local: list = None       # ignored entries that travel with them and stay ignored there
+    stays: list = None       # (path, why): what sits under a public path and stays private, where it is
+    units: list = None       # what is moved, each a file or a whole folder holding only what moves
+    rehome: list = None      # (local entry, the file whose rule ignores it now and stays behind)
+    keep_ignored: list = None  # (private entry, the moving file whose rule ignores it now): the private side's rule
+    imports: list = None     # (private file, its import, where the target goes)
+    olds: set = None         # the e-mails of the old history
+    ignored_before: list = None  # every ignored, untracked entry of the owner's folder before the run
+
+
+def code_imports(text):
+    """The relative paths a code file reaches: static imports and requires, and join/resolve paths built from the
+    file's own folder. A heuristic: a path built any other way is not seen."""
+    found = IMPORT_RE.findall(text)
+    for m in JOIN_RE.finditer(text):
+        if HERE_RE.search(m.group(1)):
+            parts = STRING_RE.findall(m.group(1))
+            if parts and (parts[0] in ("..", ".") or parts[0].startswith(("../", "./"))):
+                found.append("/".join(parts))
+    return found
+
+
+def survey(a, lay, target):
+    try:
+        return survey_or_fail(a, lay, target)
+    except GitFailed as ex:
+        return Survey([str(ex)])
+
+
+def survey_or_fail(a, lay, target):
+    cp = check_public()
+    sides = sides_of(a)
+    public = target / lay.public_dir
+    top = git_run(target, "rev-parse", "--show-toplevel")
+    if top.returncode != 0 or Path(top.stdout.strip()).resolve() != target.resolve():
+        return Survey([f"{shown(target)} is not the top folder of a git repository: a private history is that "
+                       "repository's"])
+    problems = []
+    if (git_dir(target) / SPLIT_STATE).exists():
+        problems.append(f"a split is already staged or stopped in {shown(target)}: finish it with --first-commit, "
+                        "or undo it with --undo")
+    # rev-parse --verify exits 1 when there is no commit, an answer.
+    if git_ok(target, "rev-parse", "--verify", "-q", "HEAD", allowed=(0, 1)).strip() == "":
+        problems.append(f"{shown(target)} has no commits: there is no history to keep private; with none, the "
+                        "project takes today's two-repository form or one repository")
+    if public.exists() or public.is_symlink():
+        problems.append(f"{shown(public)} exists: the public repository is born there, from nothing")
+    dirty = zsplit(git_ok(target, "status", "--porcelain", "-z", "--untracked-files=all"))
+    if dirty:
+        shown_dirty = ", ".join(d[3:] for d in dirty[:3]) + (" …" if len(dirty) > 3 else "")
+        problems.append(f"{shown(target)} has uncommitted changes ({shown_dirty}): commit, ignore or move them "
+                        "first; the split moves files, and its undo restores what was there")
+    found = hooks_path()
+    if found:
+        problems.append(hooks_path_problem(found, None))
+    entries = [e.split("\t", 1) for e in zsplit(git_ok(target, "ls-files", "-s", "-z"))]
+    tracked = [path for _, path in entries]
+    gitlinks = [path for head, path in entries if head.startswith("160000 ")]
+    ignored_before = zsplit(git_ok(target, "ls-files", "--others", "--ignored", "--exclude-standard", "--directory",
+                                   "-z"))
+    ignored = []
+    for e in ignored_before:
+        # A local folder holding a private path moves piece by piece, so the private path stays where it is.
+        if e.endswith("/") and sides.ignored_side(e) == "local" and any(
+                w == "private" and cp.covers(e, r) and r != e for r, w in sides.words.items()):
+            ignored += cp.expand(target, e)
+        else:
+            ignored.append(e)
+    public_rules = {r: w for r, w in sides.words.items() if w == "public"}
+    for rule, word in sorted(sides.words.items()):
+        in_tracked = any(cp.covers(rule, f) for f in tracked)
+        in_ignored = any(cp.covers(rule, e) or (e.endswith("/") and rule.startswith(e)) for e in ignored)
+        if not in_tracked and not in_ignored:
+            problems.append(f"sides: {rule} is not in the repository")
+        if word == "local" and in_tracked:
+            problems.append(f"sides: {rule} is local, which is for an ignored entry, but it covers tracked files")
+        if word == "local" and sides.side_of(rule, ("public",)) is None:
+            problems.append(f"sides: {rule} is local, but no public path holds it, so it would not travel")
+    moving = [f for f in tracked if sides.side_of(f) == "public"]
+    for f in moving:
+        if cp.is_agent_file(f) or cp.is_agent_file(sides.dest(f)):
+            rule = max((r for r in public_rules if cp.covers(r, f)), key=len)
+            problems.append(f"sides: {rule} makes {f} public; it is the agent tool's, and never public")
+    for g in gitlinks:
+        if g in moving:
+            problems.append(f"{g} holds a repository of its own, which cannot be moved into another one")
+    local = [e for e in ignored if sides.ignored_side(e) == "local"]
+    stays = [(r, "private") for r, w in sorted(sides.words.items()) if w == "private" and sides.side_of(r, ("public",))]
+    stays += [(e, "ignored, no rule: private") for e in ignored
+              if e not in local and sides.ignored_side(e) is None and sides.side_of(e, ("public",))]
+    moving_set = set(moving) | set(local)
+    items = tracked + ignored
+    units = []
+    for m in sorted(moving_set):
+        parts = m.rstrip("/").split("/")
+        unit = m
+        for i in range(1, len(parts)):
+            folder = "/".join(parts[:i]) + "/"
+            whole = all(x in moving_set for x in items if x.startswith(folder))
+            # A folder renamed inside is moved piece by piece, so each piece lands under its own public name.
+            if whole and not any(r.startswith(folder) and r != folder for r in sides.dests):
+                unit = folder
+                break
+        if unit not in units:
+            units.append(unit)
+    destinations = {}
+    for m in sorted(moving_set):
+        destinations.setdefault(sides.dest(m).rstrip("/"), []).append(m)
+    for dest, sources in sorted(destinations.items()):
+        if len(sources) > 1:
+            problems.append(f"sides: two sources for one public path, {dest}: {', '.join(sources)}")
+
+    def source_of(entry):
+        probe = entry + ".probe" if entry.endswith("/") else entry
+        # check-ignore exits 1 when nothing ignores the path, an answer.
+        return git_ok(target, "check-ignore", "-v", "--no-index", "--", probe, allowed=(0, 1)).split(":", 1)[0]
+    rehome = [(e, source_of(e) or "nothing") for e in local if source_of(e) not in moving]
+    # What stays private and ignored must stay ignored: when the rule that ignores it lives in a file that moves to
+    # the public side, the private side gets that rule of its own.
+    keep_ignored = []
+    for e in ignored:
+        if e in moving_set:
+            continue
+        src = source_of(e)
+        if src in moving:
+            keep_ignored.append((e, src))
+    imports = []
+    for f in tracked:
+        if f in moving_set or not f.endswith(CODE_EXT) or (target / f).is_symlink():
+            continue
+        try:
+            text = (target / f).read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for spec in code_imports(text):
+            reached = os.path.normpath(str(Path(f).parent / spec)).replace(os.sep, "/")
+            if sides.side_of(reached) == "public" or sides.side_of(reached + "/") == "public":
+                imports.append((f, spec, f"{lay.public_dir}/{sides.dest(reached)}"))
+    olds = old_emails_of(target)
+    if author(a)[1] in olds and not a["old_email_ok"]:
+        problems.append("public_author: that e-mail signs the old history; answer another, such as a no-reply "
+                        "address, or old_email_ok with the owner's yes")
+    if shutil.which("gitleaks") is None:
+        problems.append("gitleaks is not installed, so the gate cannot run; install it (https://github.com/gitleaks/"
+                        "gitleaks: a release binary, `brew install gitleaks`, or `go install "
+                        "github.com/zricethezav/gitleaks/v8@latest`) and run again")
+    return Survey(problems, sides, tracked, moving, local, stays, units, rehome, keep_ignored, imports, olds,
+                  ignored_before)
+
+
+def file_bytes(path):
+    """A file's bytes as git stores them: a symbolic link is its target's text, never what it points at."""
+    return os.readlink(path).encode() if path.is_symlink() else path.read_bytes()
+
+
+def preview_gate(a, lay, target, sv):
+    """The gate on the files that would be public, read where they are, under their public names: the dry run's,
+    and the real run's before it moves anything. The secret scan reads a temporary copy, mode 700, removed on every
+    way out."""
+    cp = check_public()
+    report = cp.Report()
+    files = [(sv.sides.dest(f), file_bytes(target / f)) for f in sv.moving]
+    markers = cp.markers_from(a["markers"])
+    cp.judge_files(report, files, sv.sides.public_view(), markers)
+    cp.judge_words(report, "the identity", a["public_author"], markers)
+    cp.judge_words(report, "the commit message", FIRST_MESSAGE, markers)
+    cp.markers_part(report, markers)
+    config = next((data for path, data in files if path == ".gitleaks.toml"), None)
+    folder = tempfile.mkdtemp(prefix="airone-gate-")
+    try:
+        os.chmod(folder, 0o700)
+        export = (Path(folder) / "files").resolve()
+        export.mkdir()
+        for path, data in files:
+            dest = export / path
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(data)
+        config_file = None
+        if config is not None:
+            config_file = Path(folder) / "gitleaks.toml"
+            config_file.write_bytes(config)
+            report.parts.append("gitleaks: the repository's own .gitleaks.toml is in effect, as tracked")
+        ran, hits, note = cp.gitleaks(["dir", str(export)], export, config_file)
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+    cp.judge_secrets(report, ran, hits, note, f"the {len(files)} file(s) that would be public")
+    report.parts.append(f"ignore: {len(sv.local)} local entr{'y' if len(sv.local) == 1 else 'ies'}, "
+                        f"{len(sv.rehome)} of them ignored by a rule that stays private, re-homed into "
+                        f"{lay.public_dir}/.gitignore; {len(sv.keep_ignored)} private entr"
+                        f"{'y' if len(sv.keep_ignored) == 1 else 'ies'} whose rule moves, given one on the private side")
+    cp.judge_identity(report, [author(a)], sv.olds, a["old_email_ok"])
+    return report
+
+
+def markers_text(a):
+    """The markers file: each marker a line, verbatim, and nothing else; what the file is for is said in
+    public-paths.txt's header and in the tools' README, since any line here is a marker."""
+    return "".join(f"{m}\n" for m in a["markers"])
+
+
+def nest_disk(a, lay, target):
+    """Where a path of the plan is on disk now: before the move, a path of the public folder that moves there is
+    still at its own place, under its own name, in the owner's folder."""
+    cp = check_public()
+    sides = sides_of(a)
+    public = target / lay.public_dir
+    prefix = lay.public_dir + "/"
+
+    def disk(rel):
+        if not public.exists() and rel.startswith(prefix):
+            rest = rel[len(prefix):]
+            for src, dst in sides.dests.items():
+                if cp.covers(dst, rest):
+                    return target / (src if not dst.endswith("/") else src + rest[len(dst):])
+            if sides.side_of(rest) == "public" and sides.dest(rest) == rest:
+                return target / rest
+        return target / rel
+    return disk
+
+
+def public_ignore_lines(sv):
+    """The lines the public repository's root .gitignore must hold: the local entries a private rule ignores now,
+    and the agent tool's files."""
+    cp = check_public()
+    rehome = [f"/{sv.sides.dest(e)}" for e, _ in sv.rehome]
+    return [("# Airone Giallo: ignored before the split by a rule that stays private", rehome),
+            ("# Airone Giallo: the agent tool's files, created by a session opened here, never public, whatever "
+             "their case", [cp.case_blind(p) for p in cp.AGENT_IGNORE])]
+
+
+def private_ignore_lines(sv):
+    """The lines the private side's root .gitignore must gain: what stays private and was ignored by a rule that
+    moves to the public side."""
+    return ("# Airone Giallo: ignored before the split by a rule that moved to the public side",
+            [f"/{e}" for e, _ in sv.keep_ignored])
+
+
+def project_rows(a, lay, sv, dry_run):
+    cp = check_public()
+    pub = lay.public_dir
+    done = (lambda verb: verb) if dry_run else (lambda verb: "DONE")
+    public_rules = {r: w for r, w in sv.sides.words.items() if w == "public"}
+    rows = [(done("MOVE"), r, f"to {pub}/{sv.sides.dest(r)}") for r in sorted(public_rules)
+            if r in sv.sides.dests or not any(cp.covers(o, r) for o in public_rules if o != r)]
+    rows += [(done("MOVE"), e, f"local: ignored, travels to {pub}/{sv.sides.dest(e)} and stays ignored there")
+             for e in sv.local]
+    rows += [("STAYS", p, why) for p, why in sv.stays]
+    for _, lines in public_ignore_lines(sv):
+        if lines:
+            rows.append((done("IGNORE"), f"{pub}/.gitignore", " ".join(lines)))
+    for e, src in sv.keep_ignored:
+        rows.append((done("IGNORE"), ".gitignore", f"/{e}   (ignored now by {src}, which moves to the public side; "
+                     "the private side keeps its own rule)"))
+    rows += [("LISTED", f, f"imports {spec}, which moves to {to}; private code reaching public code") for f, spec, to
+             in sv.imports]
+    rows += [(done("CREATE"), PUBLIC_PATHS_FILE, "the sides, read by the gate and the pre-push hook"),
+             (done("CREATE"), MARKERS_FILE, "the markers, read by the gate and the pre-push hook")]
+    return rows
+
+
+def print_rows(rows, out):
+    if not rows:
+        return
+    width = max(len(path) for _, path, _ in rows) + 1
+    for st, path, detail in rows:
+        print(f"    {st:<8} {path:<{width}} {detail}".rstrip(), file=out)
+
+
+def print_private(a, lay, target, dry_run, prows, rows, out):
+    public = target / lay.public_dir
+    prefix = lay.public_dir + "/"
+    if dry_run:
+        print("DRY RUN: nothing has been written yet.\n", file=out)
+    print(f"{'KEEP':<8} {shown(target)}   (the private repository, its history kept)", file=out)
+    print(f"{'CREATE':<8} {shown(public)}   (a new repository, empty history; its first commit waits for the gate "
+          "and the owner's yes)", file=out)
+    print(f"{'':<9}{describe(a, lay)}", file=out)
+    print(f"\nYour repository: {shown(target)} (private)", file=out)
+    print("  The project's own paths", file=out)
+    print_rows(prows, out)
+    for title, mine in ((None, [r for r in rows if not r[1].startswith(prefix)]),
+                        (f"The public repository: {shown(public)} (public, new)",
+                         [(s, p[len(prefix):], d, h) for s, p, d, h in rows if p.startswith(prefix)])):
+        if title and mine:
+            print(f"\n{title}", file=out)
+        for label, part in (("Files you have", [r for r in mine if r[3]]), ("New files", [r for r in mine if not r[3]])):
+            if part:
+                print(f"  {label}", file=out)
+                print_rows([(s, p, d) for s, p, d, _ in part], out)
+    if a["carry"]:
+        print("\nCarried over after the run, as you confirmed", file=out)
+        for line in a["carry"]:
+            print(f"    {line}", file=out)
+
+
+def print_gate(report, title, out):
+    print(f"\n{title}", file=out)
+    report.print(out)
+
+
+def private_refusal(lines, out, dry_run, what="Nothing was written."):
+    lead = "REFUSED  the real run would stop here:" if dry_run else "REFUSED"
+    for line in lines:
+        print(f"{lead} {line}.", file=out)
+    if not dry_run:
+        print(what, file=out)
+    return 1
+
+
+def git_dir(root):
+    return Path(git_ok(root, "rev-parse", "--absolute-git-dir").strip())
+
+
+def run_private(a, lay, target, dry_run, force, out):
+    """The private history: the owner's folder stays where it is, the public repository is born inside it, and the
+    first public commit waits for the gate and the owner's yes (--first-commit)."""
+    now = datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
+    sv = survey(a, lay, target)
+    if sv.tracked is None:
+        return private_refusal(sv.problems, out, dry_run)
+    disk = nest_disk(a, lay, target)
+    try:
+        ctx = context(a, lay, disk)
+        steps = plan(a, lay, ctx, now, disk)
+    except (OSError, RuntimeError, KeyError) as ex:
+        print(f"FAILED  cannot prepare the install: {ex}", file=out)
+        return 1
+    problems = list(sv.problems)
+    problem = invariants_problem(a, ctx, disk)
+    if problem:
+        problems.append(problem)
+    for name in (PUBLIC_PATHS_FILE, MARKERS_FILE):
+        if (target / name).exists():
+            problems.append(f"{name} exists, and the setup writes its own; merge it by hand with the owner")
+    existing = [s.path for s in steps if not s.lines and not s.kept and not s.backup and disk(s.path).exists()]
+    if existing and not force:
+        problems.append("these files exist; read them, keep what the owner wants, then rerun with --force (records "
+                        "are kept even then): " + ", ".join(existing))
+    taken = [s.backup for s in steps if s.backup and disk(s.backup).exists()]
+    if taken:
+        problems.append("a backup of that name exists, and a backup is never replaced: " + ", ".join(taken))
+    if problems:
+        return private_refusal(problems, out, dry_run)
+    prows = project_rows(a, lay, sv, dry_run)
+    gate = preview_gate(a, lay, target, sv)
+    scrub = (f"the gate found {len(gate.errors)} problem(s) on the files that would be public; scrub them as commits "
+             "in this repository, then run the dry run again")
+    if dry_run:
+        rows, _ = execute(steps, disk, target, lay, True, now)
+        print_private(a, lay, target, True, prows, rows, out)
+        print_gate(gate, f"The gate, on the {len(sv.moving)} file(s) that would be public", out)
+        print("", file=out)
+        return private_refusal([scrub], out, True) if gate.errors else 0
+    if gate.errors:
+        print_gate(gate, f"The gate, on the {len(sv.moving)} file(s) that would be public", out)
+        return private_refusal([scrub], out, False)
+    try:
+        return split_now(a, lay, target, sv, steps, prows, now, out)
+    except GitFailed as ex:
+        print(f"FAILED  {ex}", file=out)
+        print("STOPPED  before any commit. Every act so far is recorded; to give back what was there, run:", file=out)
+        print(f"    {undo_command(target)}", file=out)
+        return 1
+
+
+# ---------------------------------------------------------------- the record and the undo
+
+def content_hash(path):
+    """What a path holds, as the record compares it: a file's bytes' hash, a link's target, a folder, or absent."""
+    if path.is_symlink():
+        return "link:" + os.readlink(path)
+    if path.is_dir():
+        return "folder"
+    if not path.exists():
+        return "absent"
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def digest(path):
+    """A file's state for the whole-tree comparison: its content hash and its mode; None if absent."""
+    if path.is_symlink():
+        return "link:" + os.readlink(path)
+    if not path.is_file():
+        return None
+    return f"{content_hash(path)}:{stat.S_IMODE(path.stat().st_mode):o}"
+
+
+def index_entries(root):
+    """What the index holds, by its entries (mode, object, stage, path): never its file's bytes, which git rewrites
+    whenever it refreshes the stat data it caches."""
+    return git_ok(root, "ls-files", "-s", "-z")
+
+
+def tree_state(root, listed=()):
+    """Every file and folder of the owner's folder, its git folder aside, with the index's entries and `git status
+    --ignored`: what an undo must give back. A file under a `listed` entry (the local entries, installed dependencies
+    among them) is compared by its size and time, not its bytes, which would cost too much to hash."""
+    cp = check_public()
+    files, dirs = {}, []
+    for dirpath, dirnames, filenames in os.walk(root):
+        rel_dir = os.path.relpath(dirpath, root)
+        if rel_dir == ".":
+            dirnames[:] = [d for d in dirnames if d != ".git"]
+        else:
+            dirs.append(rel_dir.replace(os.sep, "/"))
+        for name in filenames + [d for d in dirnames if os.path.islink(os.path.join(dirpath, d))]:
+            p = Path(dirpath) / name
+            rel = str(p.relative_to(root)).replace(os.sep, "/")
+            if any(cp.covers(e, rel) for e in listed):
+                st = p.lstat()
+                files[rel] = f"listed:{st.st_size}:{st.st_mtime_ns}"
+            else:
+                files[rel] = digest(p)
+    return {"files": files, "dirs": sorted(dirs), "index": index_entries(root),
+            "status": git_ok(root, "status", "--porcelain", "--ignored", "-z", "--untracked-files=all")}
+
+
+def listing(path):
+    """What a moved folder or file holds, by name, size and time: cheap enough for installed dependencies. A folder
+    inside it is listed by its name, ending in '/', so an empty one added later is seen."""
+    if not path.is_dir() or path.is_symlink():
+        st = path.lstat()
+        return [["", st.st_size, st.st_mtime_ns]]
+    out = []
+    for p in sorted(path.rglob("*")):
+        rel = str(p.relative_to(path)).replace(os.sep, "/")
+        if p.is_file() or p.is_symlink():
+            st = p.lstat()
+            out.append([rel, st.st_size, st.st_mtime_ns])
+        elif p.is_dir():
+            out.append([rel + "/", 0, 0])
+    return out
+
+
+class Record:
+    """The real run's acts, saved in the private repository's git folder. Each act is written down before it is done,
+    with what it will leave, and marked done after: a run stopped between the two is settled by `--undo` from the
+    disk."""
+
+    def __init__(self, target, data):
+        self.target, self.data = target, data
+        self.folder = git_dir(target) / SAVED
+        self.pending = {}
+
+    @classmethod
+    def begin(cls, target, pub, ignored_before, listed):
+        record = cls(target, {"version": 2, "public": pub, "listed": list(listed),
+                              "before": tree_state(target, listed), "ignored_before": ignored_before, "acts": []})
+        record.folder.mkdir(exist_ok=True)
+        index = git_dir(target) / "index"
+        record.act({"act": "index", "saved": record.keep(index) if index.exists() else None,
+                    "entries_before": record.data["before"]["index"], "entries_after": None, "done": True})
+        return record
+
+    @classmethod
+    def load(cls, target):
+        path = git_dir(target) / SPLIT_STATE
+        return cls(target, json.loads(path.read_text(encoding="utf-8"))) if path.is_file() else None
+
+    def save(self):
+        path = git_dir(self.target) / SPLIT_STATE
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(json.dumps(self.data, indent=1) + "\n", encoding="utf-8")
+        os.replace(tmp, path)
+
+    def keep(self, path):
+        """Keep a file's bytes and mode in the record's folder; the name under which they are kept."""
+        name = f"{len(os.listdir(self.folder)):05d}"
+        shutil.copy2(path, self.folder / name, follow_symlinks=False)
+        return name
+
+    def act(self, entry):
+        self.data["acts"].append(entry)
+        self.save()
+        return entry
+
+    def done(self, entry, **fields):
+        entry.update(fields, done=True)
+        self.save()
+
+    def remove(self):
+        shutil.rmtree(self.folder, ignore_errors=True)
+        (git_dir(self.target) / SPLIT_STATE).unlink(missing_ok=True)
+
+    def intend(self, rel, data=None, unknown=False):
+        """Before a write: the folders it will make, the bytes the path holds now (kept), and the hash of what it will
+        hold after ('absent' for a removal, None when a command writes and the run cannot know)."""
+        p = self.target / rel
+        parent, new_dirs = Path(rel).parent, []
+        while str(parent) not in ("", ".") and not (self.target / parent).exists():
+            new_dirs.append(parent.as_posix())
+            parent = parent.parent
+        dirs = [self.act({"act": "mkdir", "path": d, "done": False}) for d in reversed(new_dirs)]
+        saved = self.keep(p) if (p.is_file() or p.is_symlink()) else None
+        expect = None if unknown else ("absent" if data is None else hashlib.sha256(data).hexdigest())
+        self.pending[rel] = (self.act({"act": "write", "path": rel, "saved": saved, "before": content_hash(p),
+                                       "expect": expect, "done": False}), dirs)
+
+    def did(self, rel):
+        entry, dirs = self.pending.pop(rel)
+        for d in dirs:
+            if (self.target / d["path"]).is_dir():
+                self.done(d)
+        self.done(entry, after=content_hash(self.target / rel))
+
+    def write(self, rel, data):
+        """A write of the run's own, recorded around it."""
+        self.intend(rel, data)
+        path = self.target / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data)
+        self.did(rel)
+
+
+def undo_command(target):
+    return f"python3 {shlex.quote(str(Path(__file__).resolve()))} --target {shlex.quote(str(target))} --undo"
+
+
+SAVED_NAME = re.compile(r"\d{5}")
+ACT_PATHS = {"write": ("path",), "mkdir": ("path",), "move": ("from", "to"), "git-init": ("path",),
+             "public-folder": ("path",), "index": ()}
+
+
+class NotTheRunsRecord(Exception):
+    """The record cannot be the one the run wrote: a path outside the project, a kept name that is not one, a field
+    missing, or text that is not the record's JSON."""
+
+
+def check_record(record, target):
+    """Refuse a record the run cannot have written, before anything is read from the disk through it: every path is
+    relative, holds no '..', and has a parent that resolves inside the project's folder, symlinks resolved; every
+    kept name is one the record's folder gives."""
+    root = target.resolve()
+
+    def inside(rel, what):
+        if not isinstance(rel, str) or not rel.strip("/"):
+            raise NotTheRunsRecord(f"{what}: {rel!r} is no path")
+        p = PurePosixPath(rel.rstrip("/"))
+        if p.is_absolute() or ".." in p.parts or "." in p.parts:
+            raise NotTheRunsRecord(f"{what}: {rel} is not a path inside the project")
+        parent = (target / p).parent.resolve()
+        if parent != root and root not in parent.parents:
+            raise NotTheRunsRecord(f"{what}: {rel} resolves outside {shown(target)}")
+
+    data = record.data
+    if not isinstance(data, dict) or not isinstance(data.get("acts"), list):
+        raise NotTheRunsRecord("it holds no list of acts")
+    inside(data.get("public"), "the public folder")
+    for n, a in enumerate(data["acts"], 1):
+        if not isinstance(a, dict) or a.get("act") not in ACT_PATHS:
+            raise NotTheRunsRecord(f"act {n} is of no kind the run records")
+        for key in ACT_PATHS[a["act"]]:
+            inside(a.get(key), f"act {n} ({a['act']}, {key})")
+        if a["act"] in ("write", "index") and a.get("saved") is not None and \
+                not (isinstance(a["saved"], str) and SAVED_NAME.fullmatch(a["saved"])):
+            raise NotTheRunsRecord(f"act {n} ({a['act']}): {a['saved']!r} is not a name the record keeps bytes under")
+
+
+def runs_folder(rel, made_dirs, moved_to, written, git_dirs):
+    """Whether a folder is the run's: one it made, one leading to what it made, moved or wrote, or one inside what it
+    moved or inside the public repository's git folder."""
+    return rel in made_dirs or any(m == rel or m.startswith(rel + "/") for m in [*made_dirs, *moved_to, *written]) \
+        or any(rel == m or rel.startswith(m + "/") for m in [*moved_to, *git_dirs])
+
+
+def resolve(record, target):
+    """Every act of the record not yet undone, settled against the disk: (the steps to take, the obstacles). Nothing
+    is changed here. An act the run started and did not mark done is read from the disk: whole at its old place
+    (nothing to undo), whole at its new one (undone like a finished act), or an obstacle named as such."""
+    acts = [a for a in record.data["acts"] if not a.get("undone")]
+    pub = record.data["public"]
+    steps, obstacles = [], []
+    # What the run left that the undo will take away: files it created, folders it made, its moves' destinations, the
+    # public repository's git folder.
+    removed_files, made_dirs, moved_to, git_dirs = set(), set(), [], []
+    writes = {}
+    # A path the run wrote, or a folder it made, after moving its folder there is judged by its own act, not by the
+    # move's listing: the record holds the moves first, so these are gathered first.
+    written = {a["path"] for a in acts if a["act"] == "write"}
+    made = {a["path"] for a in acts if a["act"] == "mkdir"}
+    # A path the run wrote more than once is judged newest write first, as the reversal goes: the disk must hold what
+    # the newest write left, and each write undone gives back what the one before it left.
+    verdict, now, blocked = {}, {}, set()
+    for i in reversed(range(len(acts))):
+        a = acts[i]
+        if a["act"] != "write" or a["path"] in blocked:
+            continue
+        cur = now[a["path"]] if a["path"] in now else content_hash(target / a["path"])
+        if a["done"]:
+            run_state = a["after"]
+        elif cur == a["before"]:
+            verdict[i] = None  # stopped before writing it: nothing to undo
+            continue
+        elif a["expect"] is not None and cur == a["expect"]:
+            run_state = cur  # stopped after writing it, before the record said so
+        else:
+            kept = record.folder / a["saved"] if a["saved"] else None
+            verdict[i] = ("obstacle", f"{a['path']}: the run was stopped while writing it, and it holds neither its "
+                          f"earlier state nor the run's; its earlier bytes are kept at {kept}" if kept else
+                          f"{a['path']}: the run was stopped while writing it, and it holds neither its earlier state "
+                          "(absent) nor the run's")
+            blocked.add(a["path"])
+            continue
+        if cur != run_state:
+            verdict[i] = ("obstacle", f"{a['path']}: changed since the run wrote it")
+            blocked.add(a["path"])
+            continue
+        verdict[i] = ("undo", run_state)
+        now[a["path"]] = a["before"]
+    for i, a in enumerate(acts):
+        kind = a["act"]
+        if kind == "write":
+            if verdict.get(i) is None:
+                continue  # never written, or not reached behind an obstacle on a newer write of the same path
+            how, run_state = verdict[i]
+            if how == "obstacle":
+                obstacles.append(run_state)
+                continue
+            writes[a["path"]] = a
+            if not a["saved"] and run_state != "absent":
+                removed_files.add(a["path"])
+            steps.append(("write", a))
+        elif kind == "mkdir":
+            if (target / a["path"]).is_dir():
+                made_dirs.add(a["path"])
+                steps.append(("mkdir", a))
+        elif kind == "move":
+            src, dest = target / a["from"].rstrip("/"), target / a["to"].rstrip("/")
+            to_rel = a["to"].rstrip("/")
+            own_inside = {w[len(to_rel) + 1:] for w in written if w.startswith(to_rel + "/")} | \
+                {d[len(to_rel) + 1:] + "/" for d in made if d.startswith(to_rel + "/")}
+            whole_at_new = os.path.lexists(dest) and (to_rel in written or [
+                x for x in listing(dest) if x[0] not in own_inside] == [
+                x for x in a["listing"] if x[0] not in own_inside])
+            if not a["done"]:
+                if os.path.lexists(src) and not os.path.lexists(dest):
+                    continue  # stopped before the move
+                if not (whole_at_new and not os.path.lexists(src)):
+                    obstacles.append(f"{a['from']}: the run was stopped while moving it to {a['to']}, and it is whole "
+                                     "at neither place")
+                    continue
+            elif not whole_at_new:
+                obstacles.append(f"{a['to']}: changed since the run moved it there from {a['from']}")
+                continue
+            moved_to.append(to_rel)  # whole where the run left it: the run's, whatever its return place holds
+            if os.path.lexists(src):
+                what = "an empty folder" if src.is_dir() and not src.is_symlink() and not any(src.iterdir()) else \
+                    "something"
+                obstacles.append(f"{a['from']}: {what} is there again, where the undo puts back what the run moved "
+                                 f"to {a['to']}; move it away first")
+                continue
+            for parent in Path(a["from"].rstrip("/")).parents:
+                if str(parent) != "." and os.path.lexists(target / parent) and not (target / parent).is_dir():
+                    obstacles.append(f"{parent}: a file where the undo needs the folder that held {a['from']}")
+            steps.append(("move", a))
+        elif kind == "git-init":
+            if (target / a["path"]).exists():
+                git_dirs.append(a["path"])
+                steps.append(("git-init", a))
+        elif kind == "public-folder":
+            if (target / a["path"]).is_dir():
+                steps.append(("public-folder", a))
+        elif kind == "index":
+            entries = index_entries(target)
+            allowed = [x for x in (a.get("entries_after"), a["entries_before"]) if x is not None]
+            # Stopped while staging: the index holds what the run staged, and the record does not say so yet. The
+            # undo puts back the index kept before the run, whatever it holds now.
+            if a.get("entries_after") is None and a.get("staging"):
+                allowed = [entries]
+            if entries not in allowed:
+                obstacles.append(f"the private repository's index holds other entries than the run left: something "
+                                 f"was staged or unstaged since. The run started from a clean tree, so `git -C "
+                                 f"{target} reset -q` gives back the index it started from, and changes no file; "
+                                 "then run --undo again")
+                continue
+            steps.append(("index", a))
+
+    def accounted(rel):
+        return (rel in removed_files or any(rel == m or rel.startswith(m + "/") for m in moved_to)
+                or any(rel.startswith(g + "/") for g in git_dirs))
+
+    def own_folder(rel):
+        return runs_folder(rel, made_dirs, moved_to, written, git_dirs)
+    # A folder the run made goes only when nothing of anyone else's is in it, an empty folder included.
+    for d in sorted(made_dirs):
+        for p in (target / d).rglob("*"):
+            rel = str(p.relative_to(target)).replace(os.sep, "/")
+            if p.is_dir() and not p.is_symlink():
+                if not own_folder(rel):
+                    obstacles.append(f"{rel}/: a folder inside {d}/, which the run made, and not the run's")
+            elif not accounted(rel):
+                obstacles.append(f"{rel}: inside {d}/, which the run made, and not the run's")
+    public = target / pub
+    if public.is_dir():
+        for p in public.rglob("*"):
+            rel = str(p.relative_to(target)).replace(os.sep, "/")
+            if p.is_dir() and not p.is_symlink():
+                if not own_folder(rel) and not any(rel == d or rel.startswith(d + "/") for d in made_dirs):
+                    obstacles.append(f"{rel}/: a folder in the public folder, and not the run's")
+            elif not accounted(rel):
+                obstacles.append(f"{rel}: in the public folder, and not put there by the run")
+    return steps, obstacles
+
+
+def undo(target, out):
+    """Reverse the real run's record. The record is checked first, every path in it inside the project; then every
+    act, where the run left each thing and where it goes back; any obstacle is listed and nothing is changed. The
+    reversal marks each act undone as it goes, so a second --undo continues where a first one was stopped. Then the
+    tree, the index's entries and the status are compared with the state recorded before the run, and the last line
+    says how."""
+    state_file = git_dir(target) / SPLIT_STATE if (target / ".git").exists() else None
+    try:
+        record = Record.load(target)
+        if record is None:
+            print(f"REFUSED  no split is recorded in {shown(target)}: there is nothing to undo.", file=out)
+            return 1
+        check_record(record, target)
+        steps, obstacles = resolve(record, target)
+    except (NotTheRunsRecord, ValueError, KeyError, TypeError, AttributeError) as ex:
+        # json's decoding error is a ValueError.
+        print(f"REFUSED  {shown(state_file) if state_file else 'the record'} is not one the run wrote ({ex}); nothing "
+              "was changed. Restore it from where it was copied, or put the project back by hand: the moves show in "
+              "`git status`", file=out)
+        return 1
+    except (GitFailed, OSError) as ex:
+        print(f"REFUSED  {ex}; nothing was changed", file=out)
+        return 1
+    if obstacles:
+        print("REFUSED  the undo changed nothing. Deal with each of these, then run --undo again:", file=out)
+        for o in obstacles:
+            print(f"    {o}", file=out)
+        return 1
+    try:
+        for kind, a in reversed(steps):
+            if kind == "write":
+                path = target / a["path"]
+                if os.path.lexists(path):
+                    path.unlink()
+                if a["saved"]:
+                    shutil.copy2(record.folder / a["saved"], path, follow_symlinks=False)
+            elif kind == "mkdir":
+                (target / a["path"]).rmdir()
+            elif kind == "move":
+                src, dest = target / a["from"].rstrip("/"), target / a["to"].rstrip("/")
+                src.parent.mkdir(parents=True, exist_ok=True)
+                os.rename(dest, src)
+            elif kind == "git-init":
+                shutil.rmtree(target / a["path"])
+            elif kind == "public-folder":
+                # Only the run's folders are left in it, the ones the moves made above what they moved: removed
+                # deepest first.
+                for dirpath, _, _ in sorted(os.walk(target / a["path"]), key=lambda w: -len(w[0])):
+                    os.rmdir(dirpath)
+            elif kind == "index":
+                index = git_dir(target) / "index"
+                index.unlink(missing_ok=True)
+                if a["saved"]:
+                    shutil.copy2(record.folder / a["saved"], index)
+            a["undone"] = True
+            record.save()
+    except OSError as ex:
+        print(f"FAILED  the undo stopped at {ex}; every act already reversed is marked so: deal with this, then run "
+              "--undo again to finish", file=out)
+        return 1
+    before = record.data["before"]
+    after = tree_state(target, record.data.get("listed", ()))
+    differs = [k for k in ("files", "dirs", "index", "status") if after[k] != before[k]]
+    if differs:
+        print(f"FAILED  the undo ran, but the {', '.join(differs)} differ from before the run; the record is kept",
+              file=out)
+        return 1
+    record.remove()
+    listed = record.data.get("listed", [])
+    print(f"UNDONE  {shown(target)} is as before the run: every file compared by its content hash and mode"
+          + (f", except under the {len(listed)} local entr{'y' if len(listed) == 1 else 'ies'} "
+             f"({', '.join(listed[:3])}{' …' if len(listed) > 3 else ''}), compared by name, size and time" if listed
+             else "") + "; every folder; the index by its entries; and the status", file=out)
+    return 0
+
+
+def split_now(a, lay, target, sv, steps, prows, now, out):
+    """The real run, once every refusal and the preview gate have passed: each act recorded as it goes, then the gate
+    on what is staged and the link check across both repositories."""
+    cp = check_public()
+    public = target / lay.public_dir
+    pub = lay.public_dir
+    sides = sv.sides
+    record = Record.begin(target, pub, sv.ignored_before, sv.local)
+    folder_act = record.act({"act": "public-folder", "path": pub, "done": False})
+    public.mkdir()
+    record.done(folder_act)
+    for unit in sv.units:
+        dest = sides.dest(unit)
+        src, to = target / unit.rstrip("/"), public / dest.rstrip("/")
+        move = record.act({"act": "move", "from": unit, "to": f"{pub}/{dest}", "listing": listing(src),
+                           "done": False})
+        to.parent.mkdir(parents=True, exist_ok=True)
+        os.rename(src, to)
+        record.done(move)
+    init = record.act({"act": "git-init", "path": f"{pub}/.git", "done": False})
+    git_ok(public, "init", "-q", "-b", "main")
+    record.done(init)
+    name, email = author(a)
+    for key, value in (("user.name", name), ("user.email", email)):
+        git_ok(public, "config", key, value)
+    rows, problems = execute(steps, lambda rel: target / rel, target, lay, False, now, track=record)
+    setup_inside = [p[len(pub) + 1:] for s, p, d, had in rows if p.startswith(pub + "/") and not had]
+    ignore = public / ".gitignore"
+    had_ignore = ignore.exists() and ".gitignore" not in setup_inside
+    record.write(f"{pub}/.gitignore", with_lines(ignore, public_ignore_lines(sv)).encode("utf-8"))
+    if not had_ignore:
+        setup_inside.append(".gitignore")
+    comment, lines = private_ignore_lines(sv)
+    if lines:
+        record.write(".gitignore", with_lines(target / ".gitignore", [(comment, lines)]).encode("utf-8"))
+    sides.setup |= set(setup_inside)
+    record.write(PUBLIC_PATHS_FILE, sides.text().encode("utf-8"))
+    record.write(MARKERS_FILE, markers_text(a).encode("utf-8"))
+    record.write(".gitmodules", gitmodules_with(target, pub))
+    failed = []
+    # What stayed private and was ignored before the run must still be ignored, or staging would start tracking it:
+    # nothing untracked and not ignored may sit under what was ignored before (a folder listed as ignored may hold
+    # files each ignored by its own rule, so the files are what is asked about).
+    loose = zsplit(git_ok(target, "ls-files", "--others", "--exclude-standard", "-z", "--", ".", f":(exclude){pub}"))
+    unignored = sorted(f for f in loose if any(cp.covers(e, f) for e in sv.ignored_before))
+    for f in unignored:
+        failed.append(f"{f}: ignored before the run and no longer ignored on the private side")
+    if not unignored:
+        # Staging the private side records the moved files as removed from it and adds the setup's files; the public
+        # folder is excluded, since it gets its gitlink only after its first commit.
+        index_act = next(x for x in record.data["acts"] if x["act"] == "index")
+        index_act["staging"] = True  # recorded before the first `git add`, so a run stopped while staging is undone
+        record.save()
+        git_ok(target, "add", "-A", "--", ".", f":(exclude){pub}")
+        git_ok(public, "add", "-A")
+        record.done(index_act, entries_after=index_entries(target))
+    record.data["tree"] = git_ok(public, "write-tree").strip()
+    record.save()
+    gate = cp.staged(public, sides, cp.markers_from(a["markers"]), sv.olds, FIRST_MESSAGE)
+    links = subprocess.run([sys.executable, str(TOOLS / "check_links.py"), "--root", str(target), "--public", pub,
+                            "--cut", lay.cut], capture_output=True, text=True,
+                           env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"})
+    errors = [ln[len("error: "):] for ln in links.stdout.splitlines() if ln.startswith("error: ")]
+    stop = [e for e in errors if e.startswith(pub + "/")]
+    listed = [e for e in errors if not e.startswith(pub + "/")]
+    if links.returncode not in (0, 1):
+        stop.append(f"check-links could not run (exit {links.returncode}): {links.stderr.strip()}")
+    print_private(a, lay, target, False, prows, rows, out)
+    for f in failed:
+        print(f"FAILED  {f}", file=out)
+    print_gate(gate, f"The gate, on what is staged in {shown(public)}", out)
+    print(f"\nThe links across both repositories: check-links --public {pub} --cut {lay.cut}", file=out)
+    for e in stop:
+        print(f"error: {e}", file=out)
+    if listed:
+        print(f"  on the private side, listed for the session and never a stop ({len(listed)}): the move changes "
+              f"where a private document's link to the public code points; write it as {pub}/<path>", file=out)
+        for e in listed:
+            print(f"    {e}", file=out)
+    print(f"  {len(stop)} error(s) on the public side", file=out)
+    print("", file=out)
+    if gate.errors or stop or problems or failed:
+        print("STOPPED  before any commit. Undo the split first; then fix what is listed above, as commits in this "
+              "repository, and run the setup again. The undo:", file=out)
+        print(f"    {undo_command(target)}", file=out)
+        return 1
+    print(f"READY  the gate passed on what is staged. With the owner's yes, the first public commit: "
+          f"scaffold.py --answers <the same answers> --target {shown(target)} --first-commit", file=out)
+    return 0
+
+
+def with_lines(path, groups):
+    """An ignore file's text with the lines of each (comment, lines) group it lacks added, never a line of it
+    changed."""
+    text = path.read_text(encoding="utf-8") if path.exists() else ""
+    have = set(text.splitlines())
+    for comment, lines in groups:
+        missing = [ln for ln in lines if ln not in have]
+        if missing:
+            text += ("" if not text or text.endswith("\n") else "\n") + "\n".join([comment] + missing) + "\n"
+    return text
+
+
+def gitmodules_with(target, pub):
+    """The .gitmodules the public repository's entry needs, written by git on a copy, so the run knows the bytes it
+    will write before it writes them."""
+    folder = tempfile.mkdtemp(prefix="airone-modules-")
+    try:
+        copy = Path(folder) / "gitmodules"
+        if (target / ".gitmodules").exists():
+            shutil.copy2(target / ".gitmodules", copy)
+        for key, value in (("path", pub), ("url", f"./{pub}")):
+            git_ok(target, "config", "-f", str(copy), f"submodule.{pub}.{key}", value)
+        return copy.read_bytes()
+    finally:
+        shutil.rmtree(folder, ignore_errors=True)
+
+
+def first_commit(a, lay, target, out):
+    """After the gate and the owner's yes: the pre-push hook, the public repository's first commit, the submodule and
+    the private commit. The hook comes first, so a public commit never exists without it; a run that failed midway is
+    completed by running it again, each step done already being checked and skipped."""
+    try:
+        return first_commit_or_fail(a, lay, target, out)
+    except GitFailed as ex:
+        print(f"FAILED  {ex}", file=out)
+        print("Run --first-commit again once this is fixed: the steps already done are checked and kept.", file=out)
+        return 1
+
+
+def first_commit_or_fail(a, lay, target, out):
+    cp = check_public()
+    public = target / lay.public_dir
+    pub = lay.public_dir
+    record = Record.load(target) if (target / ".git").exists() else None
+    if record is None or "tree" not in record.data:
+        return private_refusal([f"no split is staged in {shown(target)}: run the setup's real run first, and its gate"],
+                               out, False, "Nothing was committed.")
+    state = record.data
+    hook = public / ".git" / "hooks" / "pre-push"
+    template = PRE_PUSH_TEMPLATE.read_text(encoding="utf-8")
+    problems = []
+    if not (public / ".git").is_dir():
+        problems.append(f"{shown(public)} is not a repository with its own git folder")
+    found = hooks_path(public) if (public / ".git").is_dir() else None
+    if found:
+        problems.append(hooks_path_problem(found, public))
+    if hook.exists() and hook.read_text(encoding="utf-8") != template:
+        problems.append(f"{shown(hook)} exists and is not the setup's; merge the gate into it by hand")
+    # rev-parse --verify exits 1 when there is no commit yet, an answer.
+    committed = git_ok(public, "rev-parse", "--verify", "-q", "HEAD", allowed=(0, 1)).strip() != ""
+    if committed and git_ok(public, "rev-parse", "HEAD^{tree}").strip() != state["tree"]:
+        problems.append(f"{shown(public)} has a commit that is not the tree the gate passed")
+    if not committed and git_ok(public, "write-tree").strip() != state["tree"]:
+        problems.append("what is staged in the public repository is not what the gate passed; restore it, or undo the "
+                        "split and run the setup again")
+    added = zsplit(git_ok(target, "diff", "--cached", "--name-only", "-z", "--diff-filter=A"))
+    was_ignored = sorted(p for p in added if any(cp.covers(e, p) for e in state.get("ignored_before", [])))
+    if was_ignored:
+        problems.append("the private commit would add what was ignored before the run: " + ", ".join(was_ignored)
+                        + "; unstage it (git rm --cached)")
+    if problems:
+        return private_refusal(problems, out, False, "Nothing was committed.")
+    rows = []
+
+    def step(what, done, where, *args):
+        if done:
+            rows.append(("KEPT", what, "already done, checked"))
+            return True
+        p = git_run(where, *args)
+        rows.append(("DONE" if p.returncode == 0 else "FAILED", what, "" if p.returncode == 0 else
+                     (p.stderr.strip() or p.stdout.strip())))
+        return p.returncode == 0
+
+    if hook.exists():
+        rows.append(("KEPT", "the pre-push hook", f"{shown(hook)}, already the setup's"))
+    else:
+        hook.parent.mkdir(parents=True, exist_ok=True)
+        hook.write_text(template, encoding="utf-8")
+        hook.chmod(0o755)
+        ok = hook.read_text(encoding="utf-8") == template and os.access(hook, os.X_OK)
+        rows.append(("DONE" if ok else "FAILED", "the pre-push hook", f"{shown(hook)}, running check-public on every "
+                     "push, from this folder and from any worktree of it" if ok else "not written as the template"))
+        if not ok:
+            print_rows(rows, out)
+            return 1
+    if not committed:
+        olds = old_emails_of(target)
+        # The sides as the real run wrote them, the setup's own files declared one by one.
+        written = cp.Sides.parse((target / PUBLIC_PATHS_FILE).read_text(encoding="utf-8"))
+        gate = cp.staged(public, written, cp.read_markers_file(target / MARKERS_FILE), olds,
+                         FIRST_MESSAGE)
+        if gate.errors:
+            print_rows(rows, out)
+            print_gate(gate, f"The gate, on what is staged in {shown(public)}", out)
+            return private_refusal([f"the gate found {len(gate.errors)} problem(s)"], out, False,
+                                   "Nothing was committed.")
+    if not step("the public repository's first commit", committed, public, "commit", "-q", "-m", FIRST_MESSAGE):
+        print_rows(rows, out)
+        print("Run --first-commit again once this is fixed: the steps already done are checked and kept, and the "
+              "public repository's pre-push gate is already in place.", file=out)
+        return 1
+    head = git_ok(public, "rev-parse", "HEAD").strip()
+    linked = any(e.startswith("160000 ") and e.split()[1] == head and e.split("\t", 1)[1] == pub
+                 for e in git_ok(target, "ls-files", "-s", "--", pub).splitlines())
+    if not step("the public repository registered as a submodule", linked, target, "submodule", "add", f"./{pub}",
+                pub):
+        print_rows(rows, out)
+        return 1
+    who = []
+    # `git config` exits 1 when the key is unset, an answer.
+    if not git_ok(target, "config", "user.email", allowed=(0, 1)).strip() and "GIT_AUTHOR_EMAIL" not in os.environ:
+        last = git_ok(target, "log", "-1", "--format=%an%x00%ae").strip().split("\0")
+        who = ["-c", f"user.name={last[0]}", "-c", f"user.email={last[1]}"]
+    in_head = git_ok(target, "ls-tree", "HEAD", "--", pub).split()
+    # diff --cached --quiet exits 1 when something is staged, an answer; any other exit is an error.
+    staged_now = git_run(target, "diff", "--cached", "--quiet")
+    if staged_now.returncode not in (0, 1):
+        raise GitFailed(f"git diff --cached in {shown(target)} failed (exit {staged_now.returncode}): "
+                        f"{staged_now.stderr.strip()}")
+    private_done = len(in_head) >= 3 and in_head[2] == head and staged_now.returncode == 0
+    if not step("the private repository's commit", private_done, target, *who, "commit", "-q", "-m",
+                f"Airone Giallo: {pub}/ is born as the public repository, from one gated commit; the history stays "
+                "here"):
+        print_rows(rows, out)
+        print("Run --first-commit again once this is fixed: the steps already done are checked and kept, and the "
+              "public repository's pre-push gate is already in place.", file=out)
+        return 1
+    record.remove()
+    clean = [git_ok(r, "status", "--porcelain").strip() for r in (target, public)]
+    rows.append(("DONE" if not any(clean) else "FAILED", "both repositories clean",
+                 "" if not any(clean) else "; ".join(c for c in clean if c)))
+    print_rows(rows, out)
+    return 0 if not any(clean) else 1
 
 
 def parser():
@@ -1257,17 +2534,51 @@ def parser():
                    "whole into the workspace as the public side; a dry run before the move shows it")
     p.add_argument("--carry", action="append", metavar="LINE", help="repeatable: one confirmed line of where a part "
                    "of the old instruction file goes, carried over by the session after the run")
+    p.add_argument("--history", choices=HISTORIES, help="two repositories, a folder with commits: private keeps the "
+                   "folder and its history private and gives birth to the public repository inside it; publish makes "
+                   "the folder, history and all, the public side (required when the folder has commits)")
+    p.add_argument("--side", action="append", metavar="PATH=SIDE", help="history private, repeatable: one of the "
+                   "project's paths and its side, public, private or local")
+    p.add_argument("--marker", action="append", metavar="WORD", help="history private, repeatable: a word of the "
+                   "owner's that must never be published")
+    p.add_argument("--public-author", metavar="'NAME <EMAIL>'", help="history private: the public commits' identity")
+    p.add_argument("--old-email-ok", action=argparse.BooleanOptionalAction, default=None,
+                   help="history private: the owner's yes to a public identity the old history used")
+    p.add_argument("--first-commit", action="store_true", help="history private, after the gate and the owner's yes: "
+                   "the pre-push hook, the public repository's first commit, the submodule and the private commit")
+    p.add_argument("--undo", action="store_true", help="history private, after a real run that stopped: reverse it "
+                   "from its record, touching only what the run wrote; needs only --target")
     return p
 
 
 def main(argv=None):
     args = parser().parse_args(argv)
     target = Path(args.target).expanduser().resolve()
+    if args.undo:
+        # The undo reads its record, not the answers: it reverses what was done, whatever is answered now.
+        if not target.is_dir():
+            print(f"FAILED  the target {target} is not a folder", file=sys.stderr)
+            return 2
+        return undo(target, sys.stdout)
     try:
         answers = load_answers(args)
+        # The folder handed over for two repositories: with commits, the direction of its history is an answer the
+        # setup never takes by default, since a history once published cannot be called back.
+        handed = answers["move_from"] or str(target)
+        if not answers["history"] and form_of(answers["cut"]) == "two" and has_commits(handed):
+            raise AnswerError(f"'history' is required: {handed} has commits. Answer private (the folder and its "
+                              "history stay private, and the public repository is born inside it) or publish (the "
+                              "folder, its whole history with it, becomes the public side)")
+        if args.first_commit and answers["history"] != "private":
+            raise AnswerError("--first-commit belongs to a history that stays private (history: private)")
     except AnswerError as ex:
         print(f"invalid answers: {ex}", file=sys.stderr)
         return 2
+    if args.first_commit:
+        if not target.is_dir():
+            print(f"FAILED  the target {target} is not a folder", file=sys.stderr)
+            return 2
+        return first_commit(answers, Layout.of(answers), target, sys.stdout)
     # Before the move the workspace may not exist yet: only a dry run that shows the move may look at it.
     if not target.is_dir() and not (args.dry_run and answers["move_from"]):
         print(f"FAILED  the target {target} is not a folder", file=sys.stderr)

@@ -21,8 +21,13 @@ is copied into the project: what stays there is what the script writes. Each rul
   questions, only what stops the setup and the facts it will write that no question asks (§2), one line each; details
   only when asked. *A question the repository answers costs the owner a turn and tells them the agent did not look, and
   a finding that changes nothing is one more line to read past.*
-- **In the two-repository form the owner's folder moves, whole, into a new workspace, and the move is the setup's last
-  act.** The workspace, `<folder>-nido` beside it, is a new private repository, and the folder becomes its public side,
+- **When the history stays private (B2), the owner's folder stays where it is and becomes the private repository; the
+  public repository is born inside it, `<folder>/<public_dir>/`, from one commit made after a gate.** Only the paths
+  declared public move into it, with the ignored entries declared `local`; everything else, the history included,
+  stays. *A history once published cannot be called back, and a folder that keeps its path keeps every tool, record and
+  session that knows it.* The whole split runs in one session started in the owner's folder, which never moves.
+- **When the whole history may be public (B2), the owner's folder moves, whole, into a new workspace, and the move is
+  the setup's last act.** The workspace, `<folder>-nido` beside it, is a new private repository, and the folder becomes its public side,
   registered as a submodule where it is: one copy, with its ignored files (dependencies, `.env` files) kept. *A clone
   carries only committed files, and leaves a second copy beside the first that drifts from it unseen.* The whole setup
   runs in one session started in the owner's folder; the folder moves after the real run and the checks, with the
@@ -41,8 +46,9 @@ cut can only place the files the tools add, and the rules on acting alone read w
 - **The first message holds only the opening findings** and, when the repository has an old instruction file, that
   file's step (below); no question of any group. *The findings and the old file are what the questions' proposals rest
   on; asked beside them, a question is answered before they are read.*
-- **Each later message holds questions of one group only, never of two**, in this run: A1, A2 and A3; B1; C1 and C2;
-  C3; D1; then the dry run (§3). *B1 and C3 have the most to read, so each comes alone, and a message that mixes groups
+- **Each later message holds questions of one group only, never of two**, in this run: A1, A2 and A3; B1; B2; C1 and
+  C2; C3; D1; then the dry run (§3). B2 is asked only when the repository has commits. *B1, B2 and C3 have the most to
+  read, so each comes alone, and a message that mixes groups
   comes back answered in part.*
 - **Every question has the same frame, and the agent writes what goes in it from this repository.** The question's
   label in bold on a line of its own, never as a heading, then four parts, each opened by its name in bold and a colon,
@@ -133,6 +139,7 @@ ask. *The owner answers a question, and the script's field names are one more th
 | A2 · Tools to add | Three tools, each optional and chosen on its own. The status file is the one list of the open work, each item under an ID that never changes. The handoff is the state a new session starts from, with a log each session adds to when it closes; its first log is named after the stage, the stretch of the work it covers. The specification graph holds decisions, requirements, assumptions and threats as nodes that rest on each other, checked by a command | the status file, yes or no (`status`, with its `families`, proposed in the same question as the paragraph on families below says); the handoff, yes or no (`handoff`, with the first log's `stage`, proposed with it); the graph (`graph`): `none`, `lite` with those four kinds, `full` with evidence, checks and open questions too | the status file and the handoff for any project worked over many sessions; the graph's `lite` profile once decisions and requirements rest on each other, `full` when evidence, checks and open questions need nodes too | the files written, the map's rows, the identifier families and the checks |
 | A3 · This machine | This device, for `local-machine.md`, a file git ignores and each device has its own, so that a test or a long run fits what the device can take: its resources, what else runs on it, the run limits, whether timings measured here count as results | one line each (`machine`: `resources`, `load`, `limits`, `timings`) | what the session can see (`nproc`, `free -h`, `df -h .`), for the owner to confirm: it is measured, not guessed | `local-machine.md`, git-ignored, one per device |
 | B1 · What is public | Which rungs of the ladder are public: the ladder's table below, then the cut in the sentences under it, then the form each cut gives. In the same question, three smaller choices: on which side the two folders the setup adds beside the ladder go unless the cut is `none`, `human-docs/` for the owner's own notes and `sources/` for downloaded sources, and in the two-repository form whether contributors get a short public instruction file | the highest public rung (`cut`: `none`, `docs`, `graph`, `plan`, `ai-docs`, `all`); each `private` or `public`, the owner's notes (`human_docs`) and the downloaded sources (`sources`); the agent layer (`agent_layer`: `private`, `both`) | `plan`: the system public, the work private; `private` for both elements and no contributors' file; say what the repository already shows, such as a public remote or a licence | the form: `all` is one public repository, `none` one private repository, any other cut two, the public rungs in the submodule folder; where each file is written; the ladder rule and the map of AGENTS.md |
+| B2 · The history | Asked only when the repository has commits: whether every commit, tag and ref of it may be public. With a no, the public repository is born new inside the owner's folder, and four smaller answers come in the same question: the side of each of the project's own paths, the owner's markers, the public commits' identity, and the public folder's name, which can be chosen | **publish**: the folder, its whole history with it, becomes the public side (`history: publish`); **private**: the folder stays private with its history, and the public repository starts from one gated commit (`history: private`, with `sides`, `markers`, `public_author`, `public_dir`, `old_email_ok`) | `private` unless the owner says plainly that every commit may be public; the sides proposed from the tree as one table, each ignored entry under a public path `local` or `private`; the markers drafted from what the repository shows of the owner (names, handles, e-mails, home paths, machine names) | the direction; what moves, what stays; the gate's lists, kept on the private side; the public identity |
 | C1 · How you work | How the owner works with the agent; it sets which working rules AGENTS.md gets | **Conductor (directing)**: the owner directs, wants explanations and recommendations, seldom the technical detail; or **Four-Hands (pairing)**: the owner works beside the agent, judges every line, gives prototypes and directions (`mode`: `conductor`, `four-hands`) | no default: the repository cannot show how the owner works, so say so and ask, after describing both | Four-Hands adds the choices list after building, the scope rule, the tool-clash rule and the structure rule; Conductor adds the sentence on directions as leads to explore |
 | C2 · What the agent sends out on your behalf | Pushes, tags, releases, issues, pull requests, comments, posts: whether the owner sees each before it goes out | **gated**, prepared as a branch or a draft for the owner to send, or **free**, done and reported, with an attribution trailer, a line naming the agent, if they want one (`outward`, `attribution`) | `gated`: an act outside the repository cannot be taken back | the outward rule |
 | C3 · Actions asked first | Actions the agent always stops and asks about before doing them, said in the words below in place of the frame | Propose candidates: actions found in the repository that can do damage, one line each with why. Do not propose an action that `session` §2 already leaves to the owner in every project (scope, priorities, cost, anything irreversible or public, a change to a recorded ruling); when a candidate is already covered by B1 or C2, say which, as the text below does. The owner keeps some by number, adds their own, or answers none (`reserved`) | the candidates the repository suggests; none is an answer too, and more are added as they surface | the list becomes one sentence in AGENTS.md, in the first rule on deciding |
@@ -163,8 +170,8 @@ Under the table, B1 explains the cut in two sentences: the cut names the highest
 rung below it are public and every rung above it is private. `none` keeps everything private, `plan` makes the
 specification, the graph and the plan public and keeps the agents' documents and the instruction files private, and
 `all` makes everything public. Then the form, in one sentence: `none` and `all` keep one repository, and a cut between
-them makes two, the owner's folder becoming the public one and moving, at the end and with their yes, into a new private
-repository, `<folder>-nido`, beside it. The three smaller choices are always asked, in one line with their suggestion,
+them makes two, whose direction B2 asks when the repository has commits; when the history stays private, even `none`
+gives a public repository, holding only the project's own public paths. The three smaller choices are always asked, in one line with their suggestion,
 whatever cut is suggested: the owner may choose another. B1's Watch out says what in this repository a cut would make
 public that the owner may not want public. The rest is said when the owner asks. A rung cites only rungs at or below it,
 so one cut is enough. *One cut instead of a side per document keeps every public text free of links into the private
@@ -173,6 +180,42 @@ beside the ladder and has no side to answer: each repository gets its own, `arch
 document stays on the side it was on. With `cut: all` the agent layer is public and RATIONALE.md drops the owner's words
 from its form; `agent_layer: both` keeps the full layer private and adds a contributors' `AGENTS.md` that cites only
 public rungs.
+
+**B2 decides what a push can never undo, so anything but a clear yes keeps the history private.** *A history kept
+private costs only the public repository's past; one published cannot be called back.* With `private`:
+
+- **Every one of the project's own paths gets a side, shown as one table:** `public` for what goes into the public
+  repository, `private` for what stays, and for each ignored entry under a public path `local` (an environment file,
+  installed dependencies, build output: it travels with the code and stays ignored there) or `private` (a backup, the
+  owner's data: it stays where it is). The longest matching path wins, and a path no rule covers is private; a
+  `private` path inside a `local` folder stays where it is while the rest of the folder travels. *A side remembered at
+  the moment of a commit is a side forgotten once; a side written per path is checked by a tool at every commit and
+  push.* Never `public` for the agent tool's files or an instruction file: the script refuses it.
+- **A path published under another name is written `public as <name>`**: a public README kept beside the private
+  one (`"README.public.md": "public as README.md"`), or the public repository's ignore rules kept in a file of their
+  own (`"public-root.gitignore": "public as .gitignore"`). The private repository's own `.gitignore`, `.gitmodules`
+  and `.gitattributes` never move: git reads them where they are. Two sources for one public name are refused. *A
+  file renamed by hand after the split is a change the gate never saw.*
+- **What is ignored on the private side stays ignored there.** When the rule that ignores a private file lives in a
+  `.gitignore` that moves with a public folder, the setup gives the private side's root `.gitignore` that rule, and
+  the dry run says so (`IGNORE  .gitignore`); the private commit refuses to add anything that was ignored before the
+  run. *A rule that leaves with the public code would otherwise let the private commit take an environment file, a
+  secret, into the history the owner keeps.*
+- **The markers are the owner's words that must never be published**, drafted from what the repository shows and
+  confirmed one by one; an empty list is written only as the owner's answer, and the gate then says no markers were
+  given. *A secret scanner knows the shapes of keys, never the owner's name.*
+- **The public identity is asked, never taken from git's configuration**, and an e-mail the old history used is
+  refused unless the owner says yes to it. *The configured identity is the one every private commit carries.*
+- **The public folder's name can be chosen** (`public_dir`); its default is the project's name. Say so in one line.
+
+The two lists are written at the private repository's root, `public-paths.txt` and `public-markers.txt`, beside the
+agent layer, the one place no cut makes public; the setup adds to the first a `setup` line for each file it writes on
+the public side, one by one, and an explicit `private` rule wins over them. The markers file holds the markers and
+nothing else, one a line: it has no comment syntax, so no header is written into it, and `public-paths.txt`'s header
+says what both files are for. It is read as UTF-8, a byte-order mark and CRLF line ends handled, each line stripped,
+by one function for the setup and the gate. A marker holding a line break, or folding to fewer than 3 characters, is
+refused. *The pre-push
+hook and every later session read them there, and a folder declared for the setup's sake would let anything into it.*
 
 C3 and D1 have no frame: each is said under its label in the words given here. C3 is said to the owner as written
 here, the bracket filled at each run with the candidates found in the repository, numbered:
@@ -237,6 +280,53 @@ Both runs find the folder where it is: the real run writes the public side into 
    python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json --target <root>
    ```
 
+**When the history stays private, `--target` is the owner's folder itself, and the steps are these.** No `move_from`,
+no new workspace and no move of the folder: the script does every deterministic step, and each yes stays the owner's.
+
+1. **The dry run** says that the folder stays and that the public repository is created inside it, then lists the
+   project's own paths: `MOVE` for each public path and each `local` entry, `STAYS` for a private entry under a public
+   path, `IGNORE` for a rule the public repository must get because the one that ignores an entry now stays private,
+   and `LISTED` for private code that reaches public code. Then the setup's own files as above, and **the gate** on the
+   files that would be public, read where they are: the declared paths, the agent tool's files, the markers, the
+   secret scan, the ignore rules, the identity, and the images and binary files, listed and not read. *A gate that
+   runs only after the move finds a problem when the files it would fix are no longer tracked where they were.*
+2. **A gate that finds anything stops here.** Each finding is fixed in the project's own content, as commits in the
+   private repository, where the history records why; then the dry run again, until the gate is clean. *The fresh
+   public commit is the clean tree, and the private history keeps every scrubbed version where it does no harm.*
+3. **The owner's yes to the dry run, then the real run.** It runs the gate again and refuses before writing anything
+   if it fails, or while a `core.hooksPath` is in effect (git would run the hooks from there and never the public
+   repository's gate; the refusal names the command that unsets it, and `--first-commit` checks again); then it moves the paths, writes the setup's files and the two lists, creates the public repository
+   with the public identity and a root `.gitignore` that ignores the agent tool's files whatever their case, stages
+   both repositories, and runs the gate on what is staged and
+   `check-links` across both. It records every act as it goes, in the private repository's `.git` folder. A finding on
+   the public side, or a public file citing the private side, stops it before any commit, and its last line is the
+   one command that undoes it, `scaffold.py --target <root> --undo`: run it first, then fix, then run again. The undo
+   checks the whole record before it changes anything: every path in it must lie inside the project, symlinks
+   resolved, or it refuses the record as one the run did not write; every path must be as the run left it, every
+   place a thing returns to must hold nothing, and a folder the run made must hold nothing else. An empty folder the
+   run did not make is never removed, anywhere: at a return place, in the public folder or inside a moved folder, it
+   is an obstacle like any other. On any obstacle it lists them all,
+   changes nothing and exits non-zero; once the owner has dealt with them, it is run again. A run stopped between an
+   act and its record is settled from the disk: the thing is whole at its old place, whole at its new one, or an
+   obstacle named as such. The undo then compares the tree with the state recorded before the run, every file by its
+   content hash and mode except under the `local` entries, compared by name, size and time; every folder; the index
+   by its entries; and the status; and its last line says so. A
+   private document whose link to the code the move changed is listed for the session, never a stop: it now links to
+   `<public_dir>/…`, a private-to-public link.
+4. **The gate's report goes to the owner whole, and the first commit waits for their yes**, given after reading it:
+
+   ```sh
+   python3 <airone-giallo>/skills/setup/scaffold.py --answers ANSWERS.json --target <root> --first-commit
+   ```
+
+   It refuses when what is staged is not what the gate passed, writes the public repository's `pre-push` hook first,
+   which runs `check-public` on every object a push sends, runs the gate once more, makes the public repository's
+   first commit, registers it as a submodule, and commits the private side, refusing a private commit that would add
+   anything ignored before the run. A run that failed midway, a private pre-commit hook refusing the private commit
+   for one, is finished by running it again: each step already done is checked and kept. Once it is done, the record
+   of the real run is removed. *The gate runs on what is staged and the hook on what is pushed, so nothing reaches a
+   remote that no gate read, and no public commit exists without its hook.*
+
 What it writes, the dry run lists file by file: at the workspace root the agent layer (`AGENTS.md`, `CLAUDE.md`,
 `RATIONALE.md`, the git-ignored `local-machine.md`) and the `.gitignore`, an allowlist in the two-repository form; at
 the top of each repository `.ignore` with `archive/`, `archive/README.md` and the archive's log `archive/LOG.md`; on
@@ -248,6 +338,9 @@ the owner's repository its backup in the workspace's archive, then the file repl
 
 `--help` lists every answer as a flag; a flag overrides the file.
 
+- **The private history needs the `gitleaks` command.** The gate's secret scan is gitleaks, never reimplemented;
+  without it the script refuses before writing and names the install. Ask the owner to install it; do not work around
+  it. *A gate that skips its secret scan reports a clean tree it never read.*
 - **The graph step needs the `specgraph` command.** The script runs `specgraph init` from the PATH, and only when no
   command is there `python -m specgraph init` with its own interpreter, if the module is importable there; with
   neither it reports the step SKIPPED with the install command, and exits 1. Ask the owner to install it; do not work
@@ -340,9 +433,11 @@ Then propose a local commit of what was installed, by the project's own commit r
 the public repository first, in the folder, and the workspace's after the move, with the updated gitlink, *so the
 gitlink names a commit that exists.* The public commit removes the old instruction file; its earlier versions stay in
 that repository's history, which the owner should know before anything is pushed. Anything outward follows the answer to
-C2.
+C2. When the history stays private the two commits are the script's (`--first-commit`, §3), after the gate and the
+owner's yes; the checks above then run from the owner's folder, which is the workspace, and the links across both
+repositories have already been checked by the real run. Nothing moves afterwards.
 
-**In the two-repository form the move comes last**, with the owner's yes, once the checks, the choices and the public
+**In the two-repository form the move comes last** when the whole history may be public, with the owner's yes, once the checks, the choices and the public
 commit are done. Before the yes, say plainly that the folder's path changes from `<folder>` to `<folder>-nido/<folder>`,
 that the editor, scripts and Claude Code's per-path memory do not follow, and that moving the folder back undoes it.
 Then, with absolute paths only (`<dir>` the folder's parent), since the session's own folder is the one that moves:
@@ -365,11 +460,17 @@ scripts and Claude Code's per-path memory still point at the old path, where not
 
 ## 5. What the script does not do
 
-It runs no `git submodule` and no other git command that changes anything, commits nothing, moves nothing of the owner's
-but the agent tool's `.claude/` and `.mcp.json` to the workspace's root in the two-repository form (the move of the
-folder itself is the session's, with the owner's yes), deletes nothing but an old instruction file of the owner's
-repository once its backup has been read back equal to it, and copies no script into the project; it writes no hook and
-no CI workflow (the lines a project copies into its own are in Airone Giallo's `tools/README.md`), and it carries no
-document's content into the tree: that is a session's work with the owner, file by file. Not done yet: injecting the
-agent layer into the public checkout, several public folders under one workspace, and `.git/info/exclude` in place of a
-visible ignore block.
+When the whole history may be public, it runs no `git submodule` and no other git command that changes anything,
+commits nothing, and moves nothing of the owner's but the agent tool's `.claude/` and `.mcp.json` to the workspace's
+root (the move of the folder itself is the session's, with the owner's yes). When the history stays private, it moves
+the paths declared public and `local`, runs `git init`, `git add` (which records the moved files as gone from the
+private side) and the gate, and with `--first-commit` writes the public repository's `pre-push` hook, then makes the
+two commits and runs `git submodule add`: each a
+step the dry run names, refused before writing when its precondition fails, and, in the real run, recorded so that
+`--undo` can reverse it. In either direction it deletes nothing but an old instruction file of the owner's repository
+once its backup has been read back equal to it (the undo puts the original back from its record), copies no script
+into the project, writes no CI workflow (the lines a project copies into its own are in Airone Giallo's
+`tools/README.md`), and carries no document's content into the tree: that is a session's work with the owner, file by
+file, and so is the scrub of what the gate finds. Not done yet: injecting the agent layer into the public checkout,
+several public folders under one workspace, `.git/info/exclude` in place of a visible ignore block, and a gate on a
+whole history for the direction that publishes it.

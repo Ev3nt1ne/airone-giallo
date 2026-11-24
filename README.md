@@ -25,7 +25,7 @@ belongs in that project's memory, not here.
 | What | Where |
 |---|---|
 | The skills: how a session opens and closes, how a claim is verified, how documents are written, corrected and kept true together, and the setup, which asks a project a few questions and lays out its documents: the system documents, the plan, the AI documents with the status file and the handoff, an archive with its log in each repository, the agent layer | `skills/`, the setup in `skills/setup/` with the templates of every file it writes |
-| The commands: four checks for a hook and CI (the status file with its IDs, the archive and its log, the links, with no public document linking to a private one, the frontmatter with its dates), a mover that re-points every reference to a moved file, a mutation round, and a lister of the claims a change makes | `tools/` |
+| The commands: four checks for a hook and CI (the status file with its IDs, the archive and its log, the links, with no public document linking to a private one, the frontmatter with its dates), a mover that re-points every reference to a moved file, a mutation round, a lister of the claims a change makes, and a gate on what a public repository commits and pushes when the project's history stays private | `tools/` |
 | The specification graph: a project's decisions, requirements, assumptions and threats as a graph whose truth is computed, with a lint, a cascade and a batch tool; a package of its own, with its own skill and plugin entry (`specgraph`) for a project that takes the graph alone | `graph/` |
 | The plugin, which carries the skills into Claude Code | `.claude-plugin/` |
 | The brand: the mark, its lockups and the rules for using them | `brand/` |
@@ -57,14 +57,19 @@ environment apart from the project's.
 
 The skills are then `/airone-giallo:session`, `/airone-giallo:handoff`, `/airone-giallo:markdown-docs`,
 `/airone-giallo:doc-discipline`, `/airone-giallo:setup` and `/airone-giallo:graph`; the commands are `specgraph`,
-`check-status`, `check-archive`, `check-links`, `check-frontmatter`, `move-paths`, `mutate` and `claims`. Each
+`check-status`, `check-archive`, `check-links`, `check-frontmatter`, `move-paths`, `mutate`, `claims` and
+`check-public`. Each
 folder's README says what it holds, why, and how it is used, in that order.
 
 To lay Airone Giallo out in a project, open a session at the project's root, on a clean git tree, and run
 `/airone-giallo:setup`. It reads the repository, asks only what the repository cannot answer, and shows a dry run that
-writes nothing; the real run waits for your word. When only some of the project's documents are to be public, the
-project becomes two repositories: a new private one, `<folder>-nido`, is created beside the project's folder, and the
-folder moves into it, whole, as its public side. The move is the setup's last step, and it too waits for your yes.
+writes nothing; the real run waits for your word. When only part of the project is to be public, the project becomes
+two repositories, and the setup asks whether its history may be public. If it may not, the folder stays where it is as
+the private repository, its history with it, and the public repository is born inside it: the paths you declare public
+move in, a gate checks them (your markers, a secret scan by `gitleaks`, the agent's own files, the ignore rules), and
+the first public commit waits for your yes after the gate's report. If the whole history may be public, a new private
+repository, `<folder>-nido`, is created beside the folder, which moves into it, whole, as its public side, as the
+setup's last step and with your yes.
 
 ### Where it runs and what it runs
 
@@ -73,7 +78,8 @@ need a terminal and a git repository. The plugin has no hooks and no MCP servers
 Claude what to run. Claude then runs the commands installed above; the setup's script, `skills/setup/scaffold.py`, which
 comes with the plugin and runs with `python3`; and the git commands a skill names, such as `git mv`, and, each with your
 yes, the setup's `git init`, `git submodule add` and commits. The commands read and write the project's files and run
-local git commands (such as `ls-files`, `log`, `show`, `diff`, `mv`); `mutate` also runs the test command it is given.
+local git commands (such as `ls-files`, `log`, `show`, `diff`, `mv`); `mutate` also runs the test command it is given,
+and `check-public`, with the setup when the history stays private, runs `gitleaks` on a local copy.
 None of them opens a network connection: `check-links` counts external links and skips them without fetching them. The
 network is used to install the commands from GitHub, and by `uvx`, which the graph skill offers when `specgraph` is not
 installed and which downloads the graph package from GitHub at a fixed commit. No skill tells Claude to push, open an

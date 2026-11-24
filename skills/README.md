@@ -18,6 +18,10 @@ when the work matches its description, and each can also be called by name, `/ai
 | [doc-discipline](doc-discipline/SKILL.md) | Keeping several design documents, the graph file and the status file true together: levels in sync, the ladder of places and the cut between public and private, a term renamed across the live documents and the archive, one allocator per identifier family, the cascade read before an edit, a milestone passed by the owner's ruling, when a review is due, and what a commit of the change holds |
 | [setup](setup/SKILL.md) | Installing Airone Giallo into an existing project, once: the questions a template cannot answer, then a script that writes its tree on the sides the cut of the ladder sets (the short instruction file, the invariants file it loads into every session, its rationale file, the machine file, `ai-docs/`, `archive/` and the optional tools chosen: the status file, the handoff, the graph file), backing up an old instruction file before it replaces or removes it, refusing to overwrite anything else, and reporting every step it did not perform |
 
+The setup asks a project a few questions and lays out its documents: the system documents, the plan, the AI
+documents with the status file and the handoff, an archive with its log in each repository, the agent layer. It lives
+in `skills/setup/` with the templates of every file it writes.
+
 One more skill lives with its part: [graph](../graph/skills/graph/SKILL.md), reading, extending and checking the
 specification graph, in `graph/skills/`, so that the graph's folder stays complete on its own; the plugin loads it
 with these.

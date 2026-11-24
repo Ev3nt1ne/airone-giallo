@@ -1,7 +1,7 @@
 {
   "name": "airone-giallo",
   "displayName": "Airone Giallo",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Runs a long project with Claude Code agents: the skills for a session, the handoff, the documents and their discipline, the specification graph, and the setup that lays out the project's documents. The commands are installed separately as Python packages.",
   "author": { "name": "Ev3nt1ne", "url": "https://github.com/Ev3nt1ne" },
   "homepage": "https://github.com/Ev3nt1ne/airone-giallo",
